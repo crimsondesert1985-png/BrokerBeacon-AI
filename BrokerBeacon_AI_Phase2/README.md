@@ -1,8 +1,20 @@
-# BrokerBeacon AI v1.2 — Verified Data Workflow
+# BrokerBeacon AI 2.0
 
-BrokerBeacon is a local Flask prospect-intelligence and relationship-management prototype.
+A prospect intelligence and workflow demo for wholesale mortgage account executives.
 
-## Start
+## Included
+
+- Executive command center and KPI summaries
+- Public-web prospect profiles with source and verification fields
+- AI opportunity scoring and product-fit recommendations
+- Outreach drafting workflow
+- Pipeline board
+- Territory intelligence view
+- Full-feature read-only executive demo at `/demo`
+- Health check at `/health`
+- Compliant CSV importer
+
+## Run locally
 
 ```powershell
 python -m venv .venv
@@ -10,16 +22,16 @@ python -m venv .venv
 .\.venv\Scripts\python.exe app.py
 ```
 
-Open `http://127.0.0.1:5000`.
+Open `http://127.0.0.1:5000/` for the editable local app and `http://127.0.0.1:5000/demo` for the read-only executive demo.
 
-## Real-data import policy
+## Render settings
 
-BrokerBeacon v1.2 does not create fictional prospect records and does not scrape NMLS Consumer Access. Import only records you are authorized to store and use, such as official downloadable regulator lists, licensed data-vendor exports, company-approved CRM exports, or manually verified records.
+- Root Directory: `BrokerBeacon_AI_Phase2`
+- Build Command: `pip install -r requirements.txt`
+- Start Command: `gunicorn app:app`
 
-Every CSV row must include `authorized_use=yes` (or `true`/`1`). Rows without authorization are skipped. Supported states are NC, SC, VA, GA, TN, and MI.
+The existing public URL remains unchanged after deployment.
 
-Records are deduplicated first by NMLS ID, then by company + city + state. Existing matches are updated rather than duplicated.
+## Data note
 
-Use `source_name`, `source_url`, `verification_status`, `verified_at`, `license_type`, and `verification_notes` to document provenance. NMLS Consumer Access may be opened manually for individual verification; automated bulk scraping is not included.
-
-The included `sample_import.csv` is a column template only. Delete its example row before importing real data.
+Prospects sourced from public web information should remain marked **Needs verification** until confirmed before outreach. Do not import data from sources whose terms prohibit scraping, bulk extraction, or solicitation use.
