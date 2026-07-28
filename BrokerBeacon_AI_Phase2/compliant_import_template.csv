@@ -1,0 +1,2 @@
+company,owner,city,state,nmls,email,phone,website,license_type,verification_status,verified_at,source_name,source_url,specialties,signal,team,hiring,status,verification_notes
+Example Mortgage LLC,,Charlotte,NC,123456,,,https://example.com,Mortgage broker,Needs verification,,Authorized source name,https://official-source.example,"VA, FHA",Imported,0,no,New,
