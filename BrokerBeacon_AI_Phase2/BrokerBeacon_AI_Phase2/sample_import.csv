@@ -1,0 +1,2 @@
+company,owner,city,state,signal,team,email,phone,status,website,nmls,specialties,hiring,source_name,source_url,verification_status,verified_at,license_type,verification_notes,authorized_use
+Example Authorized Company,,Charlotte,NC,Imported,0,,,New,,123456,,0,NC regulator export,https://example.gov/source,Needs verification,2026-07-28,Mortgage broker,Replace this example row with data you are authorized to use,yes
