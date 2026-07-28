@@ -1,5 +1,5 @@
-from flask import Flask, request, jsonify, render_template_string, Response, send_file, make_response
-import sqlite3, io, csv, os, json, re, uuid, smtplib, ssl, urllib.parse, urllib.request, base64
+from flask import Flask, request, jsonify, render_template_string, Response, send_file, make_response, redirect
+import sqlite3, io, csv, os, json, re, uuid, smtplib, ssl, urllib.parse, urllib.request, base64, html
 from datetime import datetime, timedelta, time as dt_time
 from pathlib import Path
 
@@ -157,7 +157,9 @@ hr{
 
 
 .mission-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:14px}.mission-span-2{grid-column:span 2}.brief-card{white-space:pre-line;line-height:1.65;padding:12px;background:var(--green-3);border-radius:12px;margin-bottom:12px}.campaign-layout{display:grid;grid-template-columns:.9fr 1.1fr;gap:14px;margin-top:14px}.campaign-row{padding:14px;border:1px solid var(--line);border-radius:13px;margin:10px 0;background:#fff}.campaign-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:10px}.campaign-stats div{background:var(--panel-2);padding:8px;border-radius:9px;text-align:center}.campaign-stats b{display:block;color:var(--green-dark)}@media(max-width:1000px){.mission-grid{grid-template-columns:1fr 1fr}.mission-span-2{grid-column:span 2}.campaign-layout{grid-template-columns:1fr}}@media(max-width:650px){.mission-grid{grid-template-columns:1fr}.mission-span-2{grid-column:auto}.campaign-stats{grid-template-columns:repeat(2,1fr)}}
-</style></head><body><div class="app"><aside><div class="brand">Broker<span>Beacon</span> AI</div><div class="version">VERSION 6.0 · MISSION CONTROL</div><nav><button class="active" data-v="dashboard">✦ Command Center</button><button data-v="copilot">✦ AI Copilot</button><button data-v="daily">⚡ Daily Plan</button><button data-v="prospects">◉ Prospects</button><button data-v="outreach">✎ Outreach</button><button data-v="campaigns">✉ Campaigns</button><button data-v="pipeline">▦ Pipeline</button><button data-v="followups">✓ Follow-ups</button><button data-v="territory">⌖ Territory</button><button data-v="boss">◆ Executive View</button><button data-v="integrations">⚙ Integrations</button></nav></aside><main><div class="top"><div><small>AI OPERATING SYSTEM FOR WHOLESALE AES</small><h1 id="title">Command Center</h1></div><div class="actions"><button class="btn" id="import">Compliant Import</button><a class="btn" href="/api/export">Export CSV</a><button class="btn primary" id="add">+ Add Prospect</button></div></div>
+
+.template-grid{display:grid;grid-template-columns:320px 1fr;gap:14px;margin-top:14px}.template-list{max-height:720px;overflow:auto}.template-item{padding:12px;border:1px solid var(--line);border-radius:12px;margin:8px 0;background:#fff;cursor:pointer}.template-item:hover,.template-item.active{border-color:var(--green);background:var(--green-3)}.template-item b{display:block;color:var(--green-dark)}.sequence-step{display:grid;grid-template-columns:64px 110px 1fr auto;gap:10px;align-items:center;padding:11px;border:1px solid var(--line);border-radius:12px;margin:8px 0;background:#fff}.sequence-step .day{font-weight:900;color:var(--green)}.tone-row{display:flex;gap:7px;flex-wrap:wrap}.tone-row button.active{background:var(--green)!important;color:#fff!important}.analytics-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}.analytics-grid>div{padding:11px;border-radius:11px;background:var(--panel-2);text-align:center}.analytics-grid b{display:block;font-size:20px;color:var(--green-dark)}.library-tabs{display:flex;gap:6px;margin-bottom:10px}.library-tabs button.active{background:var(--green)!important;color:#fff!important}.step-editor{padding:12px;background:var(--panel-2);border-radius:12px;margin-top:10px}@media(max-width:900px){.template-grid{grid-template-columns:1fr}.sequence-step{grid-template-columns:55px 90px 1fr}.sequence-step button{grid-column:1/-1}.analytics-grid{grid-template-columns:repeat(3,1fr)}}
+</style></head><body><div class="app"><aside><div class="brand">Broker<span>Beacon</span> AI</div><div class="version">VERSION 7.0 · CAMPAIGN STUDIO</div><nav><button class="active" data-v="dashboard">✦ Command Center</button><button data-v="copilot">✦ AI Copilot</button><button data-v="daily">⚡ Daily Plan</button><button data-v="prospects">◉ Prospects</button><button data-v="outreach">✎ Outreach</button><button data-v="campaigns">✉ Campaigns</button><button data-v="templates">▤ Templates & Sequences</button><button data-v="pipeline">▦ Pipeline</button><button data-v="followups">✓ Follow-ups</button><button data-v="territory">⌖ Territory</button><button data-v="boss">◆ Executive View</button><button data-v="integrations">⚙ Integrations</button></nav></aside><main><div class="top"><div><small>AI OPERATING SYSTEM FOR WHOLESALE AES</small><h1 id="title">Command Center</h1></div><div class="actions"><button class="btn" id="import">Compliant Import</button><a class="btn" href="/api/export">Export CSV</a><button class="btn primary" id="add">+ Add Prospect</button></div></div>
 <section id="dashboard" class="view active"><div class="hero"><div><div class="kicker">AE MISSION CONTROL</div><h2>Good morning, Clay. Here is what deserves attention first.</h2><p>One screen for priority calls, newly discovered accounts, stale relationships, product opportunities, campaign activity, weekly goals, and the AI morning brief.</p></div><button class="btn primary" onclick="show('daily')">Start today’s plan</button></div><div class="metrics"><div class="metric"><span>Priority calls today</span><strong id="mcCalls">0</strong></div><div class="metric"><span>New broker alerts</span><strong id="mcNew">0</strong></div><div class="metric"><span>Relationships at risk</span><strong id="mcRisk">0</strong></div><div class="metric"><span>Meetings this week</span><strong id="mcMeetings">0</strong></div></div><div class="mission-grid"><div class="panel mission-span-2"><div class="profile-head"><div><h3>Today’s priorities</h3><p class="muted">Ranked by opportunity, follow-up urgency, and relationship inactivity.</p></div><button class="btn smallbtn" onclick="show('daily')">Open full plan</button></div><div id="mcPriorities" class="priority"></div></div><div class="panel"><h3>AI morning brief</h3><div id="mcBrief" class="brief-card muted">Loading…</div><button class="btn smallbtn" onclick="missionControl()">Refresh brief</button></div><div class="panel"><h3>New broker alerts</h3><div id="mcAlerts" class="activity"></div></div><div class="panel"><h3>Brokers at risk</h3><div id="mcAtRisk" class="activity"></div></div><div class="panel"><h3>Product opportunities</h3><div id="mcProducts" class="bars"></div></div><div class="panel"><h3>This week’s goals</h3><div id="mcGoals"></div></div><div class="panel"><h3>Campaign performance</h3><div id="mcCampaigns"></div><button class="btn smallbtn" onclick="show('campaigns')">Manage campaigns</button></div></div></section>
 <section id="copilot" class="view"><div class="hero"><div><div class="kicker">BROKERBEACON COPILOT</div><h2>Ask your territory a question. Get a ranked, explainable answer.</h2><p>The Copilot uses your BrokerBeacon prospect, pipeline, follow-up, and activity data. It does not invent email opens, licensing events, or production data that are not stored in your database.</p></div><span class="pill">Database-grounded</span></div><div class="copilot-layout" style="margin-top:14px"><div class="panel"><h3>Ask BrokerBeacon</h3><div class="askbox"><input id="copilotQuestion" placeholder="Example: Who should I call first today?"><button class="btn primary" id="askCopilot">Ask</button></div><div class="suggestions"><button class="btn smallbtn copilotPrompt">Who should I call first today?</button><button class="btn smallbtn copilotPrompt">Which Charlotte prospects need attention?</button><button class="btn smallbtn copilotPrompt">Show overdue follow-ups</button><button class="btn smallbtn copilotPrompt">Find high-score government-loan prospects</button></div><div id="copilotAnswer" class="answer muted" style="margin-top:16px">Ask a question to generate a prioritized answer from your current database.</div></div><div class="panel"><h3>Morning briefing</h3><div id="morningBrief"><div class="empty">Loading briefing…</div></div><button class="btn" style="margin-top:12px" onclick="copilotBrief()">Refresh briefing</button></div></div></section><section id="daily" class="view"><div class="hero"><div><div class="kicker">AI-GUIDED WORKDAY</div><h2>Your five best actions, ranked and ready.</h2><p>BrokerBeacon combines opportunity score, pipeline stage, follow-up urgency, and recent activity to create a focused daily call plan.</p></div><button class="btn primary" onclick="dailyPlan()">Refresh plan</button></div><div class="metrics"><div class="metric"><span>Calls logged today</span><strong id="dcalls">0</strong></div><div class="metric"><span>Emails logged today</span><strong id="demails">0</strong></div><div class="metric"><span>Conversations this week</span><strong id="dconvos">0</strong></div><div class="metric"><span>Meetings created this week</span><strong id="dmeetings">0</strong></div></div><div class="plan-grid"><div class="panel"><div class="profile-head"><div><h3>Recommended action queue</h3><p class="muted">Highest-value unfinished actions appear first.</p></div><span class="pill">Top 5</span></div><div id="dailyQueue"></div></div><div><div class="panel"><h3>Daily activity goal</h3><div class="goalring" id="goalring" style="--goal:0"><div><span><strong id="goalPct">0%</strong><br><small class="muted">10 actions</small></span></div></div><div id="goalText" class="muted" style="text-align:center;margin-top:12px"></div></div><div class="panel" style="margin-top:14px"><h3>Recent sales activity</h3><div id="salesTimeline" class="timeline"></div></div></div></div></section><section id="prospects" class="view"><div class="filters"><input id="search" placeholder="Search company, owner, city"><select id="state"><option>All</option><option>NC</option><option>SC</option><option>VA</option><option>GA</option><option>TN</option><option>MI</option></select><select id="signal"><option>All</option><option>Newly Licensed</option><option>Team Growth</option><option>VA/FHA Fit</option><option>Imported</option><option>Manual</option><option>Verified Public Record</option><option>Needs Verification</option></select><select id="pstatus"><option>All statuses</option><option>New</option><option>Contacted</option><option>Replied</option><option>Meeting</option><option>Approved</option></select><select id="minscore"><option value="0">Any score</option><option value="70">70+</option><option value="80">80+</option><option value="90">90+</option></select></div><div class="panel" style="overflow:auto"><table><thead><tr><th>Company</th><th>Contact</th><th>Signal</th><th>Location</th><th>Fit</th><th>Score</th><th>Verification</th><th>Status</th><th></th></tr></thead><tbody id="rows"></tbody></table></div></section>
 <section id="outreach" class="view"><div class="grid"><div class="panel"><h3>Personalized outreach builder</h3><label>Prospect</label><select id="op" class="full"></select><label>Channel</label><select id="channel" class="full"><option>Email</option><option>LinkedIn</option><option>Phone</option></select><label>Angle</label><select id="angle" class="full"><option>Recommended by intelligence engine</option><option>Congratulations + growth support</option><option>VA/FHA scenario support</option><option>Fast onboarding</option><option>HELOC and niche products</option></select><button class="btn primary full" id="gen" style="margin-top:15px">Generate personalized draft</button></div><div class="panel"><button class="btn primary" id="queue" disabled style="float:right">Approve & queue</button><h3>Review draft</h3><input id="subject" class="subject" placeholder="Subject"><textarea id="body"></textarea></div></div><div class="panel" style="margin-top:14px"><h3>Recent outreach</h3><div id="olist"></div></div></section>
@@ -165,7 +167,7 @@ hr{
 
 I’m Clay with Union Home Mortgage...
 
-Reply STOP to opt out of texts."></textarea></label><p class="contact-note">Available fields: {{first_name}}, {{full_name}}, {{company}}, {{city}}, {{state}}, {{specialties}}. SMS recipients must have recorded consent.</p><div class="contact-tools"><button class="btn" id="previewCampaign">Preview audience</button><button class="btn primary" id="saveCampaign">Save & queue</button></div><div id="campaignPreview" class="roster-note"></div></div><div class="panel"><div class="profile-head"><div><h3>Campaign queue</h3><p class="muted">Paused campaigns never send. Processing can be triggered here or by a scheduled Render cron job.</p></div><button class="btn" id="processCampaigns">Process due queue</button></div><div id="campaignList"></div></div></div></section><section id="pipeline" class="view"><div class="hero"><div><div class="kicker">PIPELINE CONTROL</div><h2>Move prospects from discovery to approved account.</h2><p>Every status change updates the executive view and preserves a consistent sales process.</p></div><span class="pill">5-stage workflow</span></div><div id="board" class="board" style="margin-top:14px"></div></section><section id="followups" class="view"><div class="hero"><div><div class="kicker">FOLLOW-UP CENTER</div><h2>Never lose the next action.</h2><p>Relationship notes with follow-up dates are organized by urgency so the most important conversations stay visible.</p></div><button class="btn primary" onclick="show('prospects')">Open prospects</button></div><div class="metrics"><div class="metric"><span>Overdue</span><strong id="fo">0</strong></div><div class="metric"><span>Due today</span><strong id="ft">0</strong></div><div class="metric"><span>Next 7 days</span><strong id="fw">0</strong></div><div class="metric"><span>Unscheduled notes</span><strong id="fu">0</strong></div></div><div class="panel"><div id="followList"></div></div></section>
+Reply STOP to opt out of texts."></textarea></label><p class="contact-note">Available fields: {{first_name}}, {{full_name}}, {{company}}, {{city}}, {{state}}, {{specialties}}. SMS recipients must have recorded consent.</p><div class="contact-tools"><button class="btn" id="previewCampaign">Preview audience</button><button class="btn primary" id="saveCampaign">Save & queue</button></div><div id="campaignPreview" class="roster-note"></div></div><div class="panel"><div class="profile-head"><div><h3>Campaign queue</h3><p class="muted">Paused campaigns never send. Processing can be triggered here or by a scheduled Render cron job.</p></div><button class="btn" id="processCampaigns">Process due queue</button></div><div id="campaignList"></div></div></div></section><section id="templates" class="view"><div class="hero"><div><div class="kicker">CAMPAIGN STUDIO</div><h2>Templates, personalization, sequences, and performance.</h2><p>Start from a proven wholesale-mortgage message, personalize it for a specific broker, or launch an editable multi-touch sequence. Email and SMS consent rules remain enforced by the campaign engine.</p></div><span class="pill">V7 AUTOMATION</span></div><div class="metrics"><div class="metric"><span>Email templates</span><strong id="tplEmailCount">0</strong></div><div class="metric"><span>SMS templates</span><strong id="tplSmsCount">0</strong></div><div class="metric"><span>Sequences</span><strong id="seqCount">0</strong></div><div class="metric"><span>Overall reply rate</span><strong id="replyRate">0%</strong></div></div><div class="template-grid"><div class="panel"><div class="library-tabs"><button class="btn active" data-lib="Email">Email</button><button class="btn" data-lib="SMS">SMS</button><button class="btn" data-lib="Sequences">Sequences</button></div><input id="templateSearch" class="full" placeholder="Search templates"><div id="templateList" class="template-list"></div></div><div class="panel"><div id="templateEditor"><h3>Choose a template</h3><p class="muted">Select a message from the library to edit, personalize, or load into the campaign builder.</p></div></div></div><div class="panel" style="margin-top:14px"><div class="profile-head"><div><h3>Campaign analytics</h3><p class="muted">Delivery, opens, clicks, replies, bounces, and opt-outs. Open/click tracking requires tracked HTML email delivery.</p></div><button class="btn" onclick="templateStudio()">Refresh</button></div><div id="campaignAnalytics" class="analytics-grid"></div><div id="campaignPerformance" style="margin-top:12px"></div></div></section><section id="pipeline" class="view"><div class="hero"><div><div class="kicker">PIPELINE CONTROL</div><h2>Move prospects from discovery to approved account.</h2><p>Every status change updates the executive view and preserves a consistent sales process.</p></div><span class="pill">5-stage workflow</span></div><div id="board" class="board" style="margin-top:14px"></div></section><section id="followups" class="view"><div class="hero"><div><div class="kicker">FOLLOW-UP CENTER</div><h2>Never lose the next action.</h2><p>Relationship notes with follow-up dates are organized by urgency so the most important conversations stay visible.</p></div><button class="btn primary" onclick="show('prospects')">Open prospects</button></div><div class="metrics"><div class="metric"><span>Overdue</span><strong id="fo">0</strong></div><div class="metric"><span>Due today</span><strong id="ft">0</strong></div><div class="metric"><span>Next 7 days</span><strong id="fw">0</strong></div><div class="metric"><span>Unscheduled notes</span><strong id="fu">0</strong></div></div><div class="panel"><div id="followList"></div></div></section>
 
 <section id="territory" class="view"><div class="hero"><div><div class="kicker">TERRITORY INTELLIGENCE</div><h2>See where broker opportunity is concentrated.</h2><p>Coverage by state and metro helps account executives prioritize travel, identify white space, and balance prospecting effort.</p></div><span class="pill">Public-web prospect coverage</span></div><div class="metrics"><div class="metric"><span>States covered</span><strong id="ts">0</strong></div><div class="metric"><span>Core Carolinas prospects</span><strong id="tc">0</strong></div><div class="metric"><span>Top metro concentration</span><strong id="tm">—</strong></div><div class="metric"><span>High-priority territories</span><strong id="th">0</strong></div></div><div class="grid"><div class="panel"><h3>State coverage map</h3><p class="muted">Tile-map view of the current prospect footprint. Darker fill indicates more discovered companies.</p><div id="stateMap" class="state-map"></div></div><div class="panel"><h3>Metro opportunity</h3><div id="metros" class="bars"></div><h3 style="margin-top:24px">Coverage gaps</h3><div id="gaps" class="activity"></div></div></div></section>
 <section id="boss" class="view"><div class="hero exec"><div><div class="kicker">EXECUTIVE DEMO VIEW</div><h2>Broker Development Intelligence</h2><p>A presentation-ready summary of prospecting activity, account quality, product alignment, territory coverage, and pipeline momentum.</p><div class="value-story"><div><b>Find faster</b><span class="muted">Consolidates compliant public-web prospect discovery.</span></div><div><b>Prioritize smarter</b><span class="muted">Scores fit, growth potential, and recommended product angles.</span></div><div><b>Act consistently</b><span class="muted">Turns intelligence into outreach and pipeline action.</span></div></div></div><button class="btn primary" onclick="window.print()">Print / Save PDF</button></div><div class="metrics"><div class="metric"><span>Active prospects</span><strong id="bt">0</strong></div><div class="metric"><span>High priority</span><strong id="bh">0</strong></div><div class="metric"><span>Meetings scheduled</span><strong id="bm">0</strong></div><div class="metric"><span>Weighted opportunity index</span><strong id="bi">0</strong></div></div><div class="grid"><div class="panel"><h3>Pipeline health</h3><div id="bossPipeline" class="bars"></div></div><div class="panel"><h3>Product opportunity mix</h3><div id="bossProducts" class="bars"></div></div></div><div class="panel" style="margin-top:14px"><div class="profile-head"><div><h3>Top strategic accounts</h3><p class="muted">Highest-scoring prospects currently requiring action.</p></div><span class="pill">Union Home Mortgage Demo</span></div><div id="bossTop"></div></div></section>
@@ -193,7 +195,7 @@ function safeUrl(x){let s=String(x||'').trim();return s&&!/^https?:\/\//i.test(s
 function contactButtons(p,compact=false){let a=[];if(p.phone)a.push(`<a class="btn smallbtn" href="${telHref(p.phone)}">☎ ${compact?'Call':'Call '+esc(p.phone)}</a>`);if(p.email)a.push(`<a class="btn smallbtn" href="${mailHref(p.email)}">✉ ${compact?'Email':'Email'}</a>`);if(p.website)a.push(`<a class="btn smallbtn" target="_blank" rel="noopener" href="${esc(safeUrl(p.website))}">↗ Website</a>`);return a.join(' ')}
 
 function msg(x){let t=$('#toast');t.textContent=x;t.style.display='block';setTimeout(()=>t.style.display='none',1800)}
-function show(v){$$('.view').forEach(x=>x.classList.toggle('active',x.id===v));$$('nav button').forEach(x=>x.classList.toggle('active',x.dataset.v===v));$('#title').textContent=v==='dashboard'?'Command Center':v[0].toUpperCase()+v.slice(1);if(v==='copilot'){copilotBrief()}if(v==='daily')dailyPlan();if(v==='pipeline')pipe();if(v==='followups')followups();if(v==='outreach')outreach();if(v==='campaigns')campaigns();if(v==='territory')territory();if(v==='boss')boss()}
+function show(v){$$('.view').forEach(x=>x.classList.toggle('active',x.id===v));$$('nav button').forEach(x=>x.classList.toggle('active',x.dataset.v===v));$('#title').textContent=v==='dashboard'?'Command Center':v[0].toUpperCase()+v.slice(1);if(v==='copilot'){copilotBrief()}if(v==='daily')dailyPlan();if(v==='pipeline')pipe();if(v==='followups')followups();if(v==='outreach')outreach();if(v==='campaigns')campaigns();if(v==='templates')templateStudio();if(v==='territory')territory();if(v==='boss')boss()}
 $$('nav button').forEach(b=>b.onclick=()=>show(b.dataset.v));
 async function copilotBrief(){let d=await api('/api/copilot/brief');$('#morningBrief').innerHTML=`<div class="briefline"><b>${esc(d.greeting)}</b><div class="muted">${esc(d.summary)}</div></div>`+d.highlights.map(x=>`<div class="briefline"><b>${esc(x.label)}</b><div class="muted">${esc(x.value)}</div></div>`).join('')+`<div class="briefline"><b>Recommended first move</b><div class="nextaction">${esc(d.first_move)}</div></div>`}
 async function askCopilot(){let q=$('#copilotQuestion').value.trim();if(!q)return msg('Enter a question');$('#copilotAnswer').innerHTML='<div class="empty">Analyzing your database…</div>';try{let d=await api('/api/copilot/ask',{method:'POST',body:JSON.stringify({question:q})});$('#copilotAnswer').innerHTML=`<b>${esc(d.title)}</b><div class="confidence">${esc(d.scope)}</div><p>${esc(d.answer)}</p>`+(d.results||[]).map((x,i)=>`<div class="priority-card"><div class="orb" style="--s:${x.priority_score||x.score||0}">${x.priority_score||x.score||0}</div><div><b>${i+1}. ${esc(x.company)}</b><div class="reason">${esc(x.reason)}</div><div><span class="tag">${esc(x.city||'')}${x.state?', '+esc(x.state):''}</span><span class="tag">${esc(x.status||'')}</span></div></div><button class="btn smallbtn" onclick="profile(${x.id})">Open</button></div>`).join('');}catch(e){$('#copilotAnswer').textContent=e.message}}
@@ -257,6 +259,22 @@ if(document.body.dataset.demo==='1'){
   document.querySelectorAll('.actions a').forEach(x=>x.style.display='none');
   show('dashboard');
 }
+
+let templateChannel='Email',templateCache=[],sequenceCache=[];
+function templateTokens(){return `<div class="contact-note">Fields: {{first_name}}, {{full_name}}, {{company}}, {{city}}, {{state}}, {{specialties}}, {{my_name}}, {{my_company}}.</div>`}
+async function templateStudio(){let [t,sq,a]=await Promise.all([api('/api/templates'),api('/api/sequences'),api('/api/campaigns/analytics')]);templateCache=t.items;sequenceCache=sq.items;$('#tplEmailCount').textContent=t.items.filter(x=>x.channel==='Email').length;$('#tplSmsCount').textContent=t.items.filter(x=>x.channel==='SMS').length;$('#seqCount').textContent=sq.items.length;$('#replyRate').textContent=(a.summary.reply_rate||0)+'%';renderTemplateList();$('#campaignAnalytics').innerHTML=[['Sent',a.summary.sent],['Delivered',a.summary.delivered],['Opened',a.summary.opened],['Clicked',a.summary.clicked],['Replied',a.summary.replied],['Opt-outs',a.summary.opted_out]].map(x=>`<div><b>${x[1]}</b><small>${x[0]}</small></div>`).join('');$('#campaignPerformance').innerHTML=a.campaigns.length?`<table><thead><tr><th>Campaign</th><th>Channel</th><th>Sent</th><th>Opened</th><th>Clicked</th><th>Replied</th></tr></thead><tbody>${a.campaigns.map(x=>`<tr><td>${esc(x.name)}</td><td>${esc(x.channel)}</td><td>${x.sent}</td><td>${x.opened}</td><td>${x.clicked}</td><td>${x.replied}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">No delivery analytics yet.</div>'}
+function renderTemplateList(){let q=($('#templateSearch')?.value||'').toLowerCase();$$('[data-lib]').forEach(b=>b.classList.toggle('active',b.dataset.lib===templateChannel));let list=templateChannel==='Sequences'?sequenceCache:templateCache.filter(x=>x.channel===templateChannel);list=list.filter(x=>!q||[x.name,x.category,x.subject,x.body].join(' ').toLowerCase().includes(q));$('#templateList').innerHTML=list.map(x=>`<div class="template-item" onclick="${templateChannel==='Sequences'?'editSequence':'editTemplate'}(${x.id})"><b>${esc(x.name)}</b><small>${esc(x.category||'Sequence')} ${x.channel?'· '+esc(x.channel):''}</small></div>`).join('')||'<div class="empty">No matching items.</div>'}
+$$('[data-lib]').forEach(b=>b.onclick=()=>{templateChannel=b.dataset.lib;renderTemplateList();$('#templateEditor').innerHTML='<h3>Choose a '+(templateChannel==='Sequences'?'sequence':'template')+'</h3>'});$('#templateSearch').oninput=renderTemplateList;
+function editTemplate(id){let x=templateCache.find(y=>y.id===id);if(!x)return;$('#templateEditor').innerHTML=`<div class="profile-head"><div><div class="kicker">${esc(x.category)}</div><h3>${esc(x.name)}</h3></div><span class="pill">${esc(x.channel)}</span></div><label>Template name<input id="teName" class="full" value="${esc(x.name)}"></label><label>Category<input id="teCategory" class="full" value="${esc(x.category)}"></label>${x.channel==='Email'?`<label>Subject<input id="teSubject" class="full" value="${esc(x.subject||'')}"></label>`:''}<label>Message<textarea id="teBody">${esc(x.body)}</textarea></label>${templateTokens()}<label>Personalize for prospect<select id="teProspect" class="full"><option value="">Choose a prospect</option>${P.map(p=>`<option value="${p.id}">${esc(p.company)}</option>`).join('')}</select></label><div class="tone-row"><button class="btn active" data-tone="Conversational">Conversational</button><button class="btn" data-tone="Professional">Professional</button><button class="btn" data-tone="Concise">Concise</button><button class="btn" data-tone="Warm">Warm</button></div><div class="contact-tools"><button class="btn" onclick="personalizeTemplate(${x.id})">AI personalize</button><button class="btn" onclick="loadTemplateCampaign(${x.id})">Use in campaign</button><button class="btn primary" onclick="saveTemplate(${x.id})">Save changes</button></div><div id="personalizedPreview"></div>`;$$('[data-tone]').forEach(b=>b.onclick=()=>{$$('[data-tone]').forEach(z=>z.classList.toggle('active',z===b))})}
+async function saveTemplate(id){let x=templateCache.find(y=>y.id===id);await api('/api/templates/'+id,{method:'PUT',body:JSON.stringify({name:$('#teName').value,category:$('#teCategory').value,subject:x.channel==='Email'?$('#teSubject').value:'',body:$('#teBody').value})});msg('Template saved');templateStudio()}
+async function personalizeTemplate(id){let pid=+($('#teProspect').value||0);if(!pid)return msg('Choose a prospect');let tone=document.querySelector('[data-tone].active')?.dataset.tone||'Conversational';let d=await api('/api/templates/'+id+'/personalize',{method:'POST',body:JSON.stringify({prospect_id:pid,tone})});$('#teSubject')&&($('#teSubject').value=d.subject||'');$('#teBody').value=d.body;$('#personalizedPreview').innerHTML='<div class="callout" style="margin-top:10px"><b>Personalized for '+esc(d.company)+'</b><br><small>'+esc(d.reason)+'</small></div>';msg('Message personalized')}
+function loadTemplateCampaign(id){let x=templateCache.find(y=>y.id===id);$('#campChannel').value=x.channel==='SMS'?'SMS':'Email';$('#campName').value=x.name;$('#campSubject').value=x.subject||'';$('#campBody').value=x.body;show('campaigns');msg('Template loaded into campaign builder')}
+function editSequence(id){let x=sequenceCache.find(y=>y.id===id);if(!x)return;$('#templateEditor').innerHTML=`<div class="profile-head"><div><div class="kicker">AUTOMATED SEQUENCE</div><h3>${esc(x.name)}</h3><p class="muted">${esc(x.description||'')}</p></div><button class="btn primary" onclick="launchSequence(${x.id})">Launch sequence</button></div><div>${x.steps.map((st,i)=>`<div class="sequence-step"><div class="day">Day ${st.delay_days}</div><span class="pill">${esc(st.channel)}</span><div><b>${esc(st.name)}</b><div class="mini">${esc(st.subject||st.body.slice(0,90))}</div></div><button class="btn smallbtn" onclick="editSequenceStep(${st.id},${x.id})">Edit</button></div>`).join('')}</div><div class="callout">Sequences automatically stop for a contact when the relationship is marked Replied, Meeting, Approved, or the recipient opts out.</div>`}
+async function editSequenceStep(stepId,seqId){let x=sequenceCache.find(y=>y.id===seqId),st=x.steps.find(y=>y.id===stepId);$('#templateEditor').innerHTML+=`<div class="step-editor"><h4>Edit ${esc(st.name)}</h4><div class="formgrid"><label>Day<input id="seDay" type="number" min="0" value="${st.delay_days}"></label><label>Channel<select id="seChannel"><option ${st.channel==='Email'?'selected':''}>Email</option><option ${st.channel==='SMS'?'selected':''}>SMS</option><option ${st.channel==='Task'?'selected':''}>Task</option></select></label></div><label>Subject<input id="seSubject" class="full" value="${esc(st.subject||'')}"></label><label>Message / task<textarea id="seBody">${esc(st.body)}</textarea></label><button class="btn primary" onclick="saveSequenceStep(${stepId})">Save step</button></div>`}
+async function saveSequenceStep(id){await api('/api/sequence-steps/'+id,{method:'PUT',body:JSON.stringify({delay_days:+$('#seDay').value,channel:$('#seChannel').value,subject:$('#seSubject').value,body:$('#seBody').value})});msg('Sequence step saved');templateStudio()}
+async function launchSequence(id){let x=sequenceCache.find(y=>y.id===id);$('#templateEditor').innerHTML+=`<div class="step-editor"><h4>Launch ${esc(x.name)}</h4><div class="formgrid"><label>Minimum score<input id="lsScore" type="number" value="70"></label><label>State<select id="lsState"><option value="">All states</option><option>NC</option><option>SC</option><option>VA</option><option>GA</option><option>TN</option><option>MI</option></select></label><label>Start date<input id="lsStart" type="date"></label><label>Daily limit<input id="lsLimit" type="number" value="35"></label></div><button class="btn primary" onclick="confirmLaunchSequence(${id})">Create sequence campaign</button></div>`}
+async function confirmLaunchSequence(id){let d=await api('/api/sequences/'+id+'/launch',{method:'POST',body:JSON.stringify({min_score:+$('#lsScore').value,state:$('#lsState').value,start_date:$('#lsStart').value,daily_limit:+$('#lsLimit').value})});msg(`${d.enrollments} contacts enrolled · ${d.messages} touches scheduled`);campaigns();missionControl()}
+
 load();dash();outreach();followups();dailyPlan();ints();missionControl();
 </script></body></html>'''
 
@@ -273,6 +291,57 @@ def addcol(c, table, definition):
     if name not in cols(c, table):
         c.execute(f"alter table {table} add column {definition}")
 
+
+def seed_templates(c):
+    if c.execute("select count(*) from message_templates").fetchone()[0]==0:
+        email=[
+        ('New Broker Congratulations','Congratulations','Congratulations on {{company}}','Hi {{first_name}},\n\nCongratulations on the growth of {{company}}. I am Clay with Union Home Mortgage Wholesale, and I wanted to introduce myself as a resource whenever you need another lending option.\n\nWe support conventional, FHA, VA, USDA, jumbo, HELOC, renovation, down-payment-assistance, and lower-FICO government scenarios. I would appreciate the opportunity to help with a difficult file or provide a quick second opinion.\n\nThanks,\nClay Carr'),
+        ('First Introduction','Introduction','Another lending resource for {{company}}','Hi {{first_name}},\n\nI wanted to introduce myself as a wholesale lending resource for {{company}}. My goal is not to replace your existing partners—just to be available when you need strong pricing, fast scenario help, or another option for a difficult file.\n\nWould a brief introduction next week be useful?\n\nClay Carr\nUnion Home Mortgage Wholesale'),
+        ('Reactivation Check-In','Reactivation','Checking in with {{company}}','Hi {{first_name}},\n\nIt has been a little while since we connected, so I wanted to check in. Are there any scenarios on your desk that could use another set of eyes?\n\nI am happy to help with pricing, structuring, or difficult government files.\n\nClay'),
+        ('Scenario Support','Follow-up','Anything I can help structure?','Hi {{first_name}},\n\nDo you have any files this week that could use a second look? I can help with conventional through lower-FICO government scenarios, plus HELOC and niche options.\n\nSend over the basics whenever convenient and I will take a look.\n\nClay'),
+        ('VA Opportunity','Product: VA','VA scenario support for {{company}}','Hi {{first_name}},\n\nI noticed {{company}} may be a strong fit for additional VA support. Union Home Mortgage Wholesale can help with VA purchases, refinances, and challenging scenarios.\n\nI would be glad to compare a live file or provide a quick eligibility review.\n\nClay'),
+        ('FHA & Low-FICO','Product: FHA','Another option for difficult FHA files','Hi {{first_name}},\n\nWhen an FHA file gets difficult because of credit, ratios, or layered risk, I would be happy to provide a second look. We support a broad range of government scenarios and focus on finding a responsible path forward.\n\nClay'),
+        ('Down Payment Assistance','Product: DPA','Local down-payment-assistance options','Hi {{first_name}},\n\nI wanted to make sure you knew we support local down-payment-assistance programs that may help qualified first-time and repeat buyers.\n\nI would be glad to review a borrower scenario or send a quick program overview for your market.\n\nClay'),
+        ('HELOC Introduction','Product: HELOC','HELOC options without replacing the first mortgage','Hi {{first_name}},\n\nFor homeowners who need equity access but want to keep their existing first mortgage, we offer HELOC options that may be worth comparing.\n\nLet me know if you have a borrower who needs cash without a full refinance.\n\nClay'),
+        ('Jumbo & Niche','Product: Jumbo','Jumbo and niche scenario support','Hi {{first_name}},\n\nI am reaching out because {{company}} appears well positioned for jumbo or niche scenarios. I would be glad to help compare structure, pricing, and documentation options on a current file.\n\nClay'),
+        ('Renovation Lending','Product: Renovation','Financing the purchase and improvements','Hi {{first_name}},\n\nWhen a property needs work, renovation financing can help borrowers combine the purchase and eligible improvements. I would be happy to help structure a scenario or confirm whether the property and project fit.\n\nClay'),
+        ('Pricing Improvement','Market Update','A quick pricing update','Hi {{first_name}},\n\nWe have seen some useful pricing opportunities, and I wanted to offer a comparison on anything you are quoting today. No obligation—just another data point for your borrower.\n\nClay'),
+        ('After Voicemail','Follow-up','Following up on my voicemail','Hi {{first_name}},\n\nI just left you a quick voicemail. There is no rush to respond; I simply wanted to introduce myself and let you know I am available whenever {{company}} needs another lending option or scenario review.\n\nClay'),
+        ('Meeting Follow-Up','Meeting','Thank you for your time','Hi {{first_name}},\n\nThank you for taking the time to speak with me. I appreciated learning more about {{company}} and the types of borrowers you serve.\n\nI will follow up on the items we discussed and remain available for any scenarios that come up.\n\nClay'),
+        ('Broker Appreciation','Relationship','Appreciate the opportunity to help','Hi {{first_name}},\n\nI appreciate every opportunity {{company}} gives us to help. Thank you for the partnership and for trusting me with your borrowers and scenarios.\n\nClay'),
+        ('Referral Request','Relationship','Who else could use another lending resource?','Hi {{first_name}},\n\nI am glad we have had the chance to work together. If you know another broker or loan officer who could use a responsive wholesale lending resource, I would appreciate an introduction.\n\nClay'),
+        ('Post-Closing Thank You','Post-closing','Thank you for the closing','Hi {{first_name}},\n\nThank you for the opportunity to help close this loan. I appreciate the teamwork and look forward to supporting the next borrower.\n\nClay'),
+        ('New Year Greeting','Holiday','Happy New Year','Hi {{first_name}},\n\nHappy New Year to you and the team at {{company}}. I hope the year brings strong production, smooth closings, and plenty of opportunities. I am here whenever you need scenario support.\n\nClay'),
+        ('Thanksgiving Greeting','Holiday','Happy Thanksgiving','Hi {{first_name}},\n\nHappy Thanksgiving to you and everyone at {{company}}. I appreciate the relationship and hope you have a wonderful holiday.\n\nClay'),
+        ('Christmas Greeting','Holiday','Merry Christmas','Hi {{first_name}},\n\nMerry Christmas to you and the team at {{company}}. I hope you have a relaxing holiday and a strong finish to the year.\n\nClay'),
+        ('Thirty-Day Final Check-In','Sequence','Still available whenever you need me','Hi {{first_name}},\n\nI wanted to make one final check-in for now. I am available whenever {{company}} needs a pricing comparison, a difficult-file review, or another lending option.\n\nI will stay in touch periodically, and you are always welcome to reach out directly.\n\nClay')]
+        sms=[
+        ('SMS Introduction','Introduction','', 'Hi {{first_name}}, this is Clay with Union Home Mortgage Wholesale. I wanted to introduce myself as another lending resource for {{company}}. Reply STOP to opt out.'),
+        ('SMS Quick Check-In','Follow-up','', 'Hi {{first_name}}, do you have any scenarios this week that could use a second look? Clay with Union Home Mortgage Wholesale. Reply STOP to opt out.'),
+        ('SMS After Voicemail','Follow-up','', 'Hi {{first_name}}, I just left you a quick voicemail. No rush—I am here whenever you need another lending option. Clay, UHM Wholesale. Reply STOP to opt out.'),
+        ('SMS Pricing Update','Market Update','', 'Morning {{first_name}}—I have some useful pricing opportunities today and would be glad to compare anything you are quoting. Clay, UHM Wholesale. Reply STOP to opt out.'),
+        ('SMS VA','Product: VA','', 'Hi {{first_name}}, we are available to help with VA purchases, refinances, and difficult scenarios. Send me anything you would like compared. Reply STOP to opt out.'),
+        ('SMS FHA Low-FICO','Product: FHA','', 'Hi {{first_name}}, I can help review difficult FHA or lower-credit government scenarios. Happy to be a second set of eyes. Reply STOP to opt out.'),
+        ('SMS HELOC','Product: HELOC','', 'Hi {{first_name}}, we have HELOC options for borrowers who want equity access without replacing their first mortgage. Happy to review a scenario. Reply STOP to opt out.'),
+        ('SMS DPA','Product: DPA','', 'Hi {{first_name}}, we support local down-payment-assistance options. I would be glad to review eligibility on a borrower scenario. Reply STOP to opt out.'),
+        ('SMS Meeting Reminder','Meeting','', 'Hi {{first_name}}, looking forward to our conversation today. This is Clay with Union Home Mortgage Wholesale. Reply STOP to opt out.'),
+        ('SMS Thank You','Relationship','', 'Thanks for the opportunity to help, {{first_name}}. I appreciate the partnership with {{company}}. Clay, UHM Wholesale. Reply STOP to opt out.'),
+        ('SMS Holiday','Holiday','', 'Hi {{first_name}}, wishing you and the team at {{company}} a wonderful holiday. Clay with Union Home Mortgage Wholesale. Reply STOP to opt out.'),
+        ('SMS Final Check-In','Sequence','', 'Hi {{first_name}}, I will close the loop for now, but I am always available for pricing or scenario help. Clay, UHM Wholesale. Reply STOP to opt out.')]
+        for name,cat,subject,body in email:
+            c.execute("insert into message_templates(name,channel,category,subject,body,is_system,created_at,updated_at) values(?,?,?,?,?,1,?,?)",(name,'Email',cat,subject,body,NOW(),NOW()))
+        for name,cat,subject,body in sms:
+            c.execute("insert into message_templates(name,channel,category,subject,body,is_system,created_at,updated_at) values(?,?,?,?,?,1,?,?)",(name,'SMS',cat,subject,body,NOW(),NOW()))
+    if c.execute("select count(*) from sequences").fetchone()[0]==0:
+        sequences=[
+          ('30-Day New Broker Introduction','Six-touch introduction sequence with email, consented SMS, value-add follow-ups, and a final check-in.',[(0,'Email','Introduction','Another lending resource for {{company}}','Hi {{first_name}},\n\nI wanted to introduce myself as another wholesale lending resource for {{company}}. I can help with conventional, government, HELOC, DPA, jumbo, and difficult scenarios.\n\nWould a brief introduction next week be useful?\n\nClay Carr'),(3,'SMS','Quick text follow-up','', 'Hi {{first_name}}, this is Clay with UHM Wholesale. I am available whenever you need another lending option. Reply STOP to opt out.'),(7,'Email','Product value','A useful option for {{company}}','Hi {{first_name}},\n\nBased on {{company}} and your market, I thought our {{specialties}} support could be useful. I would be glad to compare a live scenario.\n\nClay'),(14,'Task','Personal call task','', 'Call {{full_name}} at {{company}} and ask what type of file is hardest to place right now.'),(21,'Email','Scenario check-in','Anything I can help structure?','Hi {{first_name}},\n\nDo you have anything this week that could use a second look? I am happy to help with structure or pricing.\n\nClay'),(30,'Email','Final check-in','Still available whenever you need me','Hi {{first_name}},\n\nI will close the loop for now, but I remain available whenever {{company}} needs another lending option.\n\nClay')]),
+          ('Government Lending Opportunity','Four-touch FHA/VA/DPA sequence.',[(0,'Email','Government introduction','Government-loan support for {{company}}','Hi {{first_name}},\n\nI wanted to introduce our FHA, VA, USDA, and local DPA support. I would be glad to review a difficult government scenario.\n\nClay'),(5,'Task','Call task','', 'Call {{full_name}} and ask about current FHA, VA, or DPA volume.'),(10,'Email','Low-FICO value','Another look at difficult government files','Hi {{first_name}},\n\nWhen a government file is difficult because of credit, ratios, or layered risk, I would be glad to provide a responsible second look.\n\nClay'),(18,'SMS','Government check-in','', 'Hi {{first_name}}, any FHA, VA, or DPA scenarios I can review this week? Clay, UHM Wholesale. Reply STOP to opt out.')]),
+          ('Dormant Relationship Reactivation','Four-touch reactivation sequence for inactive broker relationships.',[(0,'Email','Reconnect','Checking in with {{company}}','Hi {{first_name}},\n\nIt has been a while since we connected. Are there any scenarios on your desk that could use another option?\n\nClay'),(4,'Task','Call task','', 'Call {{full_name}} to reconnect and ask what has changed in their business.'),(10,'Email','Product reminder','A few ways I can help','Hi {{first_name}},\n\nI can help with conventional, government, HELOC, DPA, jumbo, and difficult-file reviews. I would appreciate another opportunity to earn your business.\n\nClay'),(21,'Email','Close loop','Here whenever you need me','Hi {{first_name}},\n\nI will close the loop for now, but I remain available whenever {{company}} needs another lending option.\n\nClay')])]
+        for name,desc,steps in sequences:
+            cur=c.execute("insert into sequences(name,description,status,created_at,updated_at) values(?,?,'Active',?,?)",(name,desc,NOW(),NOW()));sid=cur.lastrowid
+            for i,(delay,ch,nm,sub,body) in enumerate(steps,1):
+                c.execute("insert into sequence_steps(sequence_id,step_order,delay_days,channel,name,subject,body,create_task,stop_on_response,created_at,updated_at) values(?,?,?,?,?,?,?, ?,1,?,?)",(sid,i,delay,ch,nm,sub,body,1 if ch=='Task' else 0,NOW(),NOW()))
+
 def init():
     with db() as c:
         c.executescript("""
@@ -287,6 +356,12 @@ def init():
         create table if not exists campaigns(id integer primary key,name text,channel text,subject text,body text,min_score integer default 0,state text,status_filter text,scheduled_at text,daily_limit integer default 50,status text default 'Active',created_at text,updated_at text);
         create table if not exists campaign_recipients(id integer primary key,campaign_id integer,prospect_id integer,contact_id integer,destination text,rendered_subject text,rendered_body text,status text default 'Queued',scheduled_at text,sent_at text,error text,provider_id text,created_at text);
         create table if not exists suppressions(id integer primary key,channel text,destination text,reason text,created_at text,unique(channel,destination));
+
+        create table if not exists message_templates(id integer primary key,name text,channel text,category text,subject text,body text,is_system integer default 1,created_at text,updated_at text);
+        create table if not exists sequences(id integer primary key,name text,description text,status text default 'Active',created_at text,updated_at text);
+        create table if not exists sequence_steps(id integer primary key,sequence_id integer,step_order integer,delay_days integer,channel text,name text,subject text,body text,create_task integer default 0,stop_on_response integer default 1,created_at text,updated_at text);
+        create table if not exists sequence_enrollments(id integer primary key,sequence_id integer,prospect_id integer,contact_id integer,status text default 'Active',started_at text,stopped_at text,stop_reason text,created_at text);
+        create table if not exists message_events(id integer primary key,recipient_id integer,event_type text,event_at text,detail text);
 
         """)
         for definition in [
@@ -306,7 +381,12 @@ def init():
             "last_meeting_at text default ''", "roster_status text default 'Publicly verified'", "source_name text default ''"
         ]:
             addcol(c, "contacts", definition)
-        # No fictional seed records. Import only data you are authorized to use.
+        for definition in ["sequence_id integer default 0", "auto_stop integer default 1"]:
+            addcol(c, "campaigns", definition)
+        for definition in ["opened_at text default ''", "clicked_at text default ''", "replied_at text default ''", "bounced_at text default ''", "unsubscribed_at text default ''", "sequence_enrollment_id integer default 0", "step_id integer default 0"]:
+            addcol(c, "campaign_recipients", definition)
+        seed_templates(c)
+        # No fictional prospect records. Templates are editable system content.
         ids = [r[0] for r in c.execute("select id from prospects")]
     for pid in ids:
         rescore(pid)
@@ -380,7 +460,7 @@ def health():
     try:
         with db() as c:
             prospect_count = c.execute("select count(*) from prospects").fetchone()[0]
-        return jsonify(status="ok", prospects=prospect_count, version="5.3")
+        return jsonify(status="ok", prospects=prospect_count, version="7.0")
     except Exception as exc:
         return jsonify(status="error", detail=str(exc)), 500
 
@@ -609,7 +689,11 @@ def status(pid):
     blocked = reject_demo_write()
     if blocked: return blocked
     s=(request.json or {}).get("status","New")
-    with db() as c: c.execute("update prospects set status=?,updated_at=? where id=?",(s,NOW(),pid))
+    with db() as c:
+        c.execute("update prospects set status=?,updated_at=? where id=?",(s,NOW(),pid))
+        if s in ("Replied","Meeting","Approved"):
+            c.execute("update sequence_enrollments set status='Stopped',stopped_at=?,stop_reason=? where prospect_id=? and status='Active'",(NOW(),"Prospect moved to "+s,pid))
+            c.execute("update campaign_recipients set status='Suppressed',error=? where prospect_id=? and status='Queued' and sequence_enrollment_id>0",("Sequence stopped: "+s,pid))
     log("Status updated",f"Prospect {pid}: {s}"); return jsonify(ok=True)
 
 @app.post("/api/generate")
@@ -1021,10 +1105,17 @@ def campaign_status(cid):
     with db() as c:c.execute('update campaigns set status=?,updated_at=? where id=?',(status,NOW(),cid))
     return jsonify(ok=True)
 
-def _send_email(to,subject,body):
+def _send_email(to,subject,body,recipient_id=0):
     host=os.getenv('SMTP_HOST'); user=os.getenv('SMTP_USERNAME'); password=os.getenv('SMTP_PASSWORD'); sender=os.getenv('SMTP_FROM_EMAIL') or user
     if not all([host,user,password,sender]): return False,'SMTP credentials not configured',''
-    port=int(os.getenv('SMTP_PORT','587')); msg=f"From: {sender}\r\nTo: {to}\r\nSubject: {subject}\r\nMIME-Version: 1.0\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n{body}"
+    port=int(os.getenv('SMTP_PORT','587')); base=os.getenv('APP_BASE_URL','').rstrip('/')
+    safe=html.escape(body).replace('\n','<br>')
+    if base and recipient_id:
+        def tracked(match):
+            url=match.group(0); return f'<a href="{base}/track/click/{recipient_id}?url={urllib.parse.quote(url,safe="")}">{html.escape(url)}</a>'
+        safe=re.sub(r'https?://[^\s<]+',tracked,safe)
+        safe+=f'<img src="{base}/track/open/{recipient_id}.gif" width="1" height="1" alt="">'
+    msg=f'From: {sender}\r\nTo: {to}\r\nSubject: {subject}\r\nMIME-Version: 1.0\r\nContent-Type: text/html; charset=utf-8\r\n\r\n<div style="font-family:Arial,sans-serif;line-height:1.55">{safe}</div>'
     try:
         with smtplib.SMTP(host,port,timeout=20) as server:
             server.starttls(context=ssl.create_default_context());server.login(user,password);server.sendmail(sender,[to],msg.encode('utf-8'))
@@ -1052,7 +1143,7 @@ def campaign_process():
         per_campaign[r['campaign_id']]=per_campaign.get(r['campaign_id'],0)+1
         if per_campaign[r['campaign_id']]>int(r['daily_limit'] or 50): skipped+=1;continue
         if r['channel']=='Sms' and (now.hour>=quiet_start or now.hour<quiet_end): skipped+=1;continue
-        ok,err,pid=_send_email(r['destination'],r['rendered_subject'],r['rendered_body']) if r['channel']=='Email' else _send_sms(r['destination'],r['rendered_body'])
+        ok,err,pid=_send_email(r['destination'],r['rendered_subject'],r['rendered_body'],r['id']) if r['channel']=='Email' else _send_sms(r['destination'],r['rendered_body'])
         with db() as c:
             c.execute("update campaign_recipients set status=?,sent_at=?,error=?,provider_id=? where id=?",('Sent' if ok else 'Failed',NOW() if ok else '',err,pid,r['id']))
         sent+=1 if ok else 0;failed+=0 if ok else 1
@@ -1064,6 +1155,131 @@ def add_suppression():
     if channel not in ('EMAIL','SMS') or not destination:return jsonify(error='Channel and destination required'),400
     with db() as c:c.execute("insert or ignore into suppressions(channel,destination,reason,created_at) values(?,?,?,?)",(channel,destination,d.get('reason','Opt-out'),NOW()))
     return jsonify(ok=True)
+
+
+@app.get('/api/templates')
+def template_list():
+    with db() as c: rows=[dict(x) for x in c.execute("select * from message_templates order by channel,category,name")]
+    return jsonify(items=rows)
+
+@app.put('/api/templates/<int:tid>')
+def template_update(tid):
+    blocked=reject_demo_write()
+    if blocked:return blocked
+    d=request.json or {}
+    with db() as c:c.execute("update message_templates set name=?,category=?,subject=?,body=?,updated_at=? where id=?",(d.get('name',''),d.get('category',''),d.get('subject',''),d.get('body',''),NOW(),tid))
+    return jsonify(ok=True)
+
+@app.post('/api/templates/<int:tid>/personalize')
+def template_personalize(tid):
+    d=request.json or {};pid=int(d.get('prospect_id') or 0);tone=d.get('tone','Conversational')
+    with db() as c:
+        t=c.execute('select * from message_templates where id=?',(tid,)).fetchone();p=c.execute('select * from prospects where id=?',(pid,)).fetchone()
+        contact=c.execute("select * from contacts where prospect_id=? order by is_primary desc,is_decision_maker desc,id limit 1",(pid,)).fetchone()
+    if not t or not p:return jsonify(error='Template or prospect not found'),404
+    p=dict(p);contact=dict(contact) if contact else {'name':p.get('owner','')}
+    subject=_render_tokens(t['subject'],contact,p);body=_render_tokens(t['body'],contact,p)
+    first=(contact.get('name') or p.get('owner') or 'there').split()[0]
+    fit=p.get('product_fit') or 'scenario support';signal=p.get('signal') or 'recent activity'
+    if tone=='Concise':
+        body=f"Hi {first},\n\nI noticed {signal.lower()} at {p['company']}. I can help with {fit}. Do you have a scenario worth comparing this week?\n\nClay Carr\nUnion Home Mortgage Wholesale"
+    elif tone=='Professional':
+        body=f"Hi {first},\n\nI am reaching out regarding {p['company']} and {signal.lower()}. Union Home Mortgage Wholesale supports {fit}. I would welcome the opportunity to provide a pricing comparison or second opinion on an active scenario.\n\nSincerely,\nClay Carr"
+    elif tone=='Warm':
+        body=f"Hi {first},\n\nI hope your week is going well. I noticed {signal.lower()} at {p['company']} and wanted to introduce myself. I would be glad to help your team with {fit} whenever another option would be useful.\n\nThanks,\nClay"
+    else:
+        body=f"Hi {first},\n\nI noticed {signal.lower()} at {p['company']} and wanted to reach out. I help brokers with {fit}, and I would be happy to be a quick second set of eyes on anything difficult.\n\nClay Carr\nUnion Home Mortgage Wholesale"
+    return jsonify(subject=subject,body=body,company=p['company'],reason=f"Used the prospect signal, product fit, company, and {tone.lower()} tone.")
+
+@app.get('/api/sequences')
+def sequence_list():
+    with db() as c:
+        rows=[dict(x) for x in c.execute('select * from sequences order by name')]
+        for x in rows:x['steps']=[dict(y) for y in c.execute('select * from sequence_steps where sequence_id=? order by step_order',(x['id'],))]
+    return jsonify(items=rows)
+
+@app.put('/api/sequence-steps/<int:sid>')
+def sequence_step_update(sid):
+    blocked=reject_demo_write()
+    if blocked:return blocked
+    d=request.json or {}
+    with db() as c:c.execute('update sequence_steps set delay_days=?,channel=?,subject=?,body=?,updated_at=? where id=?',(int(d.get('delay_days') or 0),d.get('channel','Email'),d.get('subject',''),d.get('body',''),NOW(),sid))
+    return jsonify(ok=True)
+
+@app.post('/api/sequences/<int:sid>/launch')
+def sequence_launch(sid):
+    blocked=reject_demo_write()
+    if blocked:return blocked
+    d=request.json or {};start=d.get('start_date') or datetime.now().date().isoformat();base=datetime.fromisoformat(start)
+    with db() as c:steps=[dict(x) for x in c.execute('select * from sequence_steps where sequence_id=? order by step_order',(sid,))]
+    if not steps:return jsonify(error='Sequence has no steps'),400
+    # Enroll against email-capable contacts; SMS steps independently enforce recorded consent.
+    eligible,_=_campaign_audience({'channel':'Email','min_score':d.get('min_score',0),'state':d.get('state',''),'status_filter':d.get('status_filter','')})
+    enrollments=messages=0
+    with db() as c:
+        for x in eligible:
+            en=c.execute("insert into sequence_enrollments(sequence_id,prospect_id,contact_id,status,started_at,created_at) values(?,?,?,'Active',?,?)",(sid,x['prospect_id'],x['id'],base.isoformat(timespec='seconds'),NOW())).lastrowid;enrollments+=1
+            prospect={'company':x['company'],'city':x['city'],'state':x['state'],'specialties':x['prospect_specialties']};contact=dict(x)
+            for st in steps:
+                due=(base+timedelta(days=int(st['delay_days']))).isoformat(timespec='seconds')
+                if st['channel']=='Task':
+                    c.execute("insert into memories(prospect_id,note_type,note,follow_up_date,created_at) values(?,?,?,?,?)",(x['prospect_id'],'Sequence task',_render_tokens(st['body'],contact,prospect),due[:10],NOW()));continue
+                dest=x['email'] if st['channel']=='Email' else (x['mobile'] or x['phone'])
+                if st['channel']=='SMS' and (not int(x.get('sms_consent') or 0) or not dest):continue
+                if not dest:continue
+                cname=f"Sequence {sid}: {st['name']}"
+                delivery_channel='Sms' if st['channel']=='SMS' else st['channel']
+                camp=c.execute("insert into campaigns(name,channel,subject,body,min_score,state,status_filter,scheduled_at,daily_limit,status,created_at,updated_at,sequence_id,auto_stop) values(?,?,?,?,0,'','',?,?, 'Active',?,?,?,1)",(cname,delivery_channel,st['subject'],st['body'],due,int(d.get('daily_limit') or 35),NOW(),NOW(),sid)).lastrowid
+                c.execute("insert into campaign_recipients(campaign_id,prospect_id,contact_id,destination,rendered_subject,rendered_body,status,scheduled_at,created_at,sequence_enrollment_id,step_id) values(?,?,?,?,?,?,'Queued',?,?,?,?,?)",(camp,x['prospect_id'],x['id'],dest,_render_tokens(st['subject'],contact,prospect),_render_tokens(st['body'],contact,prospect),due,NOW(),en,st['id']));messages+=1
+    return jsonify(ok=True,enrollments=enrollments,messages=messages)
+
+@app.get('/api/campaigns/analytics')
+def campaign_analytics():
+    with db() as c:
+        total=lambda field: c.execute(f"select count(*) from campaign_recipients where {field}").fetchone()[0]
+        sent=total("status='Sent'");opened=total("opened_at<>''");clicked=total("clicked_at<>''");replied=total("replied_at<>''");bounced=total("bounced_at<>''");opt=total("unsubscribed_at<>''")
+        camps=[dict(x) for x in c.execute("""select c.id,c.name,c.channel,sum(case when r.status='Sent' then 1 else 0 end) sent,sum(case when r.opened_at<>'' then 1 else 0 end) opened,sum(case when r.clicked_at<>'' then 1 else 0 end) clicked,sum(case when r.replied_at<>'' then 1 else 0 end) replied from campaigns c left join campaign_recipients r on r.campaign_id=c.id group by c.id order by c.id desc limit 20""")]
+    return jsonify(summary={'sent':sent,'delivered':max(0,sent-bounced),'opened':opened,'clicked':clicked,'replied':replied,'bounced':bounced,'opted_out':opt,'reply_rate':round(replied/sent*100,1) if sent else 0},campaigns=camps)
+
+@app.get('/track/open/<int:rid>.gif')
+def track_open(rid):
+    pixel=base64.b64decode('R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==')
+    with db() as c:
+        c.execute("update campaign_recipients set opened_at=case when opened_at='' then ? else opened_at end where id=?",(NOW(),rid));c.execute("insert into message_events(recipient_id,event_type,event_at,detail) values(?,'Opened',?,'tracking pixel')",(rid,NOW()))
+    return Response(pixel,mimetype='image/gif',headers={'Cache-Control':'no-store'})
+
+@app.get('/track/click/<int:rid>')
+def track_click(rid):
+    target=request.args.get('url','')
+    with db() as c:
+        c.execute("update campaign_recipients set clicked_at=case when clicked_at='' then ? else clicked_at end where id=?",(NOW(),rid));c.execute("insert into message_events(recipient_id,event_type,event_at,detail) values(?,'Clicked',?,?)",(rid,NOW(),target[:500]))
+    return redirect(target if target.startswith(('http://','https://')) else '/')
+
+@app.post('/api/campaign-recipients/<int:rid>/event')
+def recipient_event(rid):
+    blocked=reject_demo_write()
+    if blocked:return blocked
+    event=(request.json or {}).get('event','').title(); fields={'Opened':'opened_at','Clicked':'clicked_at','Replied':'replied_at','Bounced':'bounced_at','Opted_Out':'unsubscribed_at','Opted Out':'unsubscribed_at'}
+    field=fields.get(event)
+    if not field:return jsonify(error='Unsupported event'),400
+    with db() as c:
+        c.execute(f"update campaign_recipients set {field}=? where id=?",(NOW(),rid));c.execute("insert into message_events(recipient_id,event_type,event_at,detail) values(?,?,?,?)",(rid,event,NOW(),(request.json or {}).get('detail','')))
+        if field in ('replied_at','unsubscribed_at'):
+            row=c.execute('select sequence_enrollment_id,destination from campaign_recipients where id=?',(rid,)).fetchone()
+            if row and row['sequence_enrollment_id']:
+                c.execute("update sequence_enrollments set status='Stopped',stopped_at=?,stop_reason=? where id=?",(NOW(),event,row['sequence_enrollment_id']))
+                c.execute("update campaign_recipients set status='Suppressed',error=? where sequence_enrollment_id=? and status='Queued'",('Sequence stopped: '+event,row['sequence_enrollment_id']))
+    return jsonify(ok=True)
+
+@app.post('/webhooks/twilio/sms')
+def twilio_inbound_sms():
+    sender=(request.form.get('From') or '').strip();body=(request.form.get('Body') or '').strip();keyword=body.upper().split()[0] if body else ''
+    if keyword in ('STOP','UNSUBSCRIBE','CANCEL','END','QUIT') and sender:
+        with db() as c:
+            c.execute("insert or ignore into suppressions(channel,destination,reason,created_at) values('SMS',?,'Inbound STOP',?)",(sender,NOW()))
+            c.execute("update contacts set sms_opt_out=1 where replace(replace(replace(replace(coalesce(mobile,phone),'-',''),'(',''),')',''),' ','') like ?",('%'+re.sub(r'\D','',sender)[-10:],))
+            c.execute("update campaign_recipients set unsubscribed_at=?,status='Suppressed',error='Inbound STOP' where destination=? and status='Queued'",(NOW(),sender))
+    return Response('<?xml version="1.0" encoding="UTF-8"?><Response></Response>',mimetype='application/xml')
 
 @app.get("/api/integrations")
 def gi():
