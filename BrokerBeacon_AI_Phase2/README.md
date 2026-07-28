@@ -1,4 +1,4 @@
-# BrokerBeacon AI 2.0
+# BrokerBeacon AI 8.1 — Opportunity Intelligence
 
 A prospect intelligence and workflow demo for wholesale mortgage account executives.
 
@@ -40,3 +40,9 @@ Prospects sourced from public web information should remain marked **Needs verif
 ## Version 3.0 additions
 
 Daily Plan, ranked action queue, sales activity logging, automatic pipeline progression, activity goals, and weekly productivity metrics.
+
+## Sprint 2 modules
+
+- `migrations.py`: versioned, idempotent SQLite schema migrations.
+- `intelligence.py`: explainable scoring, product matching, next-best-action logic, and snapshots.
+- Opportunity Intelligence UI: adjustable weights, ranked accounts, confidence, reasons, and product talking points.
