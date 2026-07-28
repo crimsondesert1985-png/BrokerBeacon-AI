@@ -35,3 +35,8 @@ The existing public URL remains unchanged after deployment.
 ## Data note
 
 Prospects sourced from public web information should remain marked **Needs verification** until confirmed before outreach. Do not import data from sources whose terms prohibit scraping, bulk extraction, or solicitation use.
+
+
+## Version 3.0 additions
+
+Daily Plan, ranked action queue, sales activity logging, automatic pipeline progression, activity goals, and weekly productivity metrics.
