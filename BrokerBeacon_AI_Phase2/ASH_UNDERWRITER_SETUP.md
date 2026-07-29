@@ -1,19 +1,42 @@
-# Ash Underwriter Index
+# Ash Underwriter setup
 
-The guideline search is local and requires no search-engine API key.
+Ash Underwriter searches BrokerBeacon’s locally indexed official-agency material first. The optional OpenAI reasoner converts those retrieved passages into a concise, plain-English answer.
 
-## Indexed at deployment
-- FHA Handbook 4000.1: bundled PDF indexed page-by-page.
-- Fannie Mae, Freddie Mac, VA and USDA: starter official-section index with direct source citations.
+## Render environment variable
 
-## Rebuild
-BrokerBeacon builds missing index records during startup. A protected rebuild is also available:
+Add:
 
-`POST /api/guidelines/reindex`
+```
+OPENAI_API_KEY=your_key
+```
 
-The endpoint follows BrokerBeacon's existing write protections. It can take several minutes because the FHA handbook is almost 1,900 pages.
+Optional:
 
-## Search
-`GET /api/guidelines/search?q=gift+funds&program=fannie`
+```
+OPENAI_TEXT_MODEL=gpt-4.1-mini
+```
 
-Valid programs: `all`, `fannie`, `freddie`, `fha`, `va`, `usda`.
+Without an OpenAI key, BrokerBeacon uses its conservative local answer logic.
+
+## Verify the deployed build
+
+Open:
+
+```
+https://brokerbeacon-ai.onrender.com/api/version
+```
+
+The response should show:
+
+```
+"version": "10.1"
+"build": "CONVERSATIONAL ASH UNDERWRITER"
+```
+
+The Render logs should include:
+
+```
+BrokerBeacon startup: VERSION 10.1 · CONVERSATIONAL ASH UNDERWRITER
+```
+
+If the sidebar still shows an older version, replace the complete application folder and choose **Manual Deploy → Clear build cache & deploy**.
