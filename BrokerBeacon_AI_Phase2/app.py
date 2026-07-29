@@ -10,6 +10,8 @@ from voice_agent import configured as voice_configured, create_twilio_call, huma
 from guideline_index import seed_index, index_fha_pdf, search as search_guideline_index, stats as guideline_index_stats
 
 app = Flask(__name__)
+BUILD_VERSION = "8.10.1"
+BUILD_NAME = "ASH UNDERWRITER DEPLOYMENT FIX"
 DB = Path(__file__).with_name("brokerbeacon.db")
 NOW = lambda: datetime.now().isoformat(timespec="seconds")
 
@@ -240,7 +242,7 @@ body.dark-mode input,body.dark-mode select,body.dark-mode textarea{background:#0
 .guide-program-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:14px}.guide-program-head h2{margin:0 0 5px}.guide-chip{display:inline-block;padding:5px 9px;border-radius:999px;background:#e8f0fe;color:#174b91;border:1px solid #bfd3ee;font-size:11px;font-weight:750}.source-links{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.source-links a{display:inline-flex;align-items:center;gap:5px;padding:8px 10px;border:1px solid #bfd0e7;border-radius:9px;background:#f7f9fc;text-decoration:none;font-size:12px;font-weight:700}.guide-alert{padding:13px 15px;border-left:4px solid var(--red);background:var(--red-soft);border-radius:0 11px 11px 0;line-height:1.5}.guide-note{padding:13px 15px;border-left:4px solid #1d5fbf;background:#eaf2fd;border-radius:0 11px 11px 0;line-height:1.5}.guide-search-hidden{display:none!important}
 .guide-live-search{margin-top:14px}.guide-query-row{display:grid;grid-template-columns:180px 1fr auto;gap:9px;margin-top:14px}.guide-query-row input,.guide-query-row select{width:100%}.guide-example-row{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}.guide-results{display:grid;gap:11px;margin-top:12px}.guide-result{border:1px solid #d7e1ee;border-radius:13px;padding:15px;background:#fff}.guide-result-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}.guide-result h4{margin:0 0 5px;font-size:16px}.guide-result .source-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;font-weight:800;color:#174b91}.guide-result .excerpt{line-height:1.55;margin:10px 0;color:var(--text)}.guide-result .result-url{font-size:11px;color:var(--muted);word-break:break-all}.guide-loading{padding:18px;border:1px dashed #b9c9de;border-radius:12px;background:#f7f9fc}.guide-empty{padding:20px;border:1px dashed #c3d0df;border-radius:12px;text-align:center;background:#f8fafc}.guide-warning{padding:10px 12px;border-left:4px solid #d59b16;background:#fff8e3;border-radius:0 9px 9px 0;margin-top:9px}.dark-mode .guide-result,.dark-mode .guide-loading,.dark-mode .guide-empty{background:#101d34!important;border-color:#2b405f!important}.dark-mode .guide-warning{background:#332a12!important}
 @media(max-width:900px){.guide-grid{grid-template-columns:1fr}.guide-query-row{grid-template-columns:1fr}.guide-hero{align-items:flex-start;flex-direction:column}}
-</style></head><body><div class="app"><aside><div class="brand">Broker<span>Beacon</span> AI</div><div class="version">VERSION 8.10 · ASH UNDERWRITER INDEX</div><nav><button class="active" data-v="dashboard">✦ Command Center</button><button data-v="salescoach">◈ Ash Sales Coach</button><button data-v="voiceagent">☎ AI Voice Agent</button><button data-v="copilot">✦ AI Copilot</button><button data-v="daily">⚡ Daily Plan</button><button data-v="prospects">◉ Prospects</button><button data-v="outreach">✎ Outreach</button><button data-v="campaigns">✉ Campaigns</button><button data-v="inbox">↩ Reply Inbox</button><button data-v="intelligence">◆ Opportunity Intelligence</button><button data-v="templates">▤ Templates & Sequences</button><button data-v="pipeline">▦ Pipeline</button><button data-v="followups">✓ Follow-ups</button><button data-v="territory">⌖ Territory</button><button data-v="guidelines">▣ Loan Guidelines</button><button data-v="boss">◆ Executive View</button><button data-v="integrations">⚙ Integrations</button></nav></aside><main><div class="top"><div><small>AI OPERATING SYSTEM FOR WHOLESALE AES</small><h1 id="title">Command Center</h1></div><div class="actions"><span class="today-chip" id="todayChip"></span><button class="btn theme-toggle" id="themeToggle" type="button" aria-label="Toggle dark mode">◐ Theme</button><button class="btn" id="import">Compliant Import</button><a class="btn" href="/api/export">Export CSV</a><button class="btn primary" id="add">+ Add Prospect</button></div></div>
+</style></head><body><div class="app"><aside><div class="brand">Broker<span>Beacon</span> AI</div><div class="version">VERSION 8.10.1 · ASH UNDERWRITER DEPLOYMENT FIX</div><nav><button class="active" data-v="dashboard">✦ Command Center</button><button data-v="salescoach">◈ Ash Sales Coach</button><button data-v="voiceagent">☎ AI Voice Agent</button><button data-v="copilot">✦ AI Copilot</button><button data-v="daily">⚡ Daily Plan</button><button data-v="prospects">◉ Prospects</button><button data-v="outreach">✎ Outreach</button><button data-v="campaigns">✉ Campaigns</button><button data-v="inbox">↩ Reply Inbox</button><button data-v="intelligence">◆ Opportunity Intelligence</button><button data-v="templates">▤ Templates & Sequences</button><button data-v="pipeline">▦ Pipeline</button><button data-v="followups">✓ Follow-ups</button><button data-v="territory">⌖ Territory</button><button data-v="guidelines">▣ Loan Guidelines</button><button data-v="boss">◆ Executive View</button><button data-v="integrations">⚙ Integrations</button></nav></aside><main><div class="top"><div><small>AI OPERATING SYSTEM FOR WHOLESALE AES</small><h1 id="title">Command Center</h1></div><div class="actions"><span class="today-chip" id="todayChip"></span><button class="btn theme-toggle" id="themeToggle" type="button" aria-label="Toggle dark mode">◐ Theme</button><button class="btn" id="import">Compliant Import</button><a class="btn" href="/api/export">Export CSV</a><button class="btn primary" id="add">+ Add Prospect</button></div></div>
 <section id="dashboard" class="view active">
 <div class="command-hero">
   <div class="command-copy"><div class="kicker">ASH · DAILY REVENUE COMMAND</div><h2>Good morning, Clay. Here is the fastest path to more business today.</h2><p>BrokerBeacon ranks the accounts, explains the opportunity, prepares the outreach, and converts the plan into action.</p></div>
@@ -291,7 +293,7 @@ Reply STOP to opt out of texts."></textarea></label><p class="contact-note">Avai
 <section id="guidelines" class="view">
 <div class="guide-hero"><div><div class="kicker">BROKERBEACON LOAN GUIDELINES LIBRARY</div><h2>Fast program guidance with links to the controlling sources.</h2><p>Use this workspace for sales conversations and initial scenario screening. It summarizes common agency requirements, but it does not replace the current agency guide, AUS findings, lender overlays, product matrices, or an underwriter’s decision.</p></div><div><span class="guide-chip">Reviewed July 29, 2026</span></div></div>
 <div class="guide-live-search panel">
-<div class="profile-head"><div><div class="kicker">ASH UNDERWRITER · LOCAL OFFICIAL-GUIDE INDEX</div><h3 style="margin:5px 0">Ask a guideline question or search a topic</h3><p class="muted" style="margin:0">BrokerBeacon searches official agency domains and returns source excerpts, section titles, and direct links. Results are not generated from memory.</p></div><span class="guide-chip">Official sources only</span></div>
+<div class="profile-head"><div><div class="kicker">ASH UNDERWRITER · LOCAL OFFICIAL-GUIDE INDEX</div><h3 style="margin:5px 0">Ask a guideline question or search a topic</h3><p class="muted" style="margin:0">BrokerBeacon searches its local index of official agency guide sections and handbook pages, then returns source excerpts, citations, and direct official links. Results are not generated from memory.</p></div><span class="guide-chip">Official sources only</span></div>
 <div class="guide-query-row"><select id="guideProgram"><option value="all">All programs</option><option value="fannie">Fannie Mae</option><option value="freddie">Freddie Mac</option><option value="fha">FHA</option><option value="va">VA</option><option value="usda">USDA</option></select><input id="guideSearch" placeholder="Example: Can gift funds be used on a 2-unit primary residence?"><button class="btn primary" id="searchGuides" type="button">Search official guides</button></div>
 <div class="guide-example-row"><button class="btn smallbtn guide-example">Fannie gift funds</button><button class="btn smallbtn guide-example">Freddie student loan payment</button><button class="btn smallbtn guide-example">FHA manual underwriting collections</button><button class="btn smallbtn guide-example">VA residual income</button><button class="btn smallbtn guide-example">USDA manufactured housing</button></div>
 <div id="guideSearchStatus" class="muted" style="margin-top:10px"></div><div id="guideResults" class="guide-results"></div>
@@ -773,6 +775,23 @@ def rescore(pid):
         c.execute("""update prospects set score=:score,growth_score=:growth_score,gov_fit=:gov_fit,niche_fit=:niche_fit,product_fit=:product_fit,ai_summary=:ai_summary,score_reasons=:score_reasons,next_best_action=:next_best_action,call_opener=:call_opener,likely_objection=:likely_objection,objection_response=:objection_response,updated_at=:updated_at where id=:id""", {**a,"updated_at":NOW(),"id":pid})
 
 init()
+print(f"BrokerBeacon startup: VERSION {BUILD_VERSION} · {BUILD_NAME}", flush=True)
+
+@app.after_request
+def add_build_headers(response):
+    response.headers["X-BrokerBeacon-Version"] = BUILD_VERSION
+    response.headers["X-BrokerBeacon-Build"] = BUILD_NAME
+    if request.path == "/" or request.path.startswith("/api/guidelines") or request.path in {"/health", "/api/version"}:
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    return response
+
+@app.get("/api/version")
+def api_version():
+    with db() as c:
+        index_stats = guideline_index_stats(c)
+    return jsonify(version=BUILD_VERSION, build=BUILD_NAME, guideline_index=index_stats)
 
 @app.get("/")
 def home():
@@ -791,7 +810,7 @@ def health():
     try:
         with db() as c:
             prospect_count = c.execute("select count(*) from prospects").fetchone()[0]
-        return jsonify(status="ok", prospects=prospect_count, version="8.3.2")
+        return jsonify(status="ok", prospects=prospect_count, version=BUILD_VERSION, build=BUILD_NAME)
     except Exception as exc:
         return jsonify(status="error", detail=str(exc)), 500
 
