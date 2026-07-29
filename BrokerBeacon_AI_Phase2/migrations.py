@@ -33,6 +33,24 @@ create index if not exists idx_prod_company on production_records(company);
 create index if not exists idx_prod_period on production_records(period_month);
 create index if not exists idx_prod_lo on production_records(lo_name);
 create index if not exists idx_prod_type on production_records(loan_type);
+"""),
+(6, "broker_dna_sprint_1", """
+create table if not exists broker_dna(
+    id integer primary key,
+    prospect_id integer not null unique,
+    dna_score integer not null default 0,
+    tier text not null default 'Research',
+    relationship_health integer not null default 0,
+    opportunity_strength integer not null default 0,
+    engagement integer not null default 0,
+    product_fit integer not null default 0,
+    next_best_action text not null default '',
+    reasons_json text not null default '[]',
+    calculated_at text not null,
+    updated_at text not null
+);
+create index if not exists idx_broker_dna_score on broker_dna(dna_score desc);
+create index if not exists idx_broker_dna_tier on broker_dna(tier);
 """)
 ]
 
