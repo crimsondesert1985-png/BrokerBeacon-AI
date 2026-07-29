@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify, render_template_string, Response, send_file, make_response, redirect
 import sqlite3, io, csv, os, json, re, uuid, smtplib, ssl, urllib.parse, urllib.request, base64, html
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta, time as dt_time
 from pathlib import Path
 from migrations import run_migrations
@@ -234,8 +235,9 @@ body.dark-mode input,body.dark-mode select,body.dark-mode textarea{background:#0
 .guide-toolbar{display:grid;grid-template-columns:1fr auto;gap:10px;margin:14px 0}.guide-toolbar input{width:100%}.guide-tabs{display:flex;gap:7px;flex-wrap:wrap}.guide-tabs button.active{background:linear-gradient(135deg,#1d5fbf,#123f83)!important;color:#fff!important}
 .guide-program{display:none}.guide-program.active{display:block}.guide-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.guide-card{background:#fff;border:1px solid var(--line);border-radius:15px;padding:18px;box-shadow:var(--shadow)}.guide-card h3{margin:0 0 10px}.guide-card ul{padding-left:19px;margin:0}.guide-card li{margin:8px 0;line-height:1.5;color:var(--text)}
 .guide-program-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:14px}.guide-program-head h2{margin:0 0 5px}.guide-chip{display:inline-block;padding:5px 9px;border-radius:999px;background:#e8f0fe;color:#174b91;border:1px solid #bfd3ee;font-size:11px;font-weight:750}.source-links{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.source-links a{display:inline-flex;align-items:center;gap:5px;padding:8px 10px;border:1px solid #bfd0e7;border-radius:9px;background:#f7f9fc;text-decoration:none;font-size:12px;font-weight:700}.guide-alert{padding:13px 15px;border-left:4px solid var(--red);background:var(--red-soft);border-radius:0 11px 11px 0;line-height:1.5}.guide-note{padding:13px 15px;border-left:4px solid #1d5fbf;background:#eaf2fd;border-radius:0 11px 11px 0;line-height:1.5}.guide-search-hidden{display:none!important}
-@media(max-width:900px){.guide-grid{grid-template-columns:1fr}.guide-toolbar{grid-template-columns:1fr}.guide-hero{align-items:flex-start;flex-direction:column}}
-</style></head><body><div class="app"><aside><div class="brand">Broker<span>Beacon</span> AI</div><div class="version">VERSION 8.8 · LOAN GUIDELINES LIBRARY</div><nav><button class="active" data-v="dashboard">✦ Command Center</button><button data-v="salescoach">◈ Ash Sales Coach</button><button data-v="voiceagent">☎ AI Voice Agent</button><button data-v="copilot">✦ AI Copilot</button><button data-v="daily">⚡ Daily Plan</button><button data-v="prospects">◉ Prospects</button><button data-v="outreach">✎ Outreach</button><button data-v="campaigns">✉ Campaigns</button><button data-v="inbox">↩ Reply Inbox</button><button data-v="intelligence">◆ Opportunity Intelligence</button><button data-v="templates">▤ Templates & Sequences</button><button data-v="pipeline">▦ Pipeline</button><button data-v="followups">✓ Follow-ups</button><button data-v="territory">⌖ Territory</button><button data-v="guidelines">▣ Loan Guidelines</button><button data-v="boss">◆ Executive View</button><button data-v="integrations">⚙ Integrations</button></nav></aside><main><div class="top"><div><small>AI OPERATING SYSTEM FOR WHOLESALE AES</small><h1 id="title">Command Center</h1></div><div class="actions"><span class="today-chip" id="todayChip"></span><button class="btn theme-toggle" id="themeToggle" type="button" aria-label="Toggle dark mode">◐ Theme</button><button class="btn" id="import">Compliant Import</button><a class="btn" href="/api/export">Export CSV</a><button class="btn primary" id="add">+ Add Prospect</button></div></div>
+.guide-live-search{margin-top:14px}.guide-query-row{display:grid;grid-template-columns:180px 1fr auto;gap:9px;margin-top:14px}.guide-query-row input,.guide-query-row select{width:100%}.guide-example-row{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}.guide-results{display:grid;gap:11px;margin-top:12px}.guide-result{border:1px solid #d7e1ee;border-radius:13px;padding:15px;background:#fff}.guide-result-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}.guide-result h4{margin:0 0 5px;font-size:16px}.guide-result .source-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;font-weight:800;color:#174b91}.guide-result .excerpt{line-height:1.55;margin:10px 0;color:var(--text)}.guide-result .result-url{font-size:11px;color:var(--muted);word-break:break-all}.guide-loading{padding:18px;border:1px dashed #b9c9de;border-radius:12px;background:#f7f9fc}.guide-empty{padding:20px;border:1px dashed #c3d0df;border-radius:12px;text-align:center;background:#f8fafc}.guide-warning{padding:10px 12px;border-left:4px solid #d59b16;background:#fff8e3;border-radius:0 9px 9px 0;margin-top:9px}.dark-mode .guide-result,.dark-mode .guide-loading,.dark-mode .guide-empty{background:#101d34!important;border-color:#2b405f!important}.dark-mode .guide-warning{background:#332a12!important}
+@media(max-width:900px){.guide-grid{grid-template-columns:1fr}.guide-query-row{grid-template-columns:1fr}.guide-hero{align-items:flex-start;flex-direction:column}}
+</style></head><body><div class="app"><aside><div class="brand">Broker<span>Beacon</span> AI</div><div class="version">VERSION 8.9 · LIVE GUIDE SEARCH</div><nav><button class="active" data-v="dashboard">✦ Command Center</button><button data-v="salescoach">◈ Ash Sales Coach</button><button data-v="voiceagent">☎ AI Voice Agent</button><button data-v="copilot">✦ AI Copilot</button><button data-v="daily">⚡ Daily Plan</button><button data-v="prospects">◉ Prospects</button><button data-v="outreach">✎ Outreach</button><button data-v="campaigns">✉ Campaigns</button><button data-v="inbox">↩ Reply Inbox</button><button data-v="intelligence">◆ Opportunity Intelligence</button><button data-v="templates">▤ Templates & Sequences</button><button data-v="pipeline">▦ Pipeline</button><button data-v="followups">✓ Follow-ups</button><button data-v="territory">⌖ Territory</button><button data-v="guidelines">▣ Loan Guidelines</button><button data-v="boss">◆ Executive View</button><button data-v="integrations">⚙ Integrations</button></nav></aside><main><div class="top"><div><small>AI OPERATING SYSTEM FOR WHOLESALE AES</small><h1 id="title">Command Center</h1></div><div class="actions"><span class="today-chip" id="todayChip"></span><button class="btn theme-toggle" id="themeToggle" type="button" aria-label="Toggle dark mode">◐ Theme</button><button class="btn" id="import">Compliant Import</button><a class="btn" href="/api/export">Export CSV</a><button class="btn primary" id="add">+ Add Prospect</button></div></div>
 <section id="dashboard" class="view active">
 <div class="command-hero">
   <div class="command-copy"><div class="kicker">ASH · DAILY REVENUE COMMAND</div><h2>Good morning, Clay. Here is the fastest path to more business today.</h2><p>BrokerBeacon ranks the accounts, explains the opportunity, prepares the outreach, and converts the plan into action.</p></div>
@@ -285,8 +287,14 @@ Reply STOP to opt out of texts."></textarea></label><p class="contact-note">Avai
 <section id="territory" class="view"><div class="hero"><div><div class="kicker">TERRITORY INTELLIGENCE</div><h2>See where broker opportunity is concentrated.</h2><p>Coverage by state and metro helps account executives prioritize travel, identify white space, and balance prospecting effort.</p></div><span class="pill">Public-web prospect coverage</span></div><div class="metrics"><div class="metric"><span>States covered</span><strong id="ts">0</strong></div><div class="metric"><span>Core Carolinas prospects</span><strong id="tc">0</strong></div><div class="metric"><span>Top metro concentration</span><strong id="tm">—</strong></div><div class="metric"><span>High-priority territories</span><strong id="th">0</strong></div></div><div class="grid"><div class="panel"><h3>State coverage map</h3><p class="muted">Tile-map view of the current prospect footprint. Darker fill indicates more discovered companies.</p><div id="stateMap" class="state-map"></div></div><div class="panel"><h3>Metro opportunity</h3><div id="metros" class="bars"></div><h3 style="margin-top:24px">Coverage gaps</h3><div id="gaps" class="activity"></div></div></div></section>
 <section id="guidelines" class="view">
 <div class="guide-hero"><div><div class="kicker">BROKERBEACON LOAN GUIDELINES LIBRARY</div><h2>Fast program guidance with links to the controlling sources.</h2><p>Use this workspace for sales conversations and initial scenario screening. It summarizes common agency requirements, but it does not replace the current agency guide, AUS findings, lender overlays, product matrices, or an underwriter’s decision.</p></div><div><span class="guide-chip">Reviewed July 29, 2026</span></div></div>
-<div class="guide-toolbar"><input id="guideSearch" placeholder="Search: occupancy, gift funds, mortgage insurance, residual income, rural eligibility…" oninput="filterGuidelines()"><div class="guide-tabs" id="guideTabs"><button class="btn active" data-guide="fannie" onclick="showGuide('fannie',this)">Fannie Mae</button><button class="btn" data-guide="freddie" onclick="showGuide('freddie',this)">Freddie Mac</button><button class="btn" data-guide="fha" onclick="showGuide('fha',this)">FHA</button><button class="btn" data-guide="va" onclick="showGuide('va',this)">VA</button><button class="btn" data-guide="usda" onclick="showGuide('usda',this)">USDA</button></div></div>
-<div class="guide-alert" style="margin-bottom:14px"><b>Compliance checkpoint:</b> Confirm the current agency rule and your company’s overlays before quoting eligibility or issuing a prequalification. Loan limits, fees, income limits, and policy details can change.</div>
+<div class="guide-live-search panel">
+<div class="profile-head"><div><div class="kicker">LIVE OFFICIAL-GUIDE SEARCH</div><h3 style="margin:5px 0">Ask a guideline question or search a topic</h3><p class="muted" style="margin:0">BrokerBeacon searches official agency domains and returns source excerpts, section titles, and direct links. Results are not generated from memory.</p></div><span class="guide-chip">Official sources only</span></div>
+<div class="guide-query-row"><select id="guideProgram"><option value="all">All programs</option><option value="fannie">Fannie Mae</option><option value="freddie">Freddie Mac</option><option value="fha">FHA</option><option value="va">VA</option><option value="usda">USDA</option></select><input id="guideSearch" placeholder="Example: Can gift funds be used on a 2-unit primary residence?"><button class="btn primary" id="searchGuides" type="button">Search official guides</button></div>
+<div class="guide-example-row"><button class="btn smallbtn guide-example">Fannie gift funds</button><button class="btn smallbtn guide-example">Freddie student loan payment</button><button class="btn smallbtn guide-example">FHA manual underwriting collections</button><button class="btn smallbtn guide-example">VA residual income</button><button class="btn smallbtn guide-example">USDA manufactured housing</button></div>
+<div id="guideSearchStatus" class="muted" style="margin-top:10px"></div><div id="guideResults" class="guide-results"></div>
+</div>
+<div class="guide-tabs" id="guideTabs" style="margin:14px 0"><button class="btn active" data-guide="fannie" onclick="showGuide('fannie',this)">Fannie Mae overview</button><button class="btn" data-guide="freddie" onclick="showGuide('freddie',this)">Freddie Mac overview</button><button class="btn" data-guide="fha" onclick="showGuide('fha',this)">FHA overview</button><button class="btn" data-guide="va" onclick="showGuide('va',this)">VA overview</button><button class="btn" data-guide="usda" onclick="showGuide('usda',this)">USDA overview</button></div>
+<div class="guide-alert" style="margin-bottom:14px"><b>Compliance checkpoint:</b> Search results are a research aid. Open the cited official source, confirm its effective date, review AUS findings and Union Home Mortgage overlays, and obtain underwriting guidance before making a credit decision.</div>
 
 <div class="guide-program active" id="guide-fannie" data-program="Fannie Mae conventional DU Desktop Underwriter occupancy LTV DTI gifts reserves mortgage insurance">
 <div class="guide-program-head"><div><h2>Fannie Mae conventional</h2><div class="muted">Selling Guide · Desktop Underwriter (DU)</div></div><span class="guide-chip">Conventional / conforming</span></div>
@@ -387,16 +395,23 @@ function contactButtons(p,compact=false){let a=[];if(p.phone)a.push(`<a class="b
 function showGuide(name,btn){
   $$('.guide-program').forEach(x=>x.classList.toggle('active',x.id==='guide-'+name));
   $$('#guideTabs button').forEach(x=>x.classList.toggle('active',x===btn));
-  const q=$('#guideSearch');if(q){q.value='';filterGuidelines()}
 }
-function filterGuidelines(){
-  const q=($('#guideSearch')?.value||'').trim().toLowerCase();
-  if(!q){$$('.guide-card').forEach(x=>x.classList.remove('guide-search-hidden'));return}
-  const active=$('.guide-program.active');
-  if(!active)return;
-  active.querySelectorAll('.guide-card').forEach(card=>card.classList.toggle('guide-search-hidden',!card.textContent.toLowerCase().includes(q)));
+function filterGuidelines(){ /* retained for backward compatibility */ }
+async function searchOfficialGuides(){
+  const q=($('#guideSearch')?.value||'').trim(),program=$('#guideProgram')?.value||'all';
+  if(q.length<3)return msg('Enter a guideline question or topic');
+  const box=$('#guideResults'),status=$('#guideSearchStatus'),btn=$('#searchGuides');
+  btn.disabled=true;btn.textContent='Searching…';status.textContent='Searching current official agency sources…';box.innerHTML='<div class="guide-loading">Searching official guide pages and handbooks. This may take several seconds.</div>';
+  try{
+    const d=await api('/api/guidelines/search?'+new URLSearchParams({q,program}));
+    status.textContent=`${d.results.length} official result${d.results.length===1?'':'s'} · searched ${d.program_label}`;
+    box.innerHTML=d.results.length?d.results.map(r=>`<article class="guide-result"><div class="guide-result-head"><div><div class="source-label">${esc(r.program)} · ${esc(r.source_type)}</div><h4>${esc(r.title)}</h4></div><a class="btn smallbtn" target="_blank" rel="noopener" href="${esc(r.url)}">Open official source ↗</a></div>${r.section?`<div class="guide-chip">${esc(r.section)}</div>`:''}<div class="excerpt">${esc(r.excerpt||'Open the official source to review the controlling language.')}</div><div class="result-url">${esc(r.display_url||r.url)}</div></article>`).join(''):`<div class="guide-empty"><b>No exact official page was returned.</b><p>Try fewer words or search one program at a time.</p>${(d.fallback_links||[]).map(x=>`<a class="btn smallbtn" target="_blank" rel="noopener" href="${esc(x.url)}">Search ${esc(x.label)} ↗</a>`).join(' ')}</div>`;
+    if(d.warning)box.insertAdjacentHTML('beforeend',`<div class="guide-warning">${esc(d.warning)}</div>`);
+  }catch(e){status.textContent='Search unavailable';box.innerHTML=`<div class="guide-empty"><b>Could not reach the official-guide search.</b><p>${esc(e.message)}</p><p>Use the direct official guide links below while the connection is unavailable.</p></div>`}
+  finally{btn.disabled=false;btn.textContent='Search official guides'}
 }
 
+$('#searchGuides').onclick=searchOfficialGuides;$('#guideSearch').onkeydown=e=>{if(e.key==='Enter')searchOfficialGuides()};$$('.guide-example').forEach(b=>b.onclick=()=>{$('#guideSearch').value=b.textContent;searchOfficialGuides()});
 function msg(x){let t=$('#toast');t.textContent=x;t.style.display='block';setTimeout(()=>t.style.display='none',1800)}
 function show(v){$$('.view').forEach(x=>x.classList.toggle('active',x.id===v));$$('nav button').forEach(x=>x.classList.toggle('active',x.dataset.v===v));const titles={dashboard:'Command Center',salescoach:'Ash Sales Coach',voiceagent:'AI Voice Agent',boss:'Executive View',followups:'Follow-ups',intelligence:'Opportunity Intelligence',templates:'Templates & Sequences',guidelines:'Loan Guidelines Library'};$('#title').textContent=titles[v]||v[0].toUpperCase()+v.slice(1);if(v==='salescoach')salesCoach();if(v==='voiceagent')voiceAgent();if(v==='copilot'){copilotBrief()}if(v==='daily')dailyPlan();if(v==='pipeline')pipe();if(v==='followups')followups();if(v==='outreach')outreach();if(v==='campaigns')campaigns();if(v==='inbox')replyInbox();if(v==='intelligence')loadIntelligence();if(v==='templates')templateStudio();if(v==='territory')territory();if(v==='boss')boss()}
 $$('nav button').forEach(b=>b.onclick=()=>show(b.dataset.v));
@@ -2004,6 +2019,117 @@ def opportunity_rescore():
         data=intelligence_dashboard(c);save_snapshots(c,data['opportunities'],NOW())
     log('Opportunity intelligence recalculated',f"{len(data['opportunities'])} prospects")
     return jsonify(ok=True,updated=len(data['opportunities']))
+
+
+GUIDE_SOURCES = {
+    "fannie": {"label":"Fannie Mae", "domains":["selling-guide.fanniemae.com", "singlefamily.fanniemae.com"], "type":"Selling Guide"},
+    "freddie": {"label":"Freddie Mac", "domains":["guide.freddiemac.com", "sf.freddiemac.com"], "type":"Seller/Servicer Guide"},
+    "fha": {"label":"FHA", "domains":["hud.gov", "www.hud.gov"], "type":"HUD Handbook 4000.1 / FHA policy"},
+    "va": {"label":"VA", "domains":["benefits.va.gov", "www.benefits.va.gov"], "type":"VA Lenders Handbook / circular"},
+    "usda": {"label":"USDA", "domains":["rd.usda.gov", "www.rd.usda.gov"], "type":"USDA HB-1-3555 / Rural Development"},
+}
+_GUIDE_CACHE = {}
+
+def _clean_web_text(value):
+    value = html.unescape(re.sub(r'<[^>]+>', ' ', value or ''))
+    return re.sub(r'\s+', ' ', value).strip()
+
+def _official_url(raw):
+    raw = html.unescape(raw or '')
+    if 'uddg=' in raw:
+        try: raw = urllib.parse.parse_qs(urllib.parse.urlparse(raw).query).get('uddg',[raw])[0]
+        except Exception: pass
+    return raw
+
+def _allowed_guide_url(url, domains):
+    try:
+        host=urllib.parse.urlparse(url).netloc.lower().split(':')[0]
+        return any(host==d or host.endswith('.'+d) for d in domains)
+    except Exception:return False
+
+def _extract_section(title):
+    m=re.search(r'\b([A-Z]\d(?:-[\d.]+){1,4}|Section\s+[\d.]+|Chapter\s+\d+)\b', title or '', re.I)
+    return m.group(1) if m else ''
+
+def _fetch_official_excerpt(url, query):
+    if url.lower().endswith('.pdf'): return ''
+    try:
+        req=urllib.request.Request(url,headers={'User-Agent':'Mozilla/5.0 BrokerBeaconGuidelineSearch/1.0'})
+        with urllib.request.urlopen(req,timeout=7) as r:
+            ctype=(r.headers.get('content-type') or '').lower()
+            if 'html' not in ctype:return ''
+            raw=r.read(500000).decode('utf-8','ignore')
+        raw=re.sub(r'(?is)<(script|style|nav|footer|header).*?>.*?</\1>',' ',raw)
+        text=_clean_web_text(raw)
+        terms=[x.lower() for x in re.findall(r'[A-Za-z0-9-]{4,}',query)[:8]]
+        low=text.lower();positions=[low.find(t) for t in terms if low.find(t)>=0]
+        pos=min(positions) if positions else 0
+        start=max(0,pos-180);end=min(len(text),pos+520)
+        excerpt=text[start:end].strip(' .,:;-')
+        return (('…' if start else '')+excerpt+('…' if end<len(text) else ''))[:720]
+    except Exception:return ''
+
+def _duckduckgo_official_search(query, source, limit=5):
+    domains=source['domains'];site_clause=' OR '.join('site:'+d for d in domains)
+    search_q=f'({site_clause}) {query}'
+    url='https://html.duckduckgo.com/html/?'+urllib.parse.urlencode({'q':search_q})
+    req=urllib.request.Request(url,headers={'User-Agent':'Mozilla/5.0 BrokerBeaconGuidelineSearch/1.0','Accept-Language':'en-US,en;q=0.9'})
+    with urllib.request.urlopen(req,timeout=10) as r: raw=r.read(800000).decode('utf-8','ignore')
+    blocks=re.findall(r'(?is)<div[^>]+class="[^"]*result[^"]*"[^>]*>(.*?)</div>\s*</div>',raw)
+    if not blocks: blocks=re.split(r'(?is)<div[^>]+class="result results_links',raw)[1:]
+    out=[];seen=set()
+    for block in blocks:
+        m=re.search(r'(?is)<a[^>]+class="[^"]*result__a[^"]*"[^>]+href="([^"]+)"[^>]*>(.*?)</a>',block)
+        if not m:continue
+        result_url=_official_url(m.group(1));title=_clean_web_text(m.group(2))
+        if not _allowed_guide_url(result_url,domains) or result_url in seen:continue
+        seen.add(result_url)
+        sm=re.search(r'(?is)<(?:a|div)[^>]+class="[^"]*result__snippet[^"]*"[^>]*>(.*?)</(?:a|div)>',block)
+        snippet=_clean_web_text(sm.group(1) if sm else '')
+        excerpt=_fetch_official_excerpt(result_url,query) or snippet
+        out.append({'program':source['label'],'source_type':source['type'],'title':title or source['type'],'section':_extract_section(title),'url':result_url,'display_url':urllib.parse.urlparse(result_url).netloc+urllib.parse.urlparse(result_url).path,'excerpt':excerpt})
+        if len(out)>=limit:break
+    return out
+
+def _guide_fallback_links(keys, query):
+    links=[]
+    bases={
+      'fannie':'https://selling-guide.fanniemae.com/',
+      'freddie':'https://guide.freddiemac.com/app/guide/',
+      'fha':'https://www.hud.gov/hud-partners/single-family-handbook-policy',
+      'va':'https://www.benefits.va.gov/warms/pam26_7.asp',
+      'usda':'https://www.rd.usda.gov/resources/directives/handbooks',
+    }
+    for k in keys:links.append({'label':GUIDE_SOURCES[k]['label'],'url':bases[k]})
+    return links
+
+@app.get('/api/guidelines/search')
+def guideline_search():
+    query=(request.args.get('q') or '').strip()
+    program=(request.args.get('program') or 'all').lower()
+    if len(query)<3:return jsonify({'error':'Enter at least three characters.'}),400
+    if len(query)>240:return jsonify({'error':'Keep the search under 240 characters.'}),400
+    keys=list(GUIDE_SOURCES) if program=='all' else ([program] if program in GUIDE_SOURCES else [])
+    if not keys:return jsonify({'error':'Unknown loan program.'}),400
+    cache_key=(program,query.lower());cached=_GUIDE_CACHE.get(cache_key)
+    if cached and (datetime.now()-cached[0]).total_seconds()<1800:return jsonify(cached[1])
+    results=[];errors=[]
+    limit=3 if program=='all' else 7
+    with ThreadPoolExecutor(max_workers=min(5,len(keys))) as pool:
+        jobs={pool.submit(_duckduckgo_official_search,query,GUIDE_SOURCES[key],limit):key for key in keys}
+        for job in as_completed(jobs):
+            key=jobs[job]
+            try:results.extend(job.result())
+            except Exception:errors.append(GUIDE_SOURCES[key]['label'])
+    # rank exact phrase/term coverage while keeping program diversity
+    terms=[t.lower() for t in re.findall(r'[A-Za-z0-9-]{3,}',query)]
+    for r in results:
+        hay=(r['title']+' '+r['excerpt']).lower();r['_score']=sum(3 if t in r['title'].lower() else 1 for t in terms if t in hay)
+    results=sorted(results,key=lambda x:x.pop('_score'),reverse=True)[:12]
+    label='all five agency guides' if program=='all' else GUIDE_SOURCES[program]['label']
+    payload={'query':query,'program':program,'program_label':label,'results':results,'fallback_links':_guide_fallback_links(keys,query),'warning':('Some official sites could not be reached during this search: '+', '.join(errors)+'.') if errors else ''}
+    _GUIDE_CACHE[cache_key]=(datetime.now(),payload)
+    return jsonify(payload)
 
 @app.get("/api/integrations")
 def gi():
