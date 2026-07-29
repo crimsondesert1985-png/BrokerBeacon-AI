@@ -97,20 +97,37 @@ def search(conn, query, program='all', limit=20):
     seed_index(conn)
     fts=_fts_query(query)
     if not fts:return []
+    qterms=[t for t in re.findall(r'[A-Za-z0-9][A-Za-z0-9-]{1,}',query.lower()) if t not in {'can','the','be','on','a','an','is','are','how','what','used','for','with','and','or','to','of','in'}]
     params=[fts]; where=''
     if program!='all': where=' and d.program_key=?'; params.append(program)
-    params.append(limit)
+    params.append(max(limit*4,60))
     rows=conn.execute(f'''select d.*, bm25(guideline_fts,6.0,8.0,1.0,2.0,1.0) rank,
-      snippet(guideline_fts,2,'<mark>','</mark>',' … ',42) snippet
+      snippet(guideline_fts,2,'<mark>','</mark>',' … ',55) snippet
       from guideline_fts join guideline_documents d on d.id=guideline_fts.rowid
       where guideline_fts match ? {where}
       order by rank limit ?''',params).fetchall()
-    out=[]
+    scored=[]
+    program_alias={'fannie':['fannie','fnma'],'freddie':['freddie','fhlmc'],'fha':['fha','hud'],'va':['va','veteran'],'usda':['usda','rural']}
+    query_programs={k for k,aliases in program_alias.items() if any(a in query.lower() for a in aliases)}
     for r in rows:
-        d=dict(r); excerpt=d.pop('snippet') or d.get('content','')[:600]
-        d['excerpt']=excerpt; d['display_url']=re.sub(r'^https?://','',d['url']); d.pop('content',None); d.pop('rank',None)
-        out.append(d)
-    return out
+        d=dict(r); raw=d.pop('snippet') or d.get('content','')[:700]
+        excerpt=re.sub(r'</?mark>','',raw,flags=re.I)
+        hay=' '.join([d.get('title',''),d.get('section',''),d.get('content',''),d.get('program','')]).lower()
+        matched=sorted({t for t in qterms if t in hay},key=lambda x:(-len(x),x))
+        title_hay=(d.get('title','')+' '+d.get('section','')).lower()
+        score=len(matched)*5 + sum(7 for t in matched if t in title_hay)
+        if query_programs and d.get('program_key') in query_programs: score+=30
+        if 'gift' in qterms and 'gift' in title_hay: score+=24
+        if 'student' in qterms and 'student' in hay: score+=18
+        if 'residual' in qterms and 'residual' in hay: score+=18
+        if 'manufactured' in qterms and 'manufactured' in hay: score+=18
+        # Penalize generic handbook pages when a titled guide section is available.
+        if d.get('source_type')=='Handbook 4000.1 PDF' and len(matched)<2: score-=10
+        d['excerpt']=excerpt; d['matched_terms']=matched[:8]
+        d['display_url']=re.sub(r'^https?://','',d['url']); d.pop('content',None); d.pop('rank',None)
+        scored.append((score,d))
+    scored.sort(key=lambda x:(-x[0], x[1].get('page',0) or 0))
+    return [d for score,d in scored[:limit] if score>0]
 
 def stats(conn):
     ensure_schema(conn)
