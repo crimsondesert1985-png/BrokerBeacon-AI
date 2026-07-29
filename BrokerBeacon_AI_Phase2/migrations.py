@@ -14,6 +14,13 @@ create table if not exists revenue_events(id integer primary key,prospect_id int
 create index if not exists idx_revenue_events_prospect on revenue_events(prospect_id);
 create index if not exists idx_revenue_events_campaign on revenue_events(attributed_campaign_id);
 create index if not exists idx_revenue_events_date on revenue_events(event_at);
+"""),
+(3, "voice_agent", """
+create table if not exists voice_calls(id integer primary key,prospect_id integer not null,contact_id integer not null,twilio_sid text default '',status text not null default 'Queued',answered_by text default '',transcript text default '',disposition text default '',appointment_id integer,created_at text not null,updated_at text not null);
+create table if not exists appointments(id integer primary key,prospect_id integer not null,contact_id integer not null,start_at text not null,status text not null default 'Scheduled',source text not null default 'AI Voice Agent',notes text default '',created_at text not null);
+create index if not exists idx_voice_calls_contact on voice_calls(contact_id);
+create index if not exists idx_voice_calls_created on voice_calls(created_at);
+create index if not exists idx_appointments_start on appointments(start_at);
 """)]
 
 DEFAULT_WEIGHTS = [
@@ -57,3 +64,10 @@ def run_migrations(conn):
         conn.execute('insert or ignore into revenue_settings(key,label,value,description,updated_at) values(?,?,?,?,?)',(key,label,value,description,now))
     for name,category,keywords,talking_point in DEFAULT_PRODUCTS:
         conn.execute('insert or ignore into product_catalog(name,category,keywords,talking_point,is_active,created_at,updated_at) values(?,?,?,?,1,?,?)',(name,category,keywords,talking_point,now,now))
+    # Compatibility columns for existing databases. SQLite lacks ADD COLUMN IF NOT EXISTS,
+    # so inspect the schema first.
+    contact_cols={r[1] for r in conn.execute('pragma table_info(contacts)')}
+    if 'voice_consent' not in contact_cols:
+        conn.execute('alter table contacts add column voice_consent integer default 0')
+    if 'voice_opt_out' not in contact_cols:
+        conn.execute('alter table contacts add column voice_opt_out integer default 0')
