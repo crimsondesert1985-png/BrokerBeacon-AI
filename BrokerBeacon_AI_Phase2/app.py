@@ -227,7 +227,7 @@ body.dark-mode .btn.primary,body.dark-mode .primary,body.dark-mode .btn.accent{b
 body.dark-mode input,body.dark-mode select,body.dark-mode textarea{background:#0c182c!important;color:#edf4ff!important;border-color:#314868!important}body.dark-mode tbody tr:hover{background:#15243d}body.dark-mode thead th{background:#101d34}body.dark-mode .brief-card,body.dark-mode .recommendation,body.dark-mode .empty{background:#15243d!important;color:#dce8f8!important;border-color:#2c4262!important}body.dark-mode .brief-facts span{background:#14223a;border-color:#2b405f;color:#aebed4}body.dark-mode .goalring>div{background:#101d34!important}body.dark-mode dialog{background:#0d192d!important;color:#edf4ff!important;border-color:#314868!important}body.dark-mode .toast{background:#eaf2ff!important;color:#0d2347!important}
 @media(max-width:900px){.top{position:static;margin:-26px calc(clamp(18px,3vw,38px)*-1) 22px}.today-chip{display:none}}
 @media(max-width:600px){.top{padding-top:16px}.theme-toggle{min-width:auto}.command-hero{border-radius:15px}.command-kpi strong{font-size:25px}}
-</style></head><body><div class="app"><aside><div class="brand">Broker<span>Beacon</span> AI</div><div class="version">VERSION 8.6 · AI VOICE AGENT</div><nav><button class="active" data-v="dashboard">✦ Command Center</button><button data-v="salescoach">◈ Ash Sales Coach</button><button data-v="voiceagent">☎ AI Voice Agent</button><button data-v="copilot">✦ AI Copilot</button><button data-v="daily">⚡ Daily Plan</button><button data-v="prospects">◉ Prospects</button><button data-v="outreach">✎ Outreach</button><button data-v="campaigns">✉ Campaigns</button><button data-v="inbox">↩ Reply Inbox</button><button data-v="intelligence">◆ Opportunity Intelligence</button><button data-v="templates">▤ Templates & Sequences</button><button data-v="pipeline">▦ Pipeline</button><button data-v="followups">✓ Follow-ups</button><button data-v="territory">⌖ Territory</button><button data-v="boss">◆ Executive View</button><button data-v="integrations">⚙ Integrations</button></nav></aside><main><div class="top"><div><small>AI OPERATING SYSTEM FOR WHOLESALE AES</small><h1 id="title">Command Center</h1></div><div class="actions"><span class="today-chip" id="todayChip"></span><button class="btn theme-toggle" id="themeToggle" type="button" aria-label="Toggle dark mode">◐ Theme</button><button class="btn" id="import">Compliant Import</button><a class="btn" href="/api/export">Export CSV</a><button class="btn primary" id="add">+ Add Prospect</button></div></div>
+</style></head><body><div class="app"><aside><div class="brand">Broker<span>Beacon</span> AI</div><div class="version">VERSION 8.7 · AUTOMATED DRIP CAMPAIGNS</div><nav><button class="active" data-v="dashboard">✦ Command Center</button><button data-v="salescoach">◈ Ash Sales Coach</button><button data-v="voiceagent">☎ AI Voice Agent</button><button data-v="copilot">✦ AI Copilot</button><button data-v="daily">⚡ Daily Plan</button><button data-v="prospects">◉ Prospects</button><button data-v="outreach">✎ Outreach</button><button data-v="campaigns">✉ Campaigns</button><button data-v="inbox">↩ Reply Inbox</button><button data-v="intelligence">◆ Opportunity Intelligence</button><button data-v="templates">▤ Templates & Sequences</button><button data-v="pipeline">▦ Pipeline</button><button data-v="followups">✓ Follow-ups</button><button data-v="territory">⌖ Territory</button><button data-v="boss">◆ Executive View</button><button data-v="integrations">⚙ Integrations</button></nav></aside><main><div class="top"><div><small>AI OPERATING SYSTEM FOR WHOLESALE AES</small><h1 id="title">Command Center</h1></div><div class="actions"><span class="today-chip" id="todayChip"></span><button class="btn theme-toggle" id="themeToggle" type="button" aria-label="Toggle dark mode">◐ Theme</button><button class="btn" id="import">Compliant Import</button><a class="btn" href="/api/export">Export CSV</a><button class="btn primary" id="add">+ Add Prospect</button></div></div>
 <section id="dashboard" class="view active">
 <div class="command-hero">
   <div class="command-copy"><div class="kicker">ASH · DAILY REVENUE COMMAND</div><h2>Good morning, Clay. Here is the fastest path to more business today.</h2><p>BrokerBeacon ranks the accounts, explains the opportunity, prepares the outreach, and converts the plan into action.</p></div>
@@ -268,7 +268,7 @@ body.dark-mode input,body.dark-mode select,body.dark-mode textarea{background:#0
 </div>
 </section>
 <section id="outreach" class="view"><div class="grid"><div class="panel"><h3>Personalized outreach builder</h3><label>Prospect</label><select id="op" class="full"></select><label>Channel</label><select id="channel" class="full"><option>Email</option><option>LinkedIn</option><option>Phone</option></select><label>Angle</label><select id="angle" class="full"><option>Recommended by intelligence engine</option><option>Congratulations + growth support</option><option>VA/FHA scenario support</option><option>Fast onboarding</option><option>HELOC and niche products</option></select><button class="btn primary full" id="gen" style="margin-top:15px">Generate personalized draft</button></div><div class="panel"><button class="btn primary" id="queue" disabled style="float:right">Approve & queue</button><h3>Review draft</h3><input id="subject" class="subject" placeholder="Subject"><textarea id="body"></textarea></div></div><div class="panel" style="margin-top:14px"><h3>Recent outreach</h3><div id="olist"></div></div></section>
-<section id="campaigns" class="view"><div class="hero"><div><div class="kicker">CAMPAIGN AUTOMATION</div><h2>Build approved, compliant email and text sequences.</h2><p>Create targeted campaigns, preview recipients, schedule delivery, enforce throttling and quiet hours, and automatically suppress opt-outs. Live sending activates only when provider credentials are configured.</p></div><span class="pill" id="campaignMode">Approval mode</span></div><div class="campaign-layout"><div class="panel"><h3>Create campaign</h3><label>Campaign name<input id="campName" class="full" placeholder="Example: Carolinas VA Scenario Support"></label><div class="formgrid"><label>Channel<select id="campChannel"><option>Email</option><option>SMS</option></select></label><label>Minimum score<input id="campScore" type="number" min="0" max="100" value="70"></label><label>State<select id="campState"><option value="">All states</option><option>NC</option><option>SC</option><option>VA</option><option>GA</option><option>TN</option><option>MI</option></select></label><label>Status<select id="campStatus"><option value="">Any status</option><option>New</option><option>Contacted</option><option>Replied</option><option>Meeting</option></select></label><label>Send date/time<input id="campSchedule" type="datetime-local"></label><label>Daily send limit<input id="campLimit" type="number" min="1" max="500" value="50"></label></div><label>Email subject<input id="campSubject" class="full" placeholder="A quick resource for {{company}}"></label><label>Message body<textarea id="campBody" placeholder="Hi {{first_name}},
+<section id="campaigns" class="view"><div class="hero"><div><div class="kicker">AUTOMATED DRIP CAMPAIGNS</div><h2>Email and text follow-up that runs on schedule.</h2><p>Build one-time campaigns or launch multi-touch sequences. BrokerBeacon personalizes every message, respects SMS consent and quiet hours, stops future steps on replies or opt-outs, retries temporary failures, and records delivery history.</p></div><span class="pill" id="campaignMode">Checking providers…</span></div><div class="metrics"><div class="metric"><span>Automation</span><strong id="autoState" style="font-size:20px">—</strong></div><div class="metric"><span>Email provider</span><strong id="emailState" style="font-size:20px">—</strong></div><div class="metric"><span>Text provider</span><strong id="smsState" style="font-size:20px">—</strong></div><div class="metric"><span>Due now</span><strong id="dueNow">0</strong></div></div><div class="callout" id="automationHelp">A secure scheduler endpoint is included for Render Cron Jobs. Manual processing remains available for testing.</div><div class="campaign-layout"><div class="panel"><h3>Create campaign</h3><label>Campaign name<input id="campName" class="full" placeholder="Example: Carolinas VA Scenario Support"></label><div class="formgrid"><label>Channel<select id="campChannel"><option>Email</option><option>SMS</option></select></label><label>Minimum score<input id="campScore" type="number" min="0" max="100" value="70"></label><label>State<select id="campState"><option value="">All states</option><option>NC</option><option>SC</option><option>VA</option><option>GA</option><option>TN</option><option>MI</option></select></label><label>Status<select id="campStatus"><option value="">Any status</option><option>New</option><option>Contacted</option><option>Replied</option><option>Meeting</option></select></label><label>Send date/time<input id="campSchedule" type="datetime-local"></label><label>Daily send limit<input id="campLimit" type="number" min="1" max="500" value="50"></label></div><label>Email subject<input id="campSubject" class="full" placeholder="A quick resource for {{company}}"></label><label>Message body<textarea id="campBody" placeholder="Hi {{first_name}},
 
 I’m Clay with Union Home Mortgage...
 
@@ -432,7 +432,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   if(b)b.addEventListener('click',runStartMyDay);
 });
 async function quickDraft(id){let d=await api('/api/start-my-day',{method:'POST',body:JSON.stringify({prospect_id:id})});msg(d.drafts_created?'Personalized draft created':'A draft already exists for this account today');outreach();show('outreach')}
-async function campaigns(){let d=await api('/api/campaigns');$('#campaignMode').textContent=d.live_email||d.live_sms?'Live provider configured':'Approval mode';$('#campaignList').innerHTML=d.items.length?d.items.map(x=>`<div class="campaign-row"><div class="profile-head"><div><b>${esc(x.name)}</b> <span class="pill">${esc(x.channel)}</span><div class="mini">${esc(x.status)} · Scheduled ${esc((x.scheduled_at||'Immediately').replace('T',' '))}</div></div><div><button class="btn smallbtn" onclick="toggleCampaign(${x.id},'${x.status==='Paused'?'Active':'Paused'}')">${x.status==='Paused'?'Resume':'Pause'}</button></div></div><div class="campaign-stats"><div><b>${x.total}</b><small>Total</small></div><div><b>${x.queued}</b><small>Queued</small></div><div><b>${x.sent}</b><small>Sent</small></div><div><b>${x.failed}</b><small>Failed</small></div><div><b>${x.suppressed}</b><small>Suppressed</small></div></div></div>`).join(''):'<div class="empty">No campaigns created yet.</div>'}
+async function campaigns(){let d=await api('/api/campaigns');$('#campaignMode').textContent=d.live_email||d.live_sms?'Live delivery enabled':'Provider setup required';$('#autoState').textContent=d.scheduler_ready?'Cron ready':'Add secret';$('#emailState').textContent=d.live_email?'Connected':'Not connected';$('#smsState').textContent=d.live_sms?'Connected':'Not connected';$('#dueNow').textContent=d.due_now||0;$('#automationHelp').innerHTML=d.scheduler_ready?'Render scheduler endpoint is secured and ready. Set a Cron Job to call <b>/api/automation/run</b> every 5–15 minutes.':'Add <b>CAMPAIGN_AUTOMATION_SECRET</b> in Render, then create a Render Cron Job using the included setup guide.';$('#campaignList').innerHTML=d.items.length?d.items.map(x=>`<div class="campaign-row"><div class="profile-head"><div><b>${esc(x.name)}</b> <span class="pill">${esc(x.channel)}</span><div class="mini">${esc(x.status)} · Scheduled ${esc((x.scheduled_at||'Immediately').replace('T',' '))}${x.sequence_name?' · '+esc(x.sequence_name):''}</div></div><div><button class="btn smallbtn" onclick="toggleCampaign(${x.id},'${x.status==='Paused'?'Active':'Paused'}')">${x.status==='Paused'?'Resume':'Pause'}</button></div></div><div class="campaign-stats"><div><b>${x.total}</b><small>Total</small></div><div><b>${x.queued}</b><small>Queued</small></div><div><b>${x.sent}</b><small>Sent</small></div><div><b>${x.failed}</b><small>Failed</small></div><div><b>${x.suppressed}</b><small>Suppressed</small></div></div></div>`).join(''):'<div class="empty">No campaigns created yet.</div>'}
 async function toggleCampaign(id,status){await api('/api/campaigns/'+id+'/status',{method:'POST',body:JSON.stringify({status})});msg('Campaign updated');campaigns();missionControl()}
 $('#previewCampaign').onclick=previewCampaign;$('#saveCampaign').onclick=async()=>{let d=await api('/api/campaigns',{method:'POST',body:JSON.stringify(campaignPayload())});msg(`Campaign queued for ${d.queued} contacts`);campaigns();missionControl()};$('#processCampaigns').onclick=async()=>{let d=await api('/api/campaigns/process',{method:'POST'});msg(`${d.sent} sent · ${d.failed} failed · ${d.skipped} skipped`);campaigns();missionControl()};
 
@@ -1563,11 +1563,12 @@ def campaign_preview():
 @app.get('/api/campaigns')
 def campaign_list():
     with db() as c:
-        rows=[dict(x) for x in c.execute("select * from campaigns order by id desc")]
+        rows=[dict(x) for x in c.execute("""select c.*,s.name sequence_name from campaigns c left join sequences s on s.id=c.sequence_id order by c.id desc""")]
         for x in rows:
             stats={r['status']:r['n'] for r in c.execute("select status,count(*) n from campaign_recipients where campaign_id=? group by status",(x['id'],))}
-            x.update(total=sum(stats.values()),queued=stats.get('Queued',0),sent=stats.get('Sent',0),failed=stats.get('Failed',0),suppressed=stats.get('Suppressed',0))
-    return jsonify(items=rows,live_email=bool(os.getenv('SMTP_HOST') and os.getenv('SMTP_USERNAME')),live_sms=bool(os.getenv('TWILIO_ACCOUNT_SID') and os.getenv('TWILIO_AUTH_TOKEN') and os.getenv('TWILIO_FROM_NUMBER')))
+            x.update(total=sum(stats.values()),queued=stats.get('Queued',0)+stats.get('Processing',0),sent=stats.get('Sent',0),failed=stats.get('Failed',0),suppressed=stats.get('Suppressed',0))
+        due=c.execute("""select count(*) from campaign_recipients r join campaigns c on c.id=r.campaign_id where r.status='Queued' and c.status='Active' and (r.scheduled_at='' or r.scheduled_at<=?)""",(NOW(),)).fetchone()[0]
+    return jsonify(items=rows,live_email=bool(os.getenv('SMTP_HOST') and os.getenv('SMTP_USERNAME') and os.getenv('SMTP_PASSWORD')),live_sms=bool(os.getenv('TWILIO_ACCOUNT_SID') and os.getenv('TWILIO_AUTH_TOKEN') and os.getenv('TWILIO_FROM_NUMBER')),scheduler_ready=bool(os.getenv('CAMPAIGN_AUTOMATION_SECRET')),due_now=due)
 
 @app.post('/api/campaigns')
 def campaign_create():
@@ -1623,23 +1624,58 @@ def _send_sms(to,body):
         return True,'',result.get('sid','')
     except Exception as e:return False,str(e)[:300],''
 
+def _automation_authorized():
+    secret=os.getenv('CAMPAIGN_AUTOMATION_SECRET','').strip()
+    if not secret:return False
+    supplied=(request.headers.get('X-Automation-Secret') or request.args.get('secret') or '').strip()
+    return supplied==secret
+
+def _process_due_campaigns(batch_limit=100):
+    now=datetime.now(); quiet_start=int(os.getenv('SMS_QUIET_START','20')); quiet_end=int(os.getenv('SMS_QUIET_END','9'))
+    max_attempts=max(1,int(os.getenv('CAMPAIGN_MAX_ATTEMPTS','3')))
+    # Release jobs abandoned by an interrupted worker after 20 minutes.
+    stale=(now-timedelta(minutes=20)).isoformat(timespec='seconds')
+    with db() as c:
+        c.execute("update campaign_recipients set status='Queued' where status='Processing' and coalesce(last_attempt_at,'')<?",(stale,))
+        candidates=[dict(x) for x in c.execute("""select r.*,c.channel,c.daily_limit,c.auto_stop,p.status prospect_status
+          from campaign_recipients r join campaigns c on c.id=r.campaign_id join prospects p on p.id=r.prospect_id
+          where r.status='Queued' and c.status='Active' and coalesce(r.attempts,0)<?
+          and (r.scheduled_at='' or r.scheduled_at<=?) order by r.scheduled_at,r.id limit ?""",(max_attempts,NOW(),batch_limit))]
+    sent=failed=skipped=suppressed=0
+    for r in candidates:
+        # Stop future sequence steps when a relationship has already progressed.
+        if int(r.get('auto_stop') or 0) and r.get('prospect_status') in ('Replied','Meeting','Approved','Funded'):
+            with db() as c:c.execute("update campaign_recipients set status='Suppressed',error=? where id=?",('Sequence stopped: relationship '+r['prospect_status'],r['id']))
+            suppressed+=1;continue
+        if r['channel']=='Sms' and (now.hour>=quiet_start or now.hour<quiet_end): skipped+=1;continue
+        day_start=now.replace(hour=0,minute=0,second=0,microsecond=0).isoformat(timespec='seconds')
+        with db() as c:
+            sent_today=c.execute("select count(*) from campaign_recipients where campaign_id=? and status='Sent' and sent_at>=?",(r['campaign_id'],day_start)).fetchone()[0]
+            if sent_today>=int(r['daily_limit'] or 50): skipped+=1;continue
+            claimed=c.execute("update campaign_recipients set status='Processing',attempts=coalesce(attempts,0)+1,last_attempt_at=? where id=? and status='Queued'",(NOW(),r['id'])).rowcount
+        if not claimed:continue
+        ok,err,pid=_send_email(r['destination'],r['rendered_subject'],r['rendered_body'],r['id']) if r['channel']=='Email' else _send_sms(r['destination'],r['rendered_body'])
+        with db() as c:
+            attempts=c.execute('select attempts from campaign_recipients where id=?',(r['id'],)).fetchone()[0]
+            next_status='Sent' if ok else ('Failed' if attempts>=max_attempts else 'Queued')
+            next_due='' if ok or next_status=='Failed' else (datetime.now()+timedelta(minutes=min(60,5*(2**max(0,attempts-1))))).isoformat(timespec='seconds')
+            c.execute("update campaign_recipients set status=?,sent_at=?,error=?,provider_id=?,scheduled_at=case when ?<>'' then ? else scheduled_at end where id=?",(next_status,NOW() if ok else '',err,pid,next_due,next_due,r['id']))
+        sent+=1 if ok else 0;failed+=0 if ok else 1
+    with db() as c:
+        c.execute("""update campaigns set status='Completed',updated_at=? where status='Active' and not exists(select 1 from campaign_recipients r where r.campaign_id=campaigns.id and r.status in ('Queued','Processing'))""",(NOW(),))
+        c.execute("insert into automation_runs(run_type,started_at,finished_at,sent,failed,skipped,suppressed,detail) values('Campaign delivery',?,?,?,?,?,?,?)",(NOW(),NOW(),sent,failed,skipped,suppressed,json.dumps({'batch_limit':batch_limit})))
+    return {'sent':sent,'failed':failed,'skipped':skipped,'suppressed':suppressed}
+
 @app.post('/api/campaigns/process')
 def campaign_process():
     blocked=reject_demo_write()
     if blocked:return blocked
-    now=datetime.now(); quiet_start=int(os.getenv('SMS_QUIET_START','20')); quiet_end=int(os.getenv('SMS_QUIET_END','9'))
-    with db() as c:
-        rows=[dict(x) for x in c.execute("select r.*,c.channel,c.daily_limit from campaign_recipients r join campaigns c on c.id=r.campaign_id where r.status='Queued' and c.status='Active' and (r.scheduled_at='' or r.scheduled_at<=?) order by r.id limit 100",(NOW(),))]
-    sent=failed=skipped=0; per_campaign={}
-    for r in rows:
-        per_campaign[r['campaign_id']]=per_campaign.get(r['campaign_id'],0)+1
-        if per_campaign[r['campaign_id']]>int(r['daily_limit'] or 50): skipped+=1;continue
-        if r['channel']=='Sms' and (now.hour>=quiet_start or now.hour<quiet_end): skipped+=1;continue
-        ok,err,pid=_send_email(r['destination'],r['rendered_subject'],r['rendered_body'],r['id']) if r['channel']=='Email' else _send_sms(r['destination'],r['rendered_body'])
-        with db() as c:
-            c.execute("update campaign_recipients set status=?,sent_at=?,error=?,provider_id=? where id=?",('Sent' if ok else 'Failed',NOW() if ok else '',err,pid,r['id']))
-        sent+=1 if ok else 0;failed+=0 if ok else 1
-    return jsonify(sent=sent,failed=failed,skipped=skipped)
+    return jsonify(_process_due_campaigns())
+
+@app.route('/api/automation/run',methods=['GET','POST'])
+def automation_run():
+    if not _automation_authorized():return jsonify(error='Unauthorized automation request'),401
+    return jsonify(ok=True,**_process_due_campaigns(max(1,min(500,int(request.args.get('limit','100'))))))
 
 @app.post('/api/suppressions')
 def add_suppression():

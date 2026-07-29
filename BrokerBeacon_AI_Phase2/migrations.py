@@ -21,6 +21,10 @@ create table if not exists appointments(id integer primary key,prospect_id integ
 create index if not exists idx_voice_calls_contact on voice_calls(contact_id);
 create index if not exists idx_voice_calls_created on voice_calls(created_at);
 create index if not exists idx_appointments_start on appointments(start_at);
+"""),
+(4, "drip_campaign_automation", """
+create table if not exists automation_runs(id integer primary key,run_type text not null,started_at text not null,finished_at text not null,sent integer default 0,failed integer default 0,skipped integer default 0,suppressed integer default 0,detail text default '');
+create index if not exists idx_automation_runs_started on automation_runs(started_at);
 """)]
 
 DEFAULT_WEIGHTS = [
@@ -71,3 +75,9 @@ def run_migrations(conn):
         conn.execute('alter table contacts add column voice_consent integer default 0')
     if 'voice_opt_out' not in contact_cols:
         conn.execute('alter table contacts add column voice_opt_out integer default 0')
+
+    recipient_cols={r[1] for r in conn.execute('pragma table_info(campaign_recipients)')}
+    if 'attempts' not in recipient_cols:
+        conn.execute('alter table campaign_recipients add column attempts integer default 0')
+    if 'last_attempt_at' not in recipient_cols:
+        conn.execute("alter table campaign_recipients add column last_attempt_at text default ''")
