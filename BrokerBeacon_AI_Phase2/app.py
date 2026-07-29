@@ -237,7 +237,7 @@ body.dark-mode input,body.dark-mode select,body.dark-mode textarea{background:#0
 .guide-program-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:14px}.guide-program-head h2{margin:0 0 5px}.guide-chip{display:inline-block;padding:5px 9px;border-radius:999px;background:#e8f0fe;color:#174b91;border:1px solid #bfd3ee;font-size:11px;font-weight:750}.source-links{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.source-links a{display:inline-flex;align-items:center;gap:5px;padding:8px 10px;border:1px solid #bfd0e7;border-radius:9px;background:#f7f9fc;text-decoration:none;font-size:12px;font-weight:700}.guide-alert{padding:13px 15px;border-left:4px solid var(--red);background:var(--red-soft);border-radius:0 11px 11px 0;line-height:1.5}.guide-note{padding:13px 15px;border-left:4px solid #1d5fbf;background:#eaf2fd;border-radius:0 11px 11px 0;line-height:1.5}.guide-search-hidden{display:none!important}
 .guide-live-search{margin-top:14px}.guide-query-row{display:grid;grid-template-columns:180px 1fr auto;gap:9px;margin-top:14px}.guide-query-row input,.guide-query-row select{width:100%}.guide-example-row{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}.guide-results{display:grid;gap:11px;margin-top:12px}.guide-result{border:1px solid #d7e1ee;border-radius:13px;padding:15px;background:#fff}.guide-result-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}.guide-result h4{margin:0 0 5px;font-size:16px}.guide-result .source-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;font-weight:800;color:#174b91}.guide-result .excerpt{line-height:1.55;margin:10px 0;color:var(--text)}.guide-result .result-url{font-size:11px;color:var(--muted);word-break:break-all}.guide-loading{padding:18px;border:1px dashed #b9c9de;border-radius:12px;background:#f7f9fc}.guide-empty{padding:20px;border:1px dashed #c3d0df;border-radius:12px;text-align:center;background:#f8fafc}.guide-warning{padding:10px 12px;border-left:4px solid #d59b16;background:#fff8e3;border-radius:0 9px 9px 0;margin-top:9px}.dark-mode .guide-result,.dark-mode .guide-loading,.dark-mode .guide-empty{background:#101d34!important;border-color:#2b405f!important}.dark-mode .guide-warning{background:#332a12!important}
 @media(max-width:900px){.guide-grid{grid-template-columns:1fr}.guide-query-row{grid-template-columns:1fr}.guide-hero{align-items:flex-start;flex-direction:column}}
-</style></head><body><div class="app"><aside><div class="brand">Broker<span>Beacon</span> AI</div><div class="version">VERSION 8.9 · LIVE GUIDE SEARCH</div><nav><button class="active" data-v="dashboard">✦ Command Center</button><button data-v="salescoach">◈ Ash Sales Coach</button><button data-v="voiceagent">☎ AI Voice Agent</button><button data-v="copilot">✦ AI Copilot</button><button data-v="daily">⚡ Daily Plan</button><button data-v="prospects">◉ Prospects</button><button data-v="outreach">✎ Outreach</button><button data-v="campaigns">✉ Campaigns</button><button data-v="inbox">↩ Reply Inbox</button><button data-v="intelligence">◆ Opportunity Intelligence</button><button data-v="templates">▤ Templates & Sequences</button><button data-v="pipeline">▦ Pipeline</button><button data-v="followups">✓ Follow-ups</button><button data-v="territory">⌖ Territory</button><button data-v="guidelines">▣ Loan Guidelines</button><button data-v="boss">◆ Executive View</button><button data-v="integrations">⚙ Integrations</button></nav></aside><main><div class="top"><div><small>AI OPERATING SYSTEM FOR WHOLESALE AES</small><h1 id="title">Command Center</h1></div><div class="actions"><span class="today-chip" id="todayChip"></span><button class="btn theme-toggle" id="themeToggle" type="button" aria-label="Toggle dark mode">◐ Theme</button><button class="btn" id="import">Compliant Import</button><a class="btn" href="/api/export">Export CSV</a><button class="btn primary" id="add">+ Add Prospect</button></div></div>
+</style></head><body><div class="app"><aside><div class="brand">Broker<span>Beacon</span> AI</div><div class="version">VERSION 8.9.1 · GUIDE SEARCH FIX</div><nav><button class="active" data-v="dashboard">✦ Command Center</button><button data-v="salescoach">◈ Ash Sales Coach</button><button data-v="voiceagent">☎ AI Voice Agent</button><button data-v="copilot">✦ AI Copilot</button><button data-v="daily">⚡ Daily Plan</button><button data-v="prospects">◉ Prospects</button><button data-v="outreach">✎ Outreach</button><button data-v="campaigns">✉ Campaigns</button><button data-v="inbox">↩ Reply Inbox</button><button data-v="intelligence">◆ Opportunity Intelligence</button><button data-v="templates">▤ Templates & Sequences</button><button data-v="pipeline">▦ Pipeline</button><button data-v="followups">✓ Follow-ups</button><button data-v="territory">⌖ Territory</button><button data-v="guidelines">▣ Loan Guidelines</button><button data-v="boss">◆ Executive View</button><button data-v="integrations">⚙ Integrations</button></nav></aside><main><div class="top"><div><small>AI OPERATING SYSTEM FOR WHOLESALE AES</small><h1 id="title">Command Center</h1></div><div class="actions"><span class="today-chip" id="todayChip"></span><button class="btn theme-toggle" id="themeToggle" type="button" aria-label="Toggle dark mode">◐ Theme</button><button class="btn" id="import">Compliant Import</button><a class="btn" href="/api/export">Export CSV</a><button class="btn primary" id="add">+ Add Prospect</button></div></div>
 <section id="dashboard" class="view active">
 <div class="command-hero">
   <div class="command-copy"><div class="kicker">ASH · DAILY REVENUE COMMAND</div><h2>Good morning, Clay. Here is the fastest path to more business today.</h2><p>BrokerBeacon ranks the accounts, explains the opportunity, prepares the outreach, and converts the plan into action.</p></div>
@@ -2069,33 +2069,104 @@ def _fetch_official_excerpt(url, query):
         return (('…' if start else '')+excerpt+('…' if end<len(text) else ''))[:720]
     except Exception:return ''
 
-def _duckduckgo_official_search(query, source, limit=5):
-    domains=source['domains'];site_clause=' OR '.join('site:'+d for d in domains)
+def _result_record(source, result_url, title, snippet, query):
+    if not _allowed_guide_url(result_url, source['domains']):
+        return None
+    excerpt=_fetch_official_excerpt(result_url,query) or snippet
+    parsed=urllib.parse.urlparse(result_url)
+    return {
+        'program':source['label'],
+        'source_type':source['type'],
+        'title':title or source['type'],
+        'section':_extract_section(title),
+        'url':result_url,
+        'display_url':parsed.netloc+parsed.path,
+        'excerpt':excerpt,
+    }
+
+def _bing_rss_official_search(query, source, limit=5):
+    """Primary search path. Bing RSS is simpler and more stable than scraping result-page HTML."""
+    site_clause=' OR '.join('site:'+d for d in source['domains'])
     search_q=f'({site_clause}) {query}'
-    url='https://html.duckduckgo.com/html/?'+urllib.parse.urlencode({'q':search_q})
-    req=urllib.request.Request(url,headers={'User-Agent':'Mozilla/5.0 BrokerBeaconGuidelineSearch/1.0','Accept-Language':'en-US,en;q=0.9'})
-    with urllib.request.urlopen(req,timeout=10) as r: raw=r.read(800000).decode('utf-8','ignore')
-    blocks=re.findall(r'(?is)<div[^>]+class="[^"]*result[^"]*"[^>]*>(.*?)</div>\s*</div>',raw)
-    if not blocks: blocks=re.split(r'(?is)<div[^>]+class="result results_links',raw)[1:]
+    url='https://www.bing.com/search?'+urllib.parse.urlencode({'q':search_q,'format':'rss'})
+    req=urllib.request.Request(url,headers={
+        'User-Agent':'Mozilla/5.0 BrokerBeaconGuidelineSearch/1.1',
+        'Accept':'application/rss+xml, application/xml, text/xml;q=0.9, */*;q=0.8',
+        'Accept-Language':'en-US,en;q=0.9',
+    })
+    with urllib.request.urlopen(req,timeout=12) as r:
+        raw=r.read(1000000).decode('utf-8','ignore')
+    items=re.findall(r'(?is)<item>(.*?)</item>',raw)
     out=[];seen=set()
-    for block in blocks:
-        m=re.search(r'(?is)<a[^>]+class="[^"]*result__a[^"]*"[^>]+href="([^"]+)"[^>]*>(.*?)</a>',block)
-        if not m:continue
-        result_url=_official_url(m.group(1));title=_clean_web_text(m.group(2))
-        if not _allowed_guide_url(result_url,domains) or result_url in seen:continue
-        seen.add(result_url)
-        sm=re.search(r'(?is)<(?:a|div)[^>]+class="[^"]*result__snippet[^"]*"[^>]*>(.*?)</(?:a|div)>',block)
-        snippet=_clean_web_text(sm.group(1) if sm else '')
-        excerpt=_fetch_official_excerpt(result_url,query) or snippet
-        out.append({'program':source['label'],'source_type':source['type'],'title':title or source['type'],'section':_extract_section(title),'url':result_url,'display_url':urllib.parse.urlparse(result_url).netloc+urllib.parse.urlparse(result_url).path,'excerpt':excerpt})
-        if len(out)>=limit:break
+    for item in items:
+        def tag(name):
+            m=re.search(rf'(?is)<{name}>(.*?)</{name}>',item)
+            return html.unescape(re.sub(r'^<!\[CDATA\[|\]\]>$','',m.group(1).strip())) if m else ''
+        result_url=tag('link').strip()
+        title=_clean_web_text(tag('title'))
+        snippet=_clean_web_text(tag('description'))
+        if not result_url or result_url in seen: continue
+        record=_result_record(source,result_url,title,snippet,query)
+        if not record: continue
+        seen.add(result_url);out.append(record)
+        if len(out)>=limit: break
     return out
 
+def _duckduckgo_official_search(query, source, limit=5):
+    """Secondary search path with parsers for both current HTML and Lite layouts."""
+    domains=source['domains'];site_clause=' OR '.join('site:'+d for d in domains)
+    search_q=f'({site_clause}) {query}'
+    endpoints=[
+        'https://html.duckduckgo.com/html/?'+urllib.parse.urlencode({'q':search_q}),
+        'https://lite.duckduckgo.com/lite/?'+urllib.parse.urlencode({'q':search_q}),
+    ]
+    last_error=None
+    for url in endpoints:
+        try:
+            req=urllib.request.Request(url,headers={
+                'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36',
+                'Accept-Language':'en-US,en;q=0.9',
+            })
+            with urllib.request.urlopen(req,timeout=12) as r: raw=r.read(1000000).decode('utf-8','ignore')
+            out=[];seen=set()
+            # Current HTML result links and Lite result links.
+            links=re.findall(r'(?is)<a[^>]+(?:class="[^"]*(?:result__a|result-link)[^"]*"[^>]*)?href="([^"]+)"[^>]*>(.*?)</a>',raw)
+            for href,title_html in links:
+                result_url=_official_url(href)
+                title=_clean_web_text(title_html)
+                if not title or not result_url or result_url in seen: continue
+                # Locate a nearby snippet without depending on one exact wrapper structure.
+                idx=raw.find(href)
+                nearby=raw[idx:idx+2500] if idx>=0 else ''
+                sm=re.search(r'(?is)class="[^"]*(?:result__snippet|result-snippet)[^"]*"[^>]*>(.*?)</(?:a|div|td)>',nearby)
+                snippet=_clean_web_text(sm.group(1) if sm else '')
+                record=_result_record(source,result_url,title,snippet,query)
+                if not record: continue
+                seen.add(result_url);out.append(record)
+                if len(out)>=limit:return out
+            if out:return out
+        except Exception as exc:
+            last_error=exc
+    if last_error: raise last_error
+    return []
+
+def _search_official_source(query, source, limit=5):
+    errors=[]
+    for backend in (_bing_rss_official_search,_duckduckgo_official_search):
+        try:
+            results=backend(query,source,limit)
+            if results:return results,backend.__name__.replace('_official_search','').strip('_')
+        except Exception as exc:
+            errors.append(f'{backend.__name__}: {type(exc).__name__}')
+    if errors: raise RuntimeError('; '.join(errors))
+    return [],''
+
 def _guide_fallback_links(keys, query):
+    encoded=urllib.parse.quote_plus(query)
     links=[]
     bases={
-      'fannie':'https://selling-guide.fanniemae.com/',
-      'freddie':'https://guide.freddiemac.com/app/guide/',
+      'fannie':f'https://selling-guide.fanniemae.com/search?query={encoded}',
+      'freddie':f'https://guide.freddiemac.com/app/guide/search?query={encoded}',
       'fha':'https://www.hud.gov/hud-partners/single-family-handbook-policy',
       'va':'https://www.benefits.va.gov/warms/pam26_7.asp',
       'usda':'https://www.rd.usda.gov/resources/directives/handbooks',
@@ -2116,11 +2187,13 @@ def guideline_search():
     results=[];errors=[]
     limit=3 if program=='all' else 7
     with ThreadPoolExecutor(max_workers=min(5,len(keys))) as pool:
-        jobs={pool.submit(_duckduckgo_official_search,query,GUIDE_SOURCES[key],limit):key for key in keys}
+        jobs={pool.submit(_search_official_source,query,GUIDE_SOURCES[key],limit):key for key in keys}
         for job in as_completed(jobs):
             key=jobs[job]
-            try:results.extend(job.result())
-            except Exception:errors.append(GUIDE_SOURCES[key]['label'])
+            try:
+                found,backend=job.result();results.extend(found)
+            except Exception as exc:
+                errors.append(f"{GUIDE_SOURCES[key]['label']} ({str(exc)[:120]})")
     # rank exact phrase/term coverage while keeping program diversity
     terms=[t.lower() for t in re.findall(r'[A-Za-z0-9-]{3,}',query)]
     for r in results:
