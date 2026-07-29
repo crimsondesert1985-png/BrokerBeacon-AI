@@ -211,6 +211,13 @@ dialog{background:#f8fafc!important;color:var(--text)!important;border-color:#cc
 .priority-card{transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}.priority-card:hover{transform:translateY(-1px);box-shadow:0 9px 22px rgba(13,35,71,.09);border-color:#bdcde2}
 .health{letter-spacing:.02em}.kicker{letter-spacing:.14em!important}
 .theme-toggle{min-width:86px}
+.coach-hero{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:25px 27px;margin-bottom:16px;border-radius:16px;background:linear-gradient(135deg,#0d2347 0%,#174ea6 72%,#1d60bd 100%);color:#fff;box-shadow:0 16px 38px rgba(13,35,71,.18)}
+.coach-hero h2{color:#fff;margin:5px 0 7px;font-size:25px;letter-spacing:-.035em}.coach-hero p{margin:0;max-width:820px;color:#dce9fb;line-height:1.55}.coach-hero .kicker{color:#9fc5ff}.coach-hero .btn{background:#fff!important;color:#174ea6!important;border-color:#fff!important;white-space:nowrap}
+.coach-kpis{margin-bottom:16px}.coach-queue{display:grid;gap:13px}.coach-card{border:1px solid #d8e2ef;border-radius:14px;background:#fff;padding:18px;box-shadow:0 5px 16px rgba(13,35,71,.05)}.coach-card:hover{border-color:#b8cbe4;box-shadow:0 10px 25px rgba(13,35,71,.09)}
+.coach-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:13px}.coach-company{font-size:18px;font-weight:800;letter-spacing:-.025em}.coach-meta{display:flex;flex-wrap:wrap;gap:7px;margin-top:6px}.coach-score{min-width:92px;text-align:center;border:1px solid #c8d8ed;background:#f4f8fd;border-radius:12px;padding:9px}.coach-score strong{display:block;font-size:23px;color:#174ea6}.coach-score small{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#66758f;font-weight:800}
+.coach-grid{display:grid;grid-template-columns:1.15fr 1fr 1fr;gap:11px}.coach-block{border:1px solid #e0e7f0;background:#f8fafc;border-radius:11px;padding:12px}.coach-block b{display:block;margin-bottom:5px;color:#0d2347;font-size:11px;text-transform:uppercase;letter-spacing:.07em}.coach-block p{margin:0;line-height:1.48;font-size:13px}.coach-opening{grid-column:1/-1;border-left:4px solid #174ea6;background:#f4f8fd}.coach-reasons{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}.coach-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;padding-top:13px;border-top:1px solid #e4eaf2}.coach-action-label{display:inline-flex;align-items:center;border-radius:999px;padding:5px 9px;background:#fff1f3;color:#a51f36;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em}.coach-health-healthy{background:#e8f7ef;color:#17643a}.coach-health-cooling{background:#fff7df;color:#835b00}.coach-health-at-risk{background:#fff0f2;color:#a51f36}
+body.dark-mode .coach-card,body.dark-mode .coach-block,body.dark-mode .coach-score{background:#101d34!important;border-color:#2b405f!important}body.dark-mode .coach-block{background:#14223a!important}body.dark-mode .coach-opening{background:#162b4b!important}body.dark-mode .coach-block b,body.dark-mode .coach-company{color:#edf4ff!important}body.dark-mode .coach-score strong{color:#78adf4!important}body.dark-mode .coach-actions{border-color:#2b405f!important}
+@media(max-width:1050px){.coach-grid{grid-template-columns:1fr 1fr}.coach-opening{grid-column:1/-1}}@media(max-width:700px){.coach-hero,.coach-card-head{align-items:stretch;flex-direction:column}.coach-grid{grid-template-columns:1fr}.coach-opening{grid-column:auto}.coach-score{text-align:left;display:flex;align-items:center;gap:8px}.coach-score strong{display:inline}}
 body.dark-mode{--bg:#081226;--panel:#101d34;--panel-2:#16253f;--text:#edf4ff;--muted:#9fb0c8;--line:#263957;--green-3:#172b49;--navy:#eaf2ff;--navy-2:#bcd2ef;--red-soft:#3a1822;--shadow:0 12px 32px rgba(0,0,0,.24);background:linear-gradient(180deg,#071124 0%,#0c1830 100%)!important;color:var(--text)!important}
 body.dark-mode .top{background:rgba(8,18,38,.9);border-color:#263957}body.dark-mode .today-chip,body.dark-mode .panel,body.dark-mode .metric,body.dark-mode .card,body.dark-mode .command-kpi,body.dark-mode .campaign-row,body.dark-mode .template-item,body.dark-mode .sequence-step{background:#101d34!important;border-color:#263957!important}
 body.dark-mode h1,body.dark-mode h2,body.dark-mode h3,body.dark-mode h4,body.dark-mode h5,body.dark-mode .command-kpi strong,body.dark-mode .btn,body.dark-mode button.btn,body.dark-mode .smallbtn{color:#edf4ff!important}
@@ -219,7 +226,7 @@ body.dark-mode .btn.primary,body.dark-mode .primary,body.dark-mode .btn.accent{b
 body.dark-mode input,body.dark-mode select,body.dark-mode textarea{background:#0c182c!important;color:#edf4ff!important;border-color:#314868!important}body.dark-mode tbody tr:hover{background:#15243d}body.dark-mode thead th{background:#101d34}body.dark-mode .brief-card,body.dark-mode .recommendation,body.dark-mode .empty{background:#15243d!important;color:#dce8f8!important;border-color:#2c4262!important}body.dark-mode .brief-facts span{background:#14223a;border-color:#2b405f;color:#aebed4}body.dark-mode .goalring>div{background:#101d34!important}body.dark-mode dialog{background:#0d192d!important;color:#edf4ff!important;border-color:#314868!important}body.dark-mode .toast{background:#eaf2ff!important;color:#0d2347!important}
 @media(max-width:900px){.top{position:static;margin:-26px calc(clamp(18px,3vw,38px)*-1) 22px}.today-chip{display:none}}
 @media(max-width:600px){.top{padding-top:16px}.theme-toggle{min-width:auto}.command-hero{border-radius:15px}.command-kpi strong{font-size:25px}}
-</style></head><body><div class="app"><aside><div class="brand">Broker<span>Beacon</span> AI</div><div class="version">VERSION 8.4 · EXECUTIVE POLISH</div><nav><button class="active" data-v="dashboard">✦ Command Center</button><button data-v="copilot">✦ AI Copilot</button><button data-v="daily">⚡ Daily Plan</button><button data-v="prospects">◉ Prospects</button><button data-v="outreach">✎ Outreach</button><button data-v="campaigns">✉ Campaigns</button><button data-v="inbox">↩ Reply Inbox</button><button data-v="intelligence">◆ Opportunity Intelligence</button><button data-v="templates">▤ Templates & Sequences</button><button data-v="pipeline">▦ Pipeline</button><button data-v="followups">✓ Follow-ups</button><button data-v="territory">⌖ Territory</button><button data-v="boss">◆ Executive View</button><button data-v="integrations">⚙ Integrations</button></nav></aside><main><div class="top"><div><small>AI OPERATING SYSTEM FOR WHOLESALE AES</small><h1 id="title">Command Center</h1></div><div class="actions"><span class="today-chip" id="todayChip"></span><button class="btn theme-toggle" id="themeToggle" type="button" aria-label="Toggle dark mode">◐ Theme</button><button class="btn" id="import">Compliant Import</button><a class="btn" href="/api/export">Export CSV</a><button class="btn primary" id="add">+ Add Prospect</button></div></div>
+</style></head><body><div class="app"><aside><div class="brand">Broker<span>Beacon</span> AI</div><div class="version">VERSION 8.5 · ASH SALES COACH</div><nav><button class="active" data-v="dashboard">✦ Command Center</button><button data-v="salescoach">◈ Ash Sales Coach</button><button data-v="copilot">✦ AI Copilot</button><button data-v="daily">⚡ Daily Plan</button><button data-v="prospects">◉ Prospects</button><button data-v="outreach">✎ Outreach</button><button data-v="campaigns">✉ Campaigns</button><button data-v="inbox">↩ Reply Inbox</button><button data-v="intelligence">◆ Opportunity Intelligence</button><button data-v="templates">▤ Templates & Sequences</button><button data-v="pipeline">▦ Pipeline</button><button data-v="followups">✓ Follow-ups</button><button data-v="territory">⌖ Territory</button><button data-v="boss">◆ Executive View</button><button data-v="integrations">⚙ Integrations</button></nav></aside><main><div class="top"><div><small>AI OPERATING SYSTEM FOR WHOLESALE AES</small><h1 id="title">Command Center</h1></div><div class="actions"><span class="today-chip" id="todayChip"></span><button class="btn theme-toggle" id="themeToggle" type="button" aria-label="Toggle dark mode">◐ Theme</button><button class="btn" id="import">Compliant Import</button><a class="btn" href="/api/export">Export CSV</a><button class="btn primary" id="add">+ Add Prospect</button></div></div>
 <section id="dashboard" class="view active">
 <div class="command-hero">
   <div class="command-copy"><div class="kicker">ASH · DAILY REVENUE COMMAND</div><h2>Good morning, Clay. Here is the fastest path to more business today.</h2><p>BrokerBeacon ranks the accounts, explains the opportunity, prepares the outreach, and converts the plan into action.</p></div>
@@ -243,6 +250,22 @@ body.dark-mode input,body.dark-mode select,body.dark-mode textarea{background:#0
   <div class="panel"><h3>Campaign performance</h3><div id="mcCampaigns"></div><button class="btn smallbtn" onclick="show('campaigns')">Manage campaigns</button></div>
 </div></section>
 <section id="copilot" class="view"><div class="hero"><div><div class="kicker">BROKERBEACON COPILOT</div><h2>Ask your territory a question. Get a ranked, explainable answer.</h2><p>The Copilot uses your BrokerBeacon prospect, pipeline, follow-up, and activity data. It does not invent email opens, licensing events, or production data that are not stored in your database.</p></div><span class="pill">Database-grounded</span></div><div class="copilot-layout" style="margin-top:14px"><div class="panel"><h3>Ask BrokerBeacon</h3><div class="askbox"><input id="copilotQuestion" placeholder="Example: Who should I call first today?"><button class="btn primary" id="askCopilot">Ask</button></div><div class="suggestions"><button class="btn smallbtn copilotPrompt">Who should I call first today?</button><button class="btn smallbtn copilotPrompt">Which Charlotte prospects need attention?</button><button class="btn smallbtn copilotPrompt">Show overdue follow-ups</button><button class="btn smallbtn copilotPrompt">Find high-score government-loan prospects</button></div><div id="copilotAnswer" class="answer muted" style="margin-top:16px">Ask a question to generate a prioritized answer from your current database.</div></div><div class="panel"><h3>Morning briefing</h3><div id="morningBrief"><div class="empty">Loading briefing…</div></div><button class="btn" style="margin-top:12px" onclick="copilotBrief()">Refresh briefing</button></div></div></section><section id="daily" class="view"><div class="hero"><div><div class="kicker">AI-GUIDED WORKDAY</div><h2>Your five best actions, ranked and ready.</h2><p>BrokerBeacon combines opportunity score, pipeline stage, follow-up urgency, and recent activity to create a focused daily call plan.</p></div><button class="btn primary" onclick="dailyPlan()">Refresh plan</button></div><div class="metrics"><div class="metric"><span>Calls logged today</span><strong id="dcalls">0</strong></div><div class="metric"><span>Emails logged today</span><strong id="demails">0</strong></div><div class="metric"><span>Conversations this week</span><strong id="dconvos">0</strong></div><div class="metric"><span>Meetings created this week</span><strong id="dmeetings">0</strong></div></div><div class="plan-grid"><div class="panel"><div class="profile-head"><div><h3>Recommended action queue</h3><p class="muted">Highest-value unfinished actions appear first.</p></div><span class="pill">Top 5</span></div><div id="dailyQueue"></div></div><div><div class="panel"><h3>Daily activity goal</h3><div class="goalring" id="goalring" style="--goal:0"><div><span><strong id="goalPct">0%</strong><br><small class="muted">10 actions</small></span></div></div><div id="goalText" class="muted" style="text-align:center;margin-top:12px"></div></div><div class="panel" style="margin-top:14px"><h3>Recent sales activity</h3><div id="salesTimeline" class="timeline"></div></div></div></div></section><section id="prospects" class="view"><div class="filters"><input id="search" placeholder="Search company, owner, city"><select id="state"><option>All</option><option>NC</option><option>SC</option><option>VA</option><option>GA</option><option>TN</option><option>MI</option></select><select id="signal"><option>All</option><option>Newly Licensed</option><option>Team Growth</option><option>VA/FHA Fit</option><option>Imported</option><option>Manual</option><option>Verified Public Record</option><option>Needs Verification</option></select><select id="pstatus"><option>All statuses</option><option>New</option><option>Contacted</option><option>Replied</option><option>Meeting</option><option>Approved</option></select><select id="minscore"><option value="0">Any score</option><option value="70">70+</option><option value="80">80+</option><option value="90">90+</option></select></div><div class="panel" style="overflow:auto"><table><thead><tr><th>Company</th><th>Contact</th><th>Signal</th><th>Location</th><th>Fit</th><th>Score</th><th>Verification</th><th>Status</th><th></th></tr></thead><tbody id="rows"></tbody></table></div></section>
+<section id="salescoach" class="view">
+<div class="coach-hero">
+  <div><div class="kicker">ASH · EXPLAINABLE SALES COACH</div><h2>Know exactly who to call—and what to say.</h2><p>Recommendations use your stored account data, relationship activity, opportunity score, and product fit. Response likelihood is a transparent heuristic, not a promise.</p></div>
+  <button class="btn primary" onclick="salesCoach()">Refresh coaching</button>
+</div>
+<div class="command-kpis coach-kpis">
+  <div class="command-kpi"><span>Call today</span><strong id="scCallToday">0</strong><small>Highest-priority conversations</small></div>
+  <div class="command-kpi"><span>Relationships at risk</span><strong id="scAtRisk">0</strong><small>Accounts losing momentum</small></div>
+  <div class="command-kpi"><span>High response potential</span><strong id="scHighResponse">0</strong><small>Modeled likelihood ≥ 75%</small></div>
+  <div class="command-kpi"><span>Product matched</span><strong id="scProductMatched">0</strong><small>Accounts with a clear lead angle</small></div>
+</div>
+<div class="panel">
+  <div class="profile-head"><div><h3>Today’s coaching queue</h3><p class="muted">Every recommendation includes the evidence behind it.</p></div><select id="scFilter" onchange="renderSalesCoach()"><option>All</option><option>Call Today</option><option>At Risk</option><option>High Response</option></select></div>
+  <div id="scQueue" class="coach-queue"><div class="empty">Loading coaching recommendations…</div></div>
+</div>
+</section>
 <section id="outreach" class="view"><div class="grid"><div class="panel"><h3>Personalized outreach builder</h3><label>Prospect</label><select id="op" class="full"></select><label>Channel</label><select id="channel" class="full"><option>Email</option><option>LinkedIn</option><option>Phone</option></select><label>Angle</label><select id="angle" class="full"><option>Recommended by intelligence engine</option><option>Congratulations + growth support</option><option>VA/FHA scenario support</option><option>Fast onboarding</option><option>HELOC and niche products</option></select><button class="btn primary full" id="gen" style="margin-top:15px">Generate personalized draft</button></div><div class="panel"><button class="btn primary" id="queue" disabled style="float:right">Approve & queue</button><h3>Review draft</h3><input id="subject" class="subject" placeholder="Subject"><textarea id="body"></textarea></div></div><div class="panel" style="margin-top:14px"><h3>Recent outreach</h3><div id="olist"></div></div></section>
 <section id="campaigns" class="view"><div class="hero"><div><div class="kicker">CAMPAIGN AUTOMATION</div><h2>Build approved, compliant email and text sequences.</h2><p>Create targeted campaigns, preview recipients, schedule delivery, enforce throttling and quiet hours, and automatically suppress opt-outs. Live sending activates only when provider credentials are configured.</p></div><span class="pill" id="campaignMode">Approval mode</span></div><div class="campaign-layout"><div class="panel"><h3>Create campaign</h3><label>Campaign name<input id="campName" class="full" placeholder="Example: Carolinas VA Scenario Support"></label><div class="formgrid"><label>Channel<select id="campChannel"><option>Email</option><option>SMS</option></select></label><label>Minimum score<input id="campScore" type="number" min="0" max="100" value="70"></label><label>State<select id="campState"><option value="">All states</option><option>NC</option><option>SC</option><option>VA</option><option>GA</option><option>TN</option><option>MI</option></select></label><label>Status<select id="campStatus"><option value="">Any status</option><option>New</option><option>Contacted</option><option>Replied</option><option>Meeting</option></select></label><label>Send date/time<input id="campSchedule" type="datetime-local"></label><label>Daily send limit<input id="campLimit" type="number" min="1" max="500" value="50"></label></div><label>Email subject<input id="campSubject" class="full" placeholder="A quick resource for {{company}}"></label><label>Message body<textarea id="campBody" placeholder="Hi {{first_name}},
 
@@ -301,7 +324,7 @@ function safeUrl(x){let s=String(x||'').trim();return s&&!/^https?:\/\//i.test(s
 function contactButtons(p,compact=false){let a=[];if(p.phone)a.push(`<a class="btn smallbtn" href="${telHref(p.phone)}">☎ ${compact?'Call':'Call '+esc(p.phone)}</a>`);if(p.email)a.push(`<a class="btn smallbtn" href="${mailHref(p.email)}">✉ ${compact?'Email':'Email'}</a>`);if(p.website)a.push(`<a class="btn smallbtn" target="_blank" rel="noopener" href="${esc(safeUrl(p.website))}">↗ Website</a>`);return a.join(' ')}
 
 function msg(x){let t=$('#toast');t.textContent=x;t.style.display='block';setTimeout(()=>t.style.display='none',1800)}
-function show(v){$$('.view').forEach(x=>x.classList.toggle('active',x.id===v));$$('nav button').forEach(x=>x.classList.toggle('active',x.dataset.v===v));$('#title').textContent=v==='dashboard'?'Command Center':v[0].toUpperCase()+v.slice(1);if(v==='copilot'){copilotBrief()}if(v==='daily')dailyPlan();if(v==='pipeline')pipe();if(v==='followups')followups();if(v==='outreach')outreach();if(v==='campaigns')campaigns();if(v==='inbox')replyInbox();if(v==='intelligence')loadIntelligence();if(v==='templates')templateStudio();if(v==='territory')territory();if(v==='boss')boss()}
+function show(v){$$('.view').forEach(x=>x.classList.toggle('active',x.id===v));$$('nav button').forEach(x=>x.classList.toggle('active',x.dataset.v===v));const titles={dashboard:'Command Center',salescoach:'Ash Sales Coach',boss:'Executive View',followups:'Follow-ups',intelligence:'Opportunity Intelligence',templates:'Templates & Sequences'};$('#title').textContent=titles[v]||v[0].toUpperCase()+v.slice(1);if(v==='salescoach')salesCoach();if(v==='copilot'){copilotBrief()}if(v==='daily')dailyPlan();if(v==='pipeline')pipe();if(v==='followups')followups();if(v==='outreach')outreach();if(v==='campaigns')campaigns();if(v==='inbox')replyInbox();if(v==='intelligence')loadIntelligence();if(v==='templates')templateStudio();if(v==='territory')territory();if(v==='boss')boss()}
 $$('nav button').forEach(b=>b.onclick=()=>show(b.dataset.v));
 async function copilotBrief(){let d=await api('/api/copilot/brief');$('#morningBrief').innerHTML=`<div class="briefline"><b>${esc(d.greeting)}</b><div class="muted">${esc(d.summary)}</div></div>`+d.highlights.map(x=>`<div class="briefline"><b>${esc(x.label)}</b><div class="muted">${esc(x.value)}</div></div>`).join('')+`<div class="briefline"><b>Recommended first move</b><div class="nextaction">${esc(d.first_move)}</div></div>`}
 async function askCopilot(){let q=$('#copilotQuestion').value.trim();if(!q)return msg('Enter a question');$('#copilotAnswer').innerHTML='<div class="empty">Analyzing your database…</div>';try{let d=await api('/api/copilot/ask',{method:'POST',body:JSON.stringify({question:q})});$('#copilotAnswer').innerHTML=`<b>${esc(d.title)}</b><div class="confidence">${esc(d.scope)}</div><p>${esc(d.answer)}</p>`+(d.results||[]).map((x,i)=>`<div class="priority-card"><div class="orb" style="--s:${x.priority_score||x.score||0}">${x.priority_score||x.score||0}</div><div><b>${i+1}. ${esc(x.company)}</b><div class="reason">${esc(x.reason)}</div><div><span class="tag">${esc(x.city||'')}${x.state?', '+esc(x.state):''}</span><span class="tag">${esc(x.status||'')}</span></div></div><button class="btn smallbtn" onclick="profile(${x.id})">Open</button></div>`).join('');}catch(e){$('#copilotAnswer').textContent=e.message}}
@@ -451,6 +474,33 @@ async function manualInbound(){let sender=prompt('Sender email');if(!sender)retu
 
 
 let OI=null;
+let SC={items:[],summary:{}};
+async function salesCoach(){
+  try{
+    SC=await api('/api/sales-coach');
+    $('#scCallToday').textContent=SC.summary.call_today||0;
+    $('#scAtRisk').textContent=SC.summary.at_risk||0;
+    $('#scHighResponse').textContent=SC.summary.high_response||0;
+    $('#scProductMatched').textContent=SC.summary.product_matched||0;
+    renderSalesCoach();
+  }catch(e){$('#scQueue').innerHTML=`<div class="empty">Unable to load sales coaching: ${esc(e.message)}</div>`}
+}
+function renderSalesCoach(){
+  let filter=$('#scFilter')?.value||'All';let items=SC.items||[];
+  if(filter==='Call Today')items=items.filter(x=>x.recommended_action==='Call today');
+  if(filter==='At Risk')items=items.filter(x=>x.relationship_health==='At Risk');
+  if(filter==='High Response')items=items.filter(x=>x.response_likelihood>=75);
+  $('#scQueue').innerHTML=items.length?items.map(x=>`<article class="coach-card">
+    <div class="coach-card-head"><div><div class="coach-company">${esc(x.company)}</div><div class="coach-meta"><span class="pill">Score ${x.opportunity_score}</span><span class="coach-action-label coach-health-${x.relationship_health.toLowerCase().replaceAll(' ','-')}">${esc(x.relationship_health)}</span><span class="coach-action-label">${esc(x.recommended_action)}</span>${x.contact_name?`<span class="pill">${esc(x.contact_name)}</span>`:''}</div></div><div class="coach-score"><strong>${x.response_likelihood}%</strong><small>Modeled response likelihood</small></div></div>
+    <div class="coach-grid"><div class="coach-block"><b>Why today</b><p>${esc(x.why_today)}</p></div><div class="coach-block"><b>Opportunity</b><p>${esc(x.opportunity)}</p></div><div class="coach-block"><b>Likely objection</b><p>${esc(x.likely_objection||'No objection has been recorded yet.')}</p></div><div class="coach-block coach-opening"><b>Suggested opening</b><p>“${esc(x.suggested_opening)}”</p></div></div>
+    <div class="coach-reasons">${(x.evidence||[]).map(r=>`<span class="tag">${esc(r)}</span>`).join('')}</div>
+    <div class="coach-actions"><button class="btn primary smallbtn" onclick="prepareCoachAccount(${x.prospect_id})">Prepare this account</button><button class="btn smallbtn" onclick="profile(${x.prospect_id})">Open intelligence</button>${x.phone?`<a class="btn smallbtn" href="${telHref(x.phone)}">Call</a>`:''}${x.email?`<a class="btn smallbtn" href="${mailHref(x.email)}">Email</a>`:''}</div>
+  </article>`).join(''):'<div class="empty">No accounts match this coaching filter.</div>';
+}
+async function prepareCoachAccount(id){
+  try{let d=await api('/api/start-my-day',{method:'POST',body:JSON.stringify({prospect_id:id})});msg(`Account prepared · ${d.drafts_created} draft · ${d.followups_created} follow-up`);await Promise.all([missionControl(),dailyPlan(),outreach(),followups()]);}
+  catch(e){msg('Unable to prepare account: '+e.message)}
+}
 async function loadIntelligence(){OI=await api('/api/intelligence');$('#oiHot').textContent=OI.summary.hot;$('#oiWarm').textContent=OI.summary.warm;$('#oiDue').textContent=OI.summary.due_today;$('#oiMatched').textContent=OI.summary.product_matches;renderIntelligence();$('#oiSettings').innerHTML=OI.settings.map(x=>`<div class="memory-item"><div class="profile-head"><div><b>${esc(x.label)}</b><div class="muted">${esc(x.description)}</div></div><input style="width:76px" type="number" min="0" max="40" data-weight="${esc(x.key)}" value="${x.weight}"></div></div>`).join('');$('#oiProducts').innerHTML=OI.products.map(x=>`<div class="memory-item"><b>${esc(x.name)}</b> <span class="pill">${esc(x.category)}</span><div class="muted" style="margin-top:5px">${esc(x.talking_point)}</div></div>`).join('')}
 function renderIntelligence(){if(!OI)return;let tier=$('#oiTier').value;let xs=OI.opportunities.filter(x=>tier==='All'||x.tier===tier);$('#oiRows').innerHTML=xs.slice(0,50).map(x=>`<div class="priority-card"><div class="orb" style="--s:${x.score}">${x.score}</div><div><div><b>${esc(x.company)}</b> <span class="pill">${esc(x.tier)}</span> <span class="mini">${x.confidence}% confidence</span></div><div class="reason"><b>Next:</b> ${esc(x.next_action)}</div><div>${x.products.map(p=>`<span class="tag" title="${esc(p.talking_point)}">${esc(p.name)} · ${p.strength}</span>`).join('')}</div><div class="mini">${x.reasons.slice(0,3).map(r=>`+${r.points} ${esc(r.reason)}`).join(' · ')}</div></div><button class="btn smallbtn" onclick="profile(${x.prospect_id})">Open</button></div>`).join('')||'<div class="empty">No opportunities in this tier.</div>'}
 async function saveIntelligenceSettings(){let weights={};$$('[data-weight]').forEach(x=>weights[x.dataset.weight]=+x.value);await api('/api/intelligence/settings',{method:'POST',body:JSON.stringify({weights})});msg('Scoring weights saved');await rescoreIntelligence()}
@@ -1243,6 +1293,81 @@ def _campaign_audience(d):
     with db() as c:
         total=c.execute(f"select count(*) from contacts c join prospects p on p.id=c.prospect_id where {' and '.join(where)}",params[:-1]).fetchone()[0]
     return eligible,max(0,total-len(eligible))
+
+@app.get('/api/sales-coach')
+def sales_coach():
+    """Explainable, deterministic coaching based only on stored BrokerBeacon data."""
+    now=datetime.now()
+    with db() as c:
+        prospects=[dict(r) for r in c.execute("select * from prospects where status not in ('Funded') order by score desc")]
+        last_actions={r['prospect_id']:dict(r) for r in c.execute("""
+            select s.* from sales_actions s join (
+                select prospect_id,max(id) max_id from sales_actions group by prospect_id
+            ) x on x.max_id=s.id
+        """)}
+        action_counts={r['prospect_id']:r['n'] for r in c.execute("select prospect_id,count(*) n from sales_actions group by prospect_id")}
+        contacts={}
+        for r in c.execute("select * from contacts order by is_primary desc,is_decision_maker desc,id"):
+            contacts.setdefault(r['prospect_id'],dict(r))
+        reply_counts={r['prospect_id']:r['n'] for r in c.execute("select prospect_id,count(*) n from inbound_messages where prospect_id is not null group by prospect_id")} if c.execute("select 1 from sqlite_master where type='table' and name='inbound_messages'").fetchone() else {}
+    items=[]
+    for p in prospects:
+        last=last_actions.get(p['id']); days_inactive=999
+        if last and last.get('created_at'):
+            try: days_inactive=max(0,(now-datetime.fromisoformat(last['created_at'])).days)
+            except Exception: pass
+        status=p.get('status') or 'New'
+        if status in ('Replied','Meeting','Approved') and days_inactive<21: health='Healthy'
+        elif days_inactive>=30 or (status=='Contacted' and days_inactive>=21): health='At Risk'
+        else: health='Cooling'
+        score=int(p.get('score') or 0); replies=int(reply_counts.get(p['id'],0)); actions=int(action_counts.get(p['id'],0))
+        likelihood=35+round(score*.38)
+        if replies: likelihood+=8
+        if status in ('Replied','Meeting','Approved'): likelihood+=8
+        if days_inactive>=30: likelihood-=6
+        if actions>=3: likelihood+=4
+        likelihood=max(20,min(92,likelihood))
+        if health=='At Risk': action='Call today'
+        elif score>=78: action='Call today'
+        elif p.get('email'): action='Send personalized email'
+        else: action='Research contact'
+        product=(p.get('product_fit') or '').strip()
+        why=[]
+        if days_inactive==999: why.append('No completed sales activity is recorded')
+        elif days_inactive>=30: why.append(f'{days_inactive} days since the last recorded activity')
+        elif days_inactive>=14: why.append(f'{days_inactive} days since the last recorded activity')
+        else: why.append(f'Recent activity {days_inactive} days ago')
+        if score>=80: why.append(f'High opportunity score of {score}')
+        if p.get('signal'): why.append(str(p['signal']))
+        why_today='. '.join(why[:2])+'.'
+        if product:
+            opportunity=f"Lead with {product.split(',')[0].strip()}. {p.get('next_best_action') or 'Offer to review a live scenario and compare available options.'}"
+        else:
+            opportunity=p.get('next_best_action') or 'Use a discovery call to identify the account’s strongest product need.'
+        opener=(p.get('call_opener') or '').strip()
+        if not opener:
+            first=(contacts.get(p['id'],{}).get('name') or p.get('owner') or 'there').split()[0]
+            angle=product.split(',')[0].strip() if product else 'a current lending scenario'
+            opener=f"Hi {first}, it’s Clay with Union Home Mortgage. I wanted to connect because I may be able to help {p['company']} with {angle}. Do you have two minutes?"
+        evidence=[f"Opportunity score: {score}",f"Relationship: {health}"]
+        if product: evidence.append(f"Product fit: {product.split(',')[0].strip()}")
+        if replies: evidence.append(f"{replies} recorded repl{'y' if replies==1 else 'ies'}")
+        if actions: evidence.append(f"{actions} recorded sales action{'s' if actions!=1 else ''}")
+        contact=contacts.get(p['id'],{})
+        priority=score+(20 if health=='At Risk' else 8 if health=='Cooling' else 0)+(5 if replies else 0)
+        items.append(dict(prospect_id=p['id'],company=p['company'],opportunity_score=score,relationship_health=health,
+            response_likelihood=likelihood,recommended_action=action,why_today=why_today,opportunity=opportunity,
+            suggested_opening=opener,likely_objection=p.get('likely_objection') or '',objection_response=p.get('objection_response') or '',
+            evidence=evidence,contact_name=contact.get('name') or p.get('owner') or '',phone=contact.get('phone') or contact.get('mobile') or p.get('phone') or '',
+            email=contact.get('email') or p.get('email') or '',priority=priority))
+    items.sort(key=lambda x:(-x['priority'],-x['response_likelihood'],x['company']))
+    top=items[:15]
+    return jsonify(items=top,summary={
+        'call_today':sum(1 for x in top if x['recommended_action']=='Call today'),
+        'at_risk':sum(1 for x in items if x['relationship_health']=='At Risk'),
+        'high_response':sum(1 for x in top if x['response_likelihood']>=75),
+        'product_matched':sum(1 for x in top if any(e.startswith('Product fit:') for e in x['evidence']))
+    },methodology='Deterministic heuristic using stored score, relationship status, activity recency, replies, and product fit. It does not predict guaranteed outcomes.')
 
 @app.get('/api/mission-control')
 def mission_control():
