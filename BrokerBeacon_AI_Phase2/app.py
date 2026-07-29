@@ -10,8 +10,8 @@ from voice_agent import configured as voice_configured, create_twilio_call, huma
 from guideline_index import seed_index, index_fha_pdf, search as search_guideline_index, stats as guideline_index_stats
 
 app = Flask(__name__)
-BUILD_VERSION = "11.1"
-BUILD_NAME = "GLOBAL ASH WORKPLACE"
+BUILD_VERSION = "11.2"
+BUILD_NAME = "PRODUCTION INTELLIGENCE"
 DB = Path(__file__).with_name("brokerbeacon.db")
 NOW = lambda: datetime.now().isoformat(timespec="seconds")
 
@@ -283,7 +283,12 @@ body.dark-mode .ux-page-hero{background:linear-gradient(125deg,#0a1d3b,#173d6b 7
 .ash-compose{padding:12px 16px 16px;border-top:1px solid #d9e3ef;background:#fff}.ash-compose-row{display:grid;grid-template-columns:1fr auto;gap:8px}.ash-compose textarea{min-height:54px;max-height:130px;resize:vertical;background:#f7faff!important;color:#17233a!important;border-color:#c9d7e8!important}.ash-compose button{align-self:end;height:44px}.ash-footnote{font-size:10px;color:#78879d;margin-top:7px}
 body.dark-mode .ash-drawer{background:#0c1830;color:#edf4ff;border-color:#263957}.dark-mode .ash-context{background:#152743;border-color:#2b4567}.dark-mode .ash-context b{color:#edf4ff}.dark-mode .ash-context small{color:#9fb0c8}.dark-mode .ash-context-badge{background:#102039;color:#bcd7fa;border-color:#345476}.dark-mode .ash-msg.assistant{background:#11213a;border-color:#294360}.dark-mode .ash-msg.assistant strong{color:#f2f7ff}.dark-mode .ash-result{background:#152743;border-color:#2d486a}.dark-mode .ash-compose{background:#0e1b32;border-color:#263957}.dark-mode .ash-compose textarea{background:#13233d!important;color:#edf4ff!important;border-color:#304b6d!important}.dark-mode .ash-suggestion{background:#142642;border-color:#345375;color:#c9ddfa}
 @media(max-width:700px){.ash-global-trigger{padding:9px 10px!important}.ash-drawer{width:100vw}.ash-drawer-head{padding-top:16px}}
-</style></head><body><div class="app"><aside><div class="brand">Broker<span>Beacon</span> AI</div><div class="version" id="appVersion">VERSION 11.1 · GLOBAL ASH WORKPLACE</div><nav><button class="active" data-v="dashboard">✦ Ash Workplace</button><button data-v="salescoach">◈ Ash Sales Coach</button><button data-v="voiceagent">☎ AI Voice Agent</button><button data-v="copilot">✦ AI Copilot</button><button data-v="daily">⚡ Daily Plan</button><button data-v="prospects">◉ Prospects</button><button data-v="outreach">✎ Outreach</button><button data-v="campaigns">✉ Campaigns</button><button data-v="inbox">↩ Reply Inbox</button><button data-v="intelligence">◆ Opportunity Intelligence</button><button data-v="templates">▤ Templates & Sequences</button><button data-v="pipeline">▦ Pipeline</button><button data-v="followups">✓ Follow-ups</button><button data-v="territory">⌖ Territory</button><button data-v="guidelines">▣ Loan Guidelines</button><button data-v="boss">◆ Executive View</button><button data-v="integrations">⚙ Integrations</button></nav></aside><main><div class="top"><div><small>AI OPERATING SYSTEM FOR WHOLESALE AES</small><h1 id="title">Ash Workplace</h1></div><div class="actions"><span class="today-chip" id="todayChip"></span><button class="btn ash-global-trigger" id="globalAshBtn" type="button" aria-label="Open global Ash assistant">✦ Ask Ash</button><button class="btn theme-toggle" id="themeToggle" type="button" aria-label="Toggle dark mode">◐ Theme</button><button class="btn" id="import">Compliant Import</button><a class="btn" href="/api/export">Export CSV</a><button class="btn primary" id="add">+ Add Prospect</button></div></div>
+
+/* v11.2 Production Intelligence */
+.production-toolbar{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;margin:14px 0}.production-toolbar input,.production-toolbar select{width:100%}.production-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:14px 0}.production-kpi{padding:18px;border:1px solid #d5dfec;border-radius:14px;background:#fff}.production-kpi span{display:block;color:#718097;font-size:11px}.production-kpi strong{display:block;color:#102a51;font-size:26px;margin:7px 0 3px}.production-kpi small{color:#8793a6}.production-layout{display:grid;grid-template-columns:1.2fr .8fr;gap:14px}.production-company{border:1px solid #d7e2ef;border-radius:14px;padding:14px;background:#fff;margin-bottom:10px;cursor:pointer}.production-company:hover{border-color:#86aee0;box-shadow:0 8px 22px rgba(20,58,105,.08)}.production-company-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.production-company h4{margin:0;color:#102a51}.production-company .prod-meta{color:#74839a;font-size:11px;margin-top:4px}.production-company .prod-volume{font-size:18px;font-weight:900;color:#154f9d;white-space:nowrap}.mix-row{display:grid;grid-template-columns:100px 1fr 90px;gap:10px;align-items:center;margin:8px 0}.mix-track{height:9px;border-radius:999px;background:#edf2f8;overflow:hidden}.mix-fill{height:100%;background:linear-gradient(90deg,#174ea6,#35a0d8)}.lo-table td,.lo-table th{padding:10px}.source-badge{display:inline-flex;padding:4px 7px;border-radius:999px;background:#edf5ff;color:#18539b;font-size:9px;font-weight:800}.freshness-note{padding:10px 12px;border-left:3px solid #e0a800;background:#fff8dc;color:#5e4a11;border-radius:0 10px 10px 0;font-size:11px}.production-empty{padding:32px;text-align:center;border:1px dashed #c6d3e3;border-radius:14px;color:#718097}.production-import{display:flex;gap:8px;align-items:center}.production-import input{max-width:280px}.prod-ash{padding:14px;border:1px solid #cbdcf0;background:#f4f8fd;border-radius:13px}.prod-ash h4{margin:0 0 7px;color:#102a51}.prod-chart{display:grid;gap:8px}.prod-month{display:grid;grid-template-columns:70px 1fr 90px;gap:9px;align-items:center;font-size:11px}.prod-month-bar{height:10px;background:#edf2f8;border-radius:999px;overflow:hidden}.prod-month-fill{height:100%;background:linear-gradient(90deg,#c6283d,#174ea6)}
+body.dark-mode .production-kpi,body.dark-mode .production-company{background:#101d34;border-color:#2b405f}body.dark-mode .production-kpi strong,body.dark-mode .production-company h4{color:#edf4ff}body.dark-mode .prod-ash{background:#142642;border-color:#304e71}body.dark-mode .prod-ash h4{color:#edf4ff}body.dark-mode .mix-track,body.dark-mode .prod-month-bar{background:#263750}
+@media(max-width:1000px){.production-layout{grid-template-columns:1fr}.production-kpis{grid-template-columns:repeat(2,1fr)}}@media(max-width:700px){.production-toolbar{grid-template-columns:1fr}.production-kpis{grid-template-columns:1fr}.production-import{align-items:stretch;flex-direction:column}.production-import input{max-width:none}}
+</style></head><body><div class="app"><aside><div class="brand">Broker<span>Beacon</span> AI</div><div class="version" id="appVersion">VERSION 11.2 · PRODUCTION INTELLIGENCE</div><nav><button class="active" data-v="dashboard">✦ Ash Workplace</button><button data-v="salescoach">◈ Ash Sales Coach</button><button data-v="voiceagent">☎ AI Voice Agent</button><button data-v="copilot">✦ AI Copilot</button><button data-v="daily">⚡ Daily Plan</button><button data-v="prospects">◉ Prospects</button><button data-v="outreach">✎ Outreach</button><button data-v="campaigns">✉ Campaigns</button><button data-v="inbox">↩ Reply Inbox</button><button data-v="intelligence">◆ Opportunity Intelligence</button><button data-v="templates">▤ Templates & Sequences</button><button data-v="pipeline">▦ Pipeline</button><button data-v="followups">✓ Follow-ups</button><button data-v="territory">⌖ Territory</button><button data-v="guidelines">▣ Loan Guidelines</button><button data-v="production">▤ Production Intelligence</button><button data-v="boss">◆ Executive View</button><button data-v="integrations">⚙ Integrations</button></nav></aside><main><div class="top"><div><small>AI OPERATING SYSTEM FOR WHOLESALE AES</small><h1 id="title">Ash Workplace</h1></div><div class="actions"><span class="today-chip" id="todayChip"></span><button class="btn ash-global-trigger" id="globalAshBtn" type="button" aria-label="Open global Ash assistant">✦ Ask Ash</button><button class="btn theme-toggle" id="themeToggle" type="button" aria-label="Toggle dark mode">◐ Theme</button><button class="btn" id="import">Compliant Import</button><a class="btn" href="/api/export">Export CSV</a><button class="btn primary" id="add">+ Add Prospect</button></div></div>
 <section id="dashboard" class="view active">
 <div class="command-hero">
   <div class="command-copy"><div class="kicker">ASH · DAILY REVENUE COMMAND</div><h2>Good morning, Clay. Here is the fastest path to more business today.</h2><p>BrokerBeacon ranks the accounts, explains the opportunity, prepares the outreach, and converts the plan into action.</p></div>
@@ -391,7 +396,27 @@ Reply STOP to opt out of texts."></textarea></label><p class="contact-note">Avai
 </div><div class="source-links"><a target="_blank" rel="noopener" href="https://www.rd.usda.gov/resources/directives/handbooks">↗ USDA HB-1-3555</a><a target="_blank" rel="noopener" href="https://www.rd.usda.gov/resources/usda-linc-training-resource-library">↗ USDA LINC resources</a><a target="_blank" rel="noopener" href="https://eligibility.sc.egov.usda.gov/eligibility/welcomeAction.do">↗ Property & income eligibility</a></div></div>
 <div class="guide-note" style="margin-top:14px"><b>Designed for speed, not final underwriting.</b> BrokerBeacon intentionally avoids presenting mutable items such as current loan limits, fee percentages, county income limits, or company overlays as permanent facts. Use the official links above for the live rule.</div>
 </section>
-<section id="boss" class="view"><div class="hero exec"><div><div class="kicker">SPRINT 3 · REVENUE INTELLIGENCE</div><h2>Pipeline, conversion, and campaign attribution</h2><p>Separate actual recorded outcomes from configurable projections. Track applications, submissions, fundings, funded volume, estimated revenue, and which campaign preceded an outcome.</p></div><div class="contact-tools"><select id="execPeriod"><option value="30">30 days</option><option value="90" selected>90 days</option><option value="365">12 months</option></select><button class="btn primary" onclick="boss()">Refresh</button><button class="btn" onclick="window.print()">Print / Save PDF</button></div></div><div class="metrics"><div class="metric"><span>Recorded funded volume</span><strong id="eFunded">$0</strong></div><div class="metric"><span>Recorded fundings</span><strong id="eUnits">0</strong></div><div class="metric"><span>Estimated actual revenue</span><strong id="eRevenue">$0</strong></div><div class="metric"><span>Projected pipeline volume</span><strong id="eProjected">$0</strong></div></div><div class="grid"><div class="panel"><h3>Conversion funnel</h3><div id="execFunnel" class="bars"></div><div id="execConversion" class="scoregrid" style="margin-top:14px"></div></div><div class="panel"><h3>Record an outcome</h3><p class="muted">Log only real business events. BrokerBeacon attributes the outcome to the most recent sent campaign within 90 days when one exists.</p><label>Broker<select id="revProspect" class="full"></select></label><div class="formgrid"><label>Outcome<select id="revType"><option>Application</option><option>Submitted</option><option>Funded</option><option>Lost</option></select></label><label>Amount<input id="revAmount" type="number" min="0" step="1000" value="0"></label><label>Date/time<input id="revDate" type="datetime-local"></label><label>Loan count<input id="revCount" type="number" min="1" value="1"></label></div><label>Notes<input id="revNotes" class="full" placeholder="Optional scenario or outcome note"></label><button class="btn primary" id="saveRevenue">Save outcome</button></div></div><div class="grid" style="margin-top:14px"><div class="panel"><h3>Campaign-to-outcome attribution</h3><div id="execCampaigns"></div></div><div class="panel"><h3>Top accounts by recorded results</h3><div id="execTop"></div></div></div><div class="grid" style="margin-top:14px"><div class="panel"><h3>Recent outcomes</h3><div id="execRecent" class="activity"></div></div><div class="panel"><h3>Projection assumptions</h3><p class="muted">These settings affect projected figures only. They do not alter recorded production.</p><div id="revenueSettings"></div><button class="btn" id="saveRevenueSettings">Save assumptions</button></div></div></section>
+<section id="production" class="view">
+<div class="production-toolbar">
+  <input id="productionSearch" placeholder="Search company or loan officer">
+  <select id="productionPeriod"><option value="12">Trailing 12 months</option><option value="6">Trailing 6 months</option><option value="24">Trailing 24 months</option><option value="0">All imported data</option></select>
+  <button class="btn" id="refreshProduction">Refresh intelligence</button>
+</div>
+<div class="production-kpis">
+  <div class="production-kpi"><span>Companies tracked</span><strong id="prodCompanies">0</strong><small>With imported production records</small></div>
+  <div class="production-kpi"><span>Funded units</span><strong id="prodUnits">0</strong><small>Selected reporting period</small></div>
+  <div class="production-kpi"><span>Funded volume</span><strong id="prodVolume">$0</strong><small>Based on imported source data</small></div>
+  <div class="production-kpi"><span>Average loan</span><strong id="prodAvg">$0</strong><small>Volume divided by units</small></div>
+</div>
+<div class="production-layout">
+  <div class="panel"><div class="profile-head"><div><div class="kicker">COMPANY PRODUCTION</div><h3>Ranked production accounts</h3><p class="muted">Company and LO-level results are shown only when present in an imported source.</p></div><span class="pill" id="prodFreshness">No data imported</span></div><div id="productionCompanies" class="production-empty">Import a permitted production-data CSV to begin.</div></div>
+  <div>
+    <div class="panel"><div class="kicker">ASH PRODUCTION INTELLIGENCE</div><h3>Market opportunity summary</h3><div id="productionAsh" class="prod-ash"><h4>No production data yet</h4><p class="muted">Import company or loan-officer production to let Ash rank volume, product mix, and opportunity.</p></div></div>
+    <div class="panel" style="margin-top:14px"><div class="kicker">DATA CONNECTION</div><h3>Import approved production data</h3><p class="muted">Supports normalized CSV exports from licensed market-intelligence providers, HMDA company-level files, or approved internal reporting.</p><div class="production-import"><input type="file" id="productionFile" accept=".csv"><button class="btn primary" id="importProduction">Import CSV</button></div><p class="freshness-note">BrokerBeacon labels every result by source and data-as-of date. Public HMDA does not reliably provide named LO production, so LO breakdowns require an approved source containing LO names or NMLS IDs.</p><a class="btn" href="/api/production/template" style="display:inline-block;margin-top:10px">Download CSV template</a></div>
+  </div>
+</div>
+<div class="panel" style="margin-top:14px"><div class="profile-head"><div><div class="kicker">ACCOUNT DETAIL</div><h3 id="prodDetailTitle">Select a company</h3></div><span id="prodDetailSource" class="source-badge">Source not selected</span></div><div id="productionDetail" class="production-empty">Choose a company above to view loan type, monthly trend, and loan-officer production.</div></div>
+</section><section id="boss" class="view"><div class="hero exec"><div><div class="kicker">SPRINT 3 · REVENUE INTELLIGENCE</div><h2>Pipeline, conversion, and campaign attribution</h2><p>Separate actual recorded outcomes from configurable projections. Track applications, submissions, fundings, funded volume, estimated revenue, and which campaign preceded an outcome.</p></div><div class="contact-tools"><select id="execPeriod"><option value="30">30 days</option><option value="90" selected>90 days</option><option value="365">12 months</option></select><button class="btn primary" onclick="boss()">Refresh</button><button class="btn" onclick="window.print()">Print / Save PDF</button></div></div><div class="metrics"><div class="metric"><span>Recorded funded volume</span><strong id="eFunded">$0</strong></div><div class="metric"><span>Recorded fundings</span><strong id="eUnits">0</strong></div><div class="metric"><span>Estimated actual revenue</span><strong id="eRevenue">$0</strong></div><div class="metric"><span>Projected pipeline volume</span><strong id="eProjected">$0</strong></div></div><div class="grid"><div class="panel"><h3>Conversion funnel</h3><div id="execFunnel" class="bars"></div><div id="execConversion" class="scoregrid" style="margin-top:14px"></div></div><div class="panel"><h3>Record an outcome</h3><p class="muted">Log only real business events. BrokerBeacon attributes the outcome to the most recent sent campaign within 90 days when one exists.</p><label>Broker<select id="revProspect" class="full"></select></label><div class="formgrid"><label>Outcome<select id="revType"><option>Application</option><option>Submitted</option><option>Funded</option><option>Lost</option></select></label><label>Amount<input id="revAmount" type="number" min="0" step="1000" value="0"></label><label>Date/time<input id="revDate" type="datetime-local"></label><label>Loan count<input id="revCount" type="number" min="1" value="1"></label></div><label>Notes<input id="revNotes" class="full" placeholder="Optional scenario or outcome note"></label><button class="btn primary" id="saveRevenue">Save outcome</button></div></div><div class="grid" style="margin-top:14px"><div class="panel"><h3>Campaign-to-outcome attribution</h3><div id="execCampaigns"></div></div><div class="panel"><h3>Top accounts by recorded results</h3><div id="execTop"></div></div></div><div class="grid" style="margin-top:14px"><div class="panel"><h3>Recent outcomes</h3><div id="execRecent" class="activity"></div></div><div class="panel"><h3>Projection assumptions</h3><p class="muted">These settings affect projected figures only. They do not alter recorded production.</p><div id="revenueSettings"></div><button class="btn" id="saveRevenueSettings">Save assumptions</button></div></div></section>
 <section id="voiceagent" class="view"><div class="hero"><div><div class="kicker">CONSENT-FIRST AUTOMATION</div><h2>Ash AI Voice Agent</h2><p>Place disclosed automated calls with a professional female voice, detect voicemail, handle a brief conversation, and schedule appointments. Calls are allowed only for contacts explicitly marked as having voice consent.</p></div><span class="pill" id="voiceStatus">Checking connection…</span></div><div class="callout" style="margin:14px 0"><b>Compliance guardrails:</b> no cold-call automation, no voice cloning, no calls to opted-out contacts, and the AI identifies itself at the beginning of every live conversation.</div><div class="grid"><div class="panel"><div class="profile-head"><div><h3>Eligible contacts</h3><p class="muted">Review each contact before calling.</p></div><button class="btn" onclick="voiceAgent()">Refresh</button></div><div id="voiceContacts"></div></div><div><div class="panel"><h3>Upcoming appointments</h3><div id="voiceAppointments"></div></div><div class="panel" style="margin-top:14px"><h3>Recent call activity</h3><div id="voiceCalls"></div></div></div></div></section><section id="integrations" class="view"><div class="int"><div class="panel integration"><b>✉ Gmail</b><p>Future OAuth draft creation and reply tracking.</p><input type="checkbox" data-key="gmail_connected"></div><div class="panel integration"><b>H HubSpot</b><p>Future prospect and lifecycle synchronization.</p><input type="checkbox" data-key="hubspot_connected"></div><div class="panel integration"><b>N Licensing feed</b><p>Future authorized broker-data import adapter.</p><input type="checkbox" data-key="nmls_source_configured"></div></div><div class="panel" style="margin-top:14px;color:var(--m)"><b>Demo safety:</b> connection toggles store flags only. No passwords, tokens, or paid-data credentials are stored. Live research and integrations require approved data sources and credentials.</div></section>
 
 <section id="intelligence" class="view"><div class="hero"><div><div class="kicker">EXPLAINABLE REVENUE INTELLIGENCE</div><h2>Know who to call, why they matter, and what to lead with.</h2><p>Scores are calculated from verified data, roster size, product fit, relationship stage, follow-up urgency, and inactivity. Every recommendation includes its reasoning and confidence.</p></div><button class="btn primary" onclick="rescoreIntelligence()">Recalculate all</button></div><div class="metrics"><div class="metric"><span>Hot opportunities</span><strong id="oiHot">0</strong></div><div class="metric"><span>Warm opportunities</span><strong id="oiWarm">0</strong></div><div class="metric"><span>Due today</span><strong id="oiDue">0</strong></div><div class="metric"><span>Product matched</span><strong id="oiMatched">0</strong></div></div><div class="grid"><div class="panel" style="grid-column:1/-1"><div class="profile-head"><div><h3>Ranked opportunities</h3><p class="muted">The score is transparent and configurable. It is not a production-volume claim.</p></div><select id="oiTier" onchange="renderIntelligence()"><option>All</option><option>Hot</option><option>Warm</option><option>Developing</option><option>Research</option></select></div><div id="oiRows"></div></div><div class="panel"><h3>Scoring controls</h3><p class="muted">Adjust how much each verified signal contributes.</p><div id="oiSettings"></div><button class="btn primary" onclick="saveIntelligenceSettings()">Save weights</button></div><div class="panel"><h3>Union Home product catalog</h3><p class="muted">Editable talking points used by the product-match engine.</p><div id="oiProducts"></div></div></div></section>
@@ -511,6 +536,28 @@ async function searchOfficialGuides(){
 }
 $$('[data-guide-mode]').forEach(b=>b.onclick=()=>{guideMode=b.dataset.guideMode;$$('[data-guide-mode]').forEach(x=>x.classList.toggle('active',x===b));$('#guideModeHint').textContent=guideMode==='scenario'?'Enter a structured scenario or paste the full borrower, property, income, asset, and transaction details.':'Ask a natural-language guideline question.';$('#guideSearch').placeholder=guideMode==='scenario'?'Example: 680 FICO, duplex investment, 15% down, gift funds, self-employed…':'Example: Can gift funds be used on a 2-unit investment property?';$('#scenarioForm')?.classList.toggle('visible',guideMode==='scenario')});
 $('#searchGuides').onclick=searchOfficialGuides;$('#guideSearch').onkeydown=e=>{if(e.key==='Enter')searchOfficialGuides()};$$('.guide-example').forEach(b=>b.onclick=()=>{$('#guideSearch').value=b.textContent;searchOfficialGuides()});
+
+let productionState={companies:[],period:12,selected:null};
+const moneyCompact=n=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',notation:'compact',maximumFractionDigits:1}).format(Number(n||0));
+const moneyFull=n=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}).format(Number(n||0));
+async function productionIntelligence(){
+ const period=Number($('#productionPeriod')?.value||12),search=($('#productionSearch')?.value||'').trim();
+ const d=await api(`/api/production/summary?months=${period}&search=${encodeURIComponent(search)}`);productionState={...productionState,...d,period};
+ $('#prodCompanies').textContent=d.totals.companies||0;$('#prodUnits').textContent=(d.totals.units||0).toLocaleString();$('#prodVolume').textContent=moneyCompact(d.totals.volume);$('#prodAvg').textContent=moneyCompact(d.totals.average_loan);
+ $('#prodFreshness').textContent=d.freshness?.label||'No data imported';
+ const box=$('#productionCompanies');
+ if(!d.companies.length){box.className='production-empty';box.innerHTML='No production records match this view. Import an approved CSV or broaden the search.'}
+ else{box.className='';box.innerHTML=d.companies.map(c=>`<div class="production-company" data-prod-company="${esc(c.company)}"><div class="production-company-top"><div><h4>${esc(c.company)}</h4><div class="prod-meta">${c.units.toLocaleString()} units · ${moneyFull(c.average_loan)} average · ${esc(c.source_label||'Imported data')}</div></div><div class="prod-volume">${moneyCompact(c.volume)}</div></div><div class="mix-row"><span>Top product</span><div class="mix-track"><div class="mix-fill" style="width:${Math.max(8,c.top_mix_pct||0)}%"></div></div><b>${esc(c.top_loan_type||'Other')} ${c.top_mix_pct||0}%</b></div></div>`).join('');$$('[data-prod-company]').forEach(x=>x.onclick=()=>loadProductionCompany(x.dataset.prodCompany))}
+ const a=d.ash||{};$('#productionAsh').innerHTML=`<h4>${esc(a.headline||'Production intelligence')}</h4><p>${esc(a.summary||'Import production records to generate an opportunity summary.')}</p>${a.recommendations?.length?`<ul>${a.recommendations.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}`;
+}
+async function loadProductionCompany(company){
+ const d=await api(`/api/production/company?company=${encodeURIComponent(company)}&months=${productionState.period}`);productionState.selected=company;$('#prodDetailTitle').textContent=company;$('#prodDetailSource').textContent=`${d.source_label||'Imported'} · ${d.data_as_of||'date unknown'}`;
+ const maxMonth=Math.max(...d.monthly.map(x=>x.volume),1),maxMix=Math.max(...d.loan_types.map(x=>x.volume),1);
+ $('#productionDetail').className='';$('#productionDetail').innerHTML=`<div class="production-kpis"><div class="production-kpi"><span>Units</span><strong>${d.totals.units.toLocaleString()}</strong><small>${d.period_label}</small></div><div class="production-kpi"><span>Volume</span><strong>${moneyCompact(d.totals.volume)}</strong><small>${moneyFull(d.totals.volume)}</small></div><div class="production-kpi"><span>Average loan</span><strong>${moneyCompact(d.totals.average_loan)}</strong><small>Imported funded volume</small></div><div class="production-kpi"><span>Loan officers</span><strong>${d.loan_officers.length}</strong><small>Named in source</small></div></div><div class="grid"><div><h3>Loan-type mix</h3>${d.loan_types.map(x=>`<div class="mix-row"><span>${esc(x.loan_type)}</span><div class="mix-track"><div class="mix-fill" style="width:${Math.round(x.volume/maxMix*100)}%"></div></div><b>${x.units} · ${moneyCompact(x.volume)}</b></div>`).join('')||'<div class="empty">No loan-type detail</div>'}<h3 style="margin-top:22px">Monthly trend</h3><div class="prod-chart">${d.monthly.map(x=>`<div class="prod-month"><span>${esc(x.month)}</span><div class="prod-month-bar"><div class="prod-month-fill" style="width:${Math.round(x.volume/maxMonth*100)}%"></div></div><b>${moneyCompact(x.volume)}</b></div>`).join('')}</div></div><div><div class="prod-ash"><h4>${esc(d.ash.headline)}</h4><p>${esc(d.ash.summary)}</p><ul>${d.ash.recommendations.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div><h3 style="margin-top:18px">Loan officer leaderboard</h3>${d.loan_officers.length?`<table class="lo-table"><thead><tr><th>Loan officer</th><th>Units</th><th>Volume</th><th>Top type</th></tr></thead><tbody>${d.loan_officers.map(x=>`<tr><td><b>${esc(x.lo_name)}</b><br><small class="muted">${esc(x.lo_nmls||'NMLS not supplied')}</small></td><td>${x.units}</td><td>${moneyCompact(x.volume)}</td><td>${esc(x.top_loan_type||'Other')}</td></tr>`).join('')}</tbody></table>`:'<div class="production-empty">This source does not contain named loan-officer production.</div>'}</div></div>`;
+}
+$('#refreshProduction')?.addEventListener('click',productionIntelligence);$('#productionPeriod')?.addEventListener('change',productionIntelligence);$('#productionSearch')?.addEventListener('keydown',e=>{if(e.key==='Enter')productionIntelligence()});
+$('#importProduction')?.addEventListener('click',async()=>{const f=$('#productionFile')?.files?.[0];if(!f)return msg('Choose a CSV file first');const fd=new FormData();fd.append('file',f);const b=$('#importProduction');b.disabled=true;b.textContent='Importing…';try{const r=await fetch('/api/production/import',{method:'POST',body:fd});const d=await r.json();if(!r.ok)throw new Error(d.error||'Import failed');msg(`Imported ${d.rows_imported} production rows`);await productionIntelligence()}catch(e){msg(e.message)}finally{b.disabled=false;b.textContent='Import CSV'}});
+
 function msg(x){let t=$('#toast');t.textContent=x;t.style.display='block';setTimeout(()=>t.style.display='none',1800)}
 
 const executiveUX={
@@ -527,6 +574,7 @@ const executiveUX={
  pipeline:{k:'PIPELINE CONTROL',h:'Move accounts through a consistent, visible sales process.',p:'See each relationship stage at a glance and keep the next transition from becoming invisible.',badge:'Five-stage workflow',main:'Focus on accounts closest to a meaningful next stage and log every real movement.',a:['View','Kanban'],b:['Focus','Next stage'],c:['Truth','Recorded status']},
  followups:{k:'FOLLOW-UP CENTER',h:'Keep every promised next step visible and timely.',p:'Urgency-based organization makes overdue, due-today, and upcoming relationship actions easy to work.',badge:'Never lose the next step',main:'Clear overdue items first, then protect today’s commitments before adding new follow-ups.',a:['First','Overdue'],b:['Then','Due today'],c:['Cadence','Next 7 days']},
  territory:{k:'TERRITORY INTELLIGENCE',h:'See concentration, coverage, and whitespace across your market.',p:'Use geographic distribution to plan travel, balance effort, and identify markets that need more prospecting.',badge:'Coverage strategy',main:'Compare metro concentration with coverage gaps before choosing the next prospecting block.',a:['View','State + metro'],b:['Find','Whitespace'],c:['Plan','Travel + outreach']},
+ production:{k:'PRODUCTION INTELLIGENCE',h:'See company and loan-officer production, product mix, units, and volume.',p:'Import approved market or internal data, compare trailing production, and let Ash identify the strongest product and wallet-share opportunities.',badge:'Source-labeled intelligence',main:'Start with the highest-volume companies and match your outreach to the strongest loan-type concentration.',a:['Measure','Units + volume'],b:['Breakdown','Company + LO'],c:['Source','Always labeled']},
  boss:{k:'EXECUTIVE PERFORMANCE',h:'Separate recorded outcomes from projections and assumptions.',p:'Review conversion, funded volume, revenue estimates, campaign attribution, and top account performance.',badge:'Management-ready view',main:'Lead with recorded outcomes, then use projections only with the displayed assumptions.',a:['Truth','Recorded'],b:['Forecast','Configurable'],c:['Use','Review + planning']},
  voiceagent:{k:'AI VOICE OPERATIONS',h:'Manage consent-first calling, voicemail, and appointment activity.',p:'Review eligible contacts, connection status, recent outcomes, and appointments from one operational workspace.',badge:'Disclosed automation',main:'Confirm consent and provider status before initiating any automated call.',a:['Voice','Female AI'],b:['Guardrail','Consent'],c:['Outcome','Appointments']},
  integrations:{k:'CONNECTED SYSTEMS',h:'See what is connected, what is simulated, and what still needs credentials.',p:'Integration cards clearly separate live capability from stored flags and future connection points.',badge:'Configuration center',main:'Connect only approved services and keep secrets in Render environment variables.',a:['Security','Environment keys'],b:['Status','Visible'],c:['Rule','No passwords here']}
@@ -545,6 +593,7 @@ const ashPagePrompts={
  campaigns:['How are campaigns performing?','What should I optimize?','Are messages due?'],
  inbox:['Which replies need attention?','Summarize positive intent','What should I answer first?'],
  pipeline:['Where is pipeline stuck?','What is most likely to move?','Summarize stage risk'],
+ production:['Who are my largest producers?','Show the strongest VA companies','Which LOs should I target?'],
  guidelines:['Help me structure a guideline question','What facts should I include?','Open scenario analyzer'],
  territory:['Where is my best territory opportunity?','Show Carolinas priorities','Where are coverage gaps?'],
  integrations:['Which integrations are active?','What should I configure next?'],
@@ -582,7 +631,7 @@ async function sendGlobalAsh(){
    ashAddMessage('assistant',html);ashHistory.push({question,answer:d.answer||'',view:context.view});
  }catch(e){loading.remove();ashAddMessage('assistant',`<strong>I couldn't complete that request.</strong><div>${esc(e.message)}</div>`)}
 }
-function show(v){$$('.view').forEach(x=>x.classList.toggle('active',x.id===v));$$('nav button').forEach(x=>x.classList.toggle('active',x.dataset.v===v));const titles={dashboard:'Ash Workplace',salescoach:'Ash Sales Coach',voiceagent:'AI Voice Agent',boss:'Executive View',followups:'Follow-ups',intelligence:'Opportunity Intelligence',templates:'Templates & Sequences',guidelines:'Loan Guidelines Library'};$('#title').textContent=titles[v]||v[0].toUpperCase()+v.slice(1);if(v==='salescoach')salesCoach();if(v==='voiceagent')voiceAgent();if(v==='copilot'){copilotBrief()}if(v==='daily')dailyPlan();if(v==='pipeline')pipe();if(v==='followups')followups();if(v==='outreach')outreach();if(v==='campaigns')campaigns();if(v==='inbox')replyInbox();if(v==='intelligence')loadIntelligence();if(v==='templates')templateStudio();if(v==='territory')territory();if(v==='boss')boss();applyExecutiveUX(v);updateAshContext()}
+function show(v){$$('.view').forEach(x=>x.classList.toggle('active',x.id===v));$$('nav button').forEach(x=>x.classList.toggle('active',x.dataset.v===v));const titles={dashboard:'Ash Workplace',salescoach:'Ash Sales Coach',voiceagent:'AI Voice Agent',boss:'Executive View',followups:'Follow-ups',intelligence:'Opportunity Intelligence',templates:'Templates & Sequences',guidelines:'Loan Guidelines Library',production:'Production Intelligence'};$('#title').textContent=titles[v]||v[0].toUpperCase()+v.slice(1);if(v==='salescoach')salesCoach();if(v==='voiceagent')voiceAgent();if(v==='copilot'){copilotBrief()}if(v==='daily')dailyPlan();if(v==='pipeline')pipe();if(v==='followups')followups();if(v==='outreach')outreach();if(v==='campaigns')campaigns();if(v==='inbox')replyInbox();if(v==='intelligence')loadIntelligence();if(v==='templates')templateStudio();if(v==='territory')territory();if(v==='production')productionIntelligence();if(v==='boss')boss();applyExecutiveUX(v);updateAshContext()}
 $$('nav button').forEach(b=>b.onclick=()=>show(b.dataset.v));
 $('#globalAshBtn').onclick=()=>openGlobalAsh();$('#ashClose').onclick=closeGlobalAsh;$('#ashBackdrop').onclick=closeGlobalAsh;$('#ashSend').onclick=sendGlobalAsh;$('#ashInput').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendGlobalAsh()}});document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();openGlobalAsh()}if(e.key==='Escape'&&$('#ashDrawer').classList.contains('open'))closeGlobalAsh()});
 fetch('/api/version?ts='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(v=>{const el=$('#appVersion');if(el)el.textContent=`VERSION ${v.version} · ${v.build}`}).catch(()=>{});
@@ -957,7 +1006,12 @@ def add_build_headers(response):
 def api_version():
     with db() as c:
         index_stats = guideline_index_stats(c)
-    return jsonify(version=BUILD_VERSION, build=BUILD_NAME, guideline_index=index_stats, deployment_id=f'{BUILD_VERSION}-{BUILD_NAME.lower().replace(" ","-")}')
+    production_stats={'records':0,'companies':0}
+    with db() as c:
+        if _ash_table_exists(c,'production_records'):
+            row=c.execute('select count(*),count(distinct company) from production_records').fetchone()
+            production_stats={'records':row[0],'companies':row[1]}
+    return jsonify(version=BUILD_VERSION, build=BUILD_NAME, guideline_index=index_stats, production_intelligence=production_stats, deployment_id=f'{BUILD_VERSION}-{BUILD_NAME.lower().replace(" ","-")}')
 
 @app.get("/")
 def home():
@@ -1087,6 +1141,18 @@ def global_ash_ask():
         answer=selected.get('next_best_action') or 'Make a focused introduction, confirm the best product fit, and record a clear next step.'
         bullets=[f"Opportunity score: {selected.get('score') or 0}",f"Relationship stage: {selected.get('status') or 'New'}",f"Product fit: {selected.get('product_fit') or 'Review account intelligence'}"]
         actions=[{'label':'Open account','view':'prospects'},{'label':'Build outreach','view':'outreach'},{'label':'Open Sales Coach','view':'salescoach'}]
+    elif any(w in q for w in ['production','volume','units','loan officer','lo production','largest producer','top producer']):
+        with db() as c:
+            cutoff=(datetime.now()-timedelta(days=365)).date().isoformat()
+            rows=[dict(x) for x in c.execute("select company,sum(units) units,sum(volume) volume from production_records where period_month>=? group by company order by volume desc limit 5",(cutoff[:7],))] if _ash_table_exists(c,'production_records') else []
+        headline='Production intelligence summary'
+        if rows:
+            answer=f"{rows[0]['company']} is the largest imported producer in the trailing view at approximately ${rows[0]['volume']:,.0f} across {rows[0]['units']:,} unit(s)."
+            results=[{'company':x['company'],'score':0,'status':f"{x['units']} units",'reason':f"Imported volume ${x['volume']:,.0f}."} for x in rows]
+            bullets=['Production reflects imported source data, not live public estimates.','Open Production Intelligence for company, LO, and loan-type detail.']
+        else:
+            answer='No production records have been imported yet. Open Production Intelligence and upload an approved source file.'
+        actions=[{'label':'Open Production Intelligence','view':'production'}]
     elif any(w in q for w in ['guideline','underwriter','loan scenario','fannie','freddie','fha','va ','usda']):
         headline='Use Ash Underwriter for a source-grounded answer'
         answer='Open Loan Guidelines and include the program, occupancy, units, transaction type, LTV, and any special factors. Ash Underwriter will answer first and show the official supporting sources underneath.'
@@ -2558,6 +2624,310 @@ def guideline_reindex():
         added=index_fha_pdf(c,Path(__file__).with_name('fha_handbook_4000_1.pdf'))
         st=guideline_index_stats(c)
     return jsonify(ok=True,fha_pages=added,**st)
+
+
+def _prod_month_cutoff(months):
+    if not months or months <= 0:
+        return ''
+    d = datetime.now().replace(day=1) - timedelta(days=31 * (months - 1))
+    return d.strftime('%Y-%m')
+
+
+def _prod_norm_loan_type(value):
+    v = (value or '').strip().lower()
+    if 'conventional' in v or 'conforming' in v:
+        return 'Conventional'
+    if 'fha' in v:
+        return 'FHA'
+    if re.search(r'(^|\W)va($|\W)', v):
+        return 'VA'
+    if 'usda' in v or 'rural' in v:
+        return 'USDA'
+    if 'jumbo' in v:
+        return 'Jumbo'
+    if 'heloc' in v or 'home equity' in v:
+        return 'HELOC'
+    if 'non-qm' in v or 'non qm' in v:
+        return 'Non-QM'
+    return (value or 'Other').strip().title() or 'Other'
+
+
+def _prod_norm_purpose(value):
+    v = (value or '').strip().lower()
+    if 'purchase' in v:
+        return 'Purchase'
+    if 'cash' in v and 'out' in v:
+        return 'Cash-Out Refinance'
+    if 'refi' in v or 'refinance' in v:
+        return 'Rate/Term Refinance'
+    return (value or 'Other').strip().title() or 'Other'
+
+
+def _prod_value(row, *names):
+    normalized = {re.sub(r'[^a-z0-9]', '', str(k).lower()): v for k, v in row.items()}
+    for name in names:
+        key = re.sub(r'[^a-z0-9]', '', name.lower())
+        if key in normalized and str(normalized[key]).strip():
+            return str(normalized[key]).strip()
+    return ''
+
+
+def _prod_num(value, integer=False):
+    text = re.sub(r'[^0-9.\-]', '', str(value or '0'))
+    try:
+        number = float(text or 0)
+        return int(round(number)) if integer else number
+    except ValueError:
+        return 0 if integer else 0.0
+
+
+def _prod_ash_summary(companies, totals):
+    if not companies:
+        return {
+            'headline': 'No imported production data yet',
+            'summary': 'Import an approved production CSV to rank companies, loan officers, product mix, units, and volume.',
+            'recommendations': ['Use the provided template or map an approved provider export to the supported fields.'],
+        }
+    top = companies[0]
+    rec = [f"Lead with {top.get('top_loan_type') or 'the dominant product mix'} when approaching {top['company']}."]
+    if len(companies) > 1:
+        rec.append(f"Compare {top['company']} with {companies[1]['company']} before planning territory travel or outreach.")
+    rec.append('Use LO-level rankings only when the imported source includes named loan officers or NMLS identifiers.')
+    return {
+        'headline': f"{top['company']} leads the imported production view",
+        'summary': (
+            f"The selected period contains {totals['units']:,} funded unit(s) and ${totals['volume']:,.0f} "
+            f"in volume across {totals['companies']} compan{'ies' if totals['companies'] != 1 else 'y'}. "
+            f"{top['company']} represents the largest imported opportunity at ${top['volume']:,.0f}."
+        ),
+        'recommendations': rec,
+    }
+
+
+@app.get('/api/production/template')
+def production_template():
+    return send_file(
+        Path(__file__).with_name('production_import_template.csv'),
+        as_attachment=True,
+        download_name='brokerbeacon_production_import_template.csv',
+    )
+
+
+@app.post('/api/production/import')
+def production_import():
+    blocked = reject_demo_write()
+    if blocked:
+        return blocked
+    uploaded = request.files.get('file')
+    if not uploaded or not uploaded.filename.lower().endswith('.csv'):
+        return jsonify(error='Choose a CSV file.'), 400
+    try:
+        raw = uploaded.read().decode('utf-8-sig')
+    except UnicodeDecodeError:
+        return jsonify(error='The CSV must use UTF-8 encoding.'), 400
+    rows = list(csv.DictReader(io.StringIO(raw)))
+    if not rows:
+        return jsonify(error='The CSV contains no data rows.'), 400
+
+    parsed, errors = [], []
+    for idx, row in enumerate(rows, 2):
+        company = _prod_value(row, 'company', 'company name', 'lender name', 'broker company', 'institution name')
+        period = _prod_value(row, 'period_month', 'period month', 'month', 'activity year month', 'reporting month')
+        if re.fullmatch(r'\d{4}-\d{2}-\d{2}', period):
+            period = period[:7]
+        if re.fullmatch(r'\d{6}', period):
+            period = period[:4] + '-' + period[4:]
+        if not company or not re.fullmatch(r'\d{4}-\d{2}', period):
+            errors.append(f'Row {idx}: company and period_month (YYYY-MM) are required.')
+            continue
+        units = _prod_num(_prod_value(row, 'units', 'loan count', 'count', 'funded units', 'originations'), True)
+        volume = _prod_num(_prod_value(row, 'volume', 'loan volume', 'funded volume', 'amount', 'loan amount'))
+        if units <= 0 and volume > 0:
+            units = 1
+        if units <= 0 and volume <= 0:
+            errors.append(f'Row {idx}: units or volume is required.')
+            continue
+        source = _prod_value(row, 'source_name', 'source', 'provider', 'data source') or 'Production CSV Import'
+        data_as_of = _prod_value(row, 'data_as_of', 'data as of', 'as of date', 'freshness date') or datetime.now().date().isoformat()
+        parsed.append({
+            'company': company,
+            'company_nmls': _prod_value(row, 'company_nmls', 'company nmls', 'institution nmls', 'lei'),
+            'lo_name': _prod_value(row, 'lo_name', 'loan officer', 'loan officer name', 'originator name'),
+            'lo_nmls': _prod_value(row, 'lo_nmls', 'lo nmls', 'loan originator nmls', 'originator nmls'),
+            'period_month': period,
+            'loan_type': _prod_norm_loan_type(_prod_value(row, 'loan_type', 'loan type', 'product', 'program')),
+            'purpose': _prod_norm_purpose(_prod_value(row, 'purpose', 'loan purpose', 'transaction type')),
+            'units': units,
+            'volume': volume,
+            'source_name': source,
+            'data_as_of': data_as_of,
+        })
+    if not parsed:
+        return jsonify(error='No valid rows were found.', details=errors[:12]), 400
+
+    source_name = parsed[0]['source_name']
+    data_as_of = max(item['data_as_of'] for item in parsed)
+    with db() as conn:
+        old_ids = [r[0] for r in conn.execute(
+            'select id from production_imports where source_name=? and data_as_of=?',
+            (source_name, data_as_of),
+        )]
+        if old_ids:
+            marks = ','.join('?' * len(old_ids))
+            conn.execute(f'delete from production_records where import_id in ({marks})', old_ids)
+            conn.execute(f'delete from production_imports where id in ({marks})', old_ids)
+        cur = conn.execute(
+            'insert into production_imports(source_name,source_type,data_as_of,file_name,rows_imported,created_at) values(?,?,?,?,?,?)',
+            (source_name, 'CSV', data_as_of, uploaded.filename, len(parsed), NOW()),
+        )
+        import_id = cur.lastrowid
+        prospect_map = {
+            re.sub(r'[^a-z0-9]', '', r['company'].lower()): r['id']
+            for r in conn.execute('select id,company from prospects')
+        }
+        for item in parsed:
+            prospect_id = prospect_map.get(re.sub(r'[^a-z0-9]', '', item['company'].lower()))
+            conn.execute(
+                'insert into production_records(import_id,prospect_id,company,company_nmls,lo_name,lo_nmls,period_month,loan_type,purpose,units,volume,source_name,data_as_of,created_at) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+                (
+                    import_id, prospect_id, item['company'], item['company_nmls'], item['lo_name'], item['lo_nmls'],
+                    item['period_month'], item['loan_type'], item['purpose'], item['units'], item['volume'],
+                    item['source_name'], item['data_as_of'], NOW(),
+                ),
+            )
+    return jsonify(
+        ok=True,
+        rows_imported=len(parsed),
+        rows_skipped=len(rows) - len(parsed),
+        source_name=source_name,
+        data_as_of=data_as_of,
+        errors=errors[:12],
+    )
+
+
+@app.get('/api/production/summary')
+def production_summary():
+    try:
+        months = max(0, min(60, int(request.args.get('months', '12'))))
+    except ValueError:
+        months = 12
+    search = (request.args.get('search') or '').strip().lower()
+    cutoff = _prod_month_cutoff(months)
+    where, params = [], []
+    if cutoff:
+        where.append('period_month>=?')
+        params.append(cutoff)
+    if search:
+        where.append('(lower(company) like ? or lower(lo_name) like ?)')
+        params.extend([f'%{search}%', f'%{search}%'])
+    clause = ' where ' + ' and '.join(where) if where else ''
+    with db() as conn:
+        companies = [dict(r) for r in conn.execute(
+            f'select company,sum(units) units,sum(volume) volume,max(data_as_of) data_as_of,max(source_name) source_label from production_records{clause} group by company order by volume desc',
+            params,
+        )]
+        totals_row = conn.execute(
+            f'select count(distinct company),coalesce(sum(units),0),coalesce(sum(volume),0),max(data_as_of) from production_records{clause}',
+            params,
+        ).fetchone()
+        for company in companies:
+            sub_where = list(where) + ['company=?']
+            sub_params = list(params) + [company['company']]
+            sub_clause = ' where ' + ' and '.join(sub_where)
+            top = conn.execute(
+                f'select loan_type,sum(volume) v from production_records{sub_clause} group by loan_type order by v desc limit 1',
+                sub_params,
+            ).fetchone()
+            company['average_loan'] = company['volume'] / company['units'] if company['units'] else 0
+            company['top_loan_type'] = top[0] if top else 'Other'
+            company['top_mix_pct'] = round((top[1] / company['volume'] * 100) if top and company['volume'] else 0)
+        totals = {
+            'companies': int(totals_row[0] or 0),
+            'units': int(totals_row[1] or 0),
+            'volume': float(totals_row[2] or 0),
+        }
+        totals['average_loan'] = totals['volume'] / totals['units'] if totals['units'] else 0
+        latest = conn.execute('select source_name,data_as_of,created_at from production_imports order by id desc limit 1').fetchone()
+    freshness = {
+        'label': f"As of {latest['data_as_of']} · {latest['source_name']}" if latest else 'No data imported',
+        'data_as_of': latest['data_as_of'] if latest else '',
+        'source': latest['source_name'] if latest else '',
+    }
+    return jsonify(
+        totals=totals,
+        companies=companies,
+        freshness=freshness,
+        ash=_prod_ash_summary(companies, totals),
+        period_months=months,
+    )
+
+
+@app.get('/api/production/company')
+def production_company():
+    company = (request.args.get('company') or '').strip()
+    if not company:
+        return jsonify(error='Company required'), 400
+    try:
+        months = max(0, min(60, int(request.args.get('months', '12'))))
+    except ValueError:
+        months = 12
+    cutoff = _prod_month_cutoff(months)
+    where, params = ['company=?'], [company]
+    if cutoff:
+        where.append('period_month>=?')
+        params.append(cutoff)
+    clause = ' where ' + ' and '.join(where)
+    with db() as conn:
+        total = conn.execute(
+            f'select coalesce(sum(units),0),coalesce(sum(volume),0),max(data_as_of),max(source_name) from production_records{clause}',
+            params,
+        ).fetchone()
+        loan_types = [dict(r) for r in conn.execute(
+            f'select loan_type,sum(units) units,sum(volume) volume from production_records{clause} group by loan_type order by volume desc',
+            params,
+        )]
+        monthly = [dict(r) for r in conn.execute(
+            f'select period_month month,sum(units) units,sum(volume) volume from production_records{clause} group by period_month order by period_month',
+            params,
+        )]
+        loan_officers = [dict(r) for r in conn.execute(
+            f"select lo_name,lo_nmls,sum(units) units,sum(volume) volume from production_records{clause} and trim(lo_name)<>'' group by lo_name,lo_nmls order by volume desc",
+            params,
+        )]
+        for lo in loan_officers:
+            top = conn.execute(
+                f"select loan_type,sum(volume) v from production_records{clause} and lo_name=? and coalesce(lo_nmls,'')=? group by loan_type order by v desc limit 1",
+                params + [lo['lo_name'], lo['lo_nmls'] or ''],
+            ).fetchone()
+            lo['top_loan_type'] = top[0] if top else 'Other'
+    totals = {'units': int(total[0] or 0), 'volume': float(total[1] or 0)}
+    totals['average_loan'] = totals['volume'] / totals['units'] if totals['units'] else 0
+    top = loan_types[0] if loan_types else {'loan_type': 'Other', 'units': 0, 'volume': 0}
+    share = (top['volume'] / totals['volume'] * 100) if totals['volume'] else 0
+    ash = {
+        'headline': f"{top['loan_type']} is the leading imported product for {company}",
+        'summary': (
+            f"{company} shows {totals['units']:,} unit(s) and ${totals['volume']:,.0f} in imported production. "
+            f"{top['loan_type']} represents approximately {share:.0f}% of volume in this view."
+        ),
+        'recommendations': [
+            f"Lead with a {top['loan_type']}-specific value proposition.",
+            (f"Prioritize {loan_officers[0]['lo_name']} as the highest-volume named LO in this source." if loan_officers else 'Import an approved LO-level source to identify individual producer targets.'),
+            'Compare imported total production with internal UHM fundings before estimating wallet share.',
+        ],
+    }
+    return jsonify(
+        company=company,
+        totals=totals,
+        loan_types=loan_types,
+        monthly=monthly,
+        loan_officers=loan_officers,
+        source_label=total[3] or 'Imported data',
+        data_as_of=total[2] or '',
+        period_label='All imported data' if not months else f'Trailing {months} months',
+        ash=ash,
+    )
+
 
 @app.get("/api/integrations")
 def gi():

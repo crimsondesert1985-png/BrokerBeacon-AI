@@ -25,7 +25,16 @@ create index if not exists idx_appointments_start on appointments(start_at);
 (4, "drip_campaign_automation", """
 create table if not exists automation_runs(id integer primary key,run_type text not null,started_at text not null,finished_at text not null,sent integer default 0,failed integer default 0,skipped integer default 0,suppressed integer default 0,detail text default '');
 create index if not exists idx_automation_runs_started on automation_runs(started_at);
-""")]
+"""),
+(5, "production_intelligence", """
+create table if not exists production_imports(id integer primary key,source_name text not null,source_type text not null default 'CSV',data_as_of text default '',file_name text default '',rows_imported integer default 0,created_at text not null);
+create table if not exists production_records(id integer primary key,import_id integer not null,prospect_id integer,company text not null,company_nmls text default '',lo_name text default '',lo_nmls text default '',period_month text not null,loan_type text not null default 'Other',purpose text not null default 'Other',units integer not null default 0,volume real not null default 0,source_name text not null,data_as_of text default '',created_at text not null);
+create index if not exists idx_prod_company on production_records(company);
+create index if not exists idx_prod_period on production_records(period_month);
+create index if not exists idx_prod_lo on production_records(lo_name);
+create index if not exists idx_prod_type on production_records(loan_type);
+""")
+]
 
 DEFAULT_WEIGHTS = [
 ('base_verified','Verified data',8,'Rewards records with a verified status.'),

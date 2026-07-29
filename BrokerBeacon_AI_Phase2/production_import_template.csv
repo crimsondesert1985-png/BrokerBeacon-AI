@@ -1,0 +1,4 @@
+company,company_nmls,lo_name,lo_nmls,period_month,loan_type,purpose,units,volume,source_name,data_as_of
+Raleigh Mortgage Group Inc.,123456,Mike Smith,987654,2026-06,VA,Purchase,8,2640000,Approved Production Export,2026-07-01
+Raleigh Mortgage Group Inc.,123456,Mike Smith,987654,2026-06,FHA,Purchase,4,1180000,Approved Production Export,2026-07-01
+Raleigh Mortgage Group Inc.,123456,Sarah Jones,876543,2026-06,Conventional,Purchase,10,3650000,Approved Production Export,2026-07-01
