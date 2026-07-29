@@ -7,6 +7,7 @@ from migrations import run_migrations
 from intelligence import intelligence_dashboard, save_snapshots
 from revenue_intelligence import executive_dashboard, log_revenue_event
 from voice_agent import configured as voice_configured, create_twilio_call, human_greeting, voicemail, twiml, say, appointment_slots, ai_reply
+from guideline_index import seed_index, index_fha_pdf, search as search_guideline_index, stats as guideline_index_stats
 
 app = Flask(__name__)
 DB = Path(__file__).with_name("brokerbeacon.db")
@@ -229,6 +230,8 @@ body.dark-mode input,body.dark-mode select,body.dark-mode textarea{background:#0
 @media(max-width:900px){.top{position:static;margin:-26px calc(clamp(18px,3vw,38px)*-1) 22px}.today-chip{display:none}}
 @media(max-width:600px){.top{padding-top:16px}.theme-toggle{min-width:auto}.command-hero{border-radius:15px}.command-kpi strong{font-size:25px}}
 
+/* v8.10 Ash Underwriter local index */
+.guide-index-status{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.guide-index-status .guide-chip{background:#e7f7ed;color:#0a6333}.guide-result mark{background:#fff0a6;color:#2b341f;padding:0 2px;border-radius:3px}.guide-result .indexed-meta{font-size:10px;color:var(--muted);margin-top:8px}.compare-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin:12px 0}.compare-card{border:1px solid var(--line);border-radius:12px;padding:12px;background:#fff}.compare-card h4{margin:0 0 6px}.source-confidence{font-size:10px;font-weight:800;color:#138a48;text-transform:uppercase;letter-spacing:.08em}
 /* v8.8 loan guidelines library */
 .guide-hero{display:flex;justify-content:space-between;gap:22px;align-items:flex-end;padding:26px 28px;border-radius:18px;background:linear-gradient(120deg,#0d2347,#173b6b 72%,#8f1c30 145%);color:#fff;box-shadow:0 18px 40px rgba(13,35,71,.18)}
 .guide-hero h2{color:#fff!important;margin:7px 0}.guide-hero p{color:#d9e5f4;max-width:850px;line-height:1.6;margin:0}.guide-hero .kicker{color:#ff9eaa!important}
@@ -237,7 +240,7 @@ body.dark-mode input,body.dark-mode select,body.dark-mode textarea{background:#0
 .guide-program-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:14px}.guide-program-head h2{margin:0 0 5px}.guide-chip{display:inline-block;padding:5px 9px;border-radius:999px;background:#e8f0fe;color:#174b91;border:1px solid #bfd3ee;font-size:11px;font-weight:750}.source-links{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.source-links a{display:inline-flex;align-items:center;gap:5px;padding:8px 10px;border:1px solid #bfd0e7;border-radius:9px;background:#f7f9fc;text-decoration:none;font-size:12px;font-weight:700}.guide-alert{padding:13px 15px;border-left:4px solid var(--red);background:var(--red-soft);border-radius:0 11px 11px 0;line-height:1.5}.guide-note{padding:13px 15px;border-left:4px solid #1d5fbf;background:#eaf2fd;border-radius:0 11px 11px 0;line-height:1.5}.guide-search-hidden{display:none!important}
 .guide-live-search{margin-top:14px}.guide-query-row{display:grid;grid-template-columns:180px 1fr auto;gap:9px;margin-top:14px}.guide-query-row input,.guide-query-row select{width:100%}.guide-example-row{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}.guide-results{display:grid;gap:11px;margin-top:12px}.guide-result{border:1px solid #d7e1ee;border-radius:13px;padding:15px;background:#fff}.guide-result-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}.guide-result h4{margin:0 0 5px;font-size:16px}.guide-result .source-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;font-weight:800;color:#174b91}.guide-result .excerpt{line-height:1.55;margin:10px 0;color:var(--text)}.guide-result .result-url{font-size:11px;color:var(--muted);word-break:break-all}.guide-loading{padding:18px;border:1px dashed #b9c9de;border-radius:12px;background:#f7f9fc}.guide-empty{padding:20px;border:1px dashed #c3d0df;border-radius:12px;text-align:center;background:#f8fafc}.guide-warning{padding:10px 12px;border-left:4px solid #d59b16;background:#fff8e3;border-radius:0 9px 9px 0;margin-top:9px}.dark-mode .guide-result,.dark-mode .guide-loading,.dark-mode .guide-empty{background:#101d34!important;border-color:#2b405f!important}.dark-mode .guide-warning{background:#332a12!important}
 @media(max-width:900px){.guide-grid{grid-template-columns:1fr}.guide-query-row{grid-template-columns:1fr}.guide-hero{align-items:flex-start;flex-direction:column}}
-</style></head><body><div class="app"><aside><div class="brand">Broker<span>Beacon</span> AI</div><div class="version">VERSION 8.9.1 · GUIDE SEARCH FIX</div><nav><button class="active" data-v="dashboard">✦ Command Center</button><button data-v="salescoach">◈ Ash Sales Coach</button><button data-v="voiceagent">☎ AI Voice Agent</button><button data-v="copilot">✦ AI Copilot</button><button data-v="daily">⚡ Daily Plan</button><button data-v="prospects">◉ Prospects</button><button data-v="outreach">✎ Outreach</button><button data-v="campaigns">✉ Campaigns</button><button data-v="inbox">↩ Reply Inbox</button><button data-v="intelligence">◆ Opportunity Intelligence</button><button data-v="templates">▤ Templates & Sequences</button><button data-v="pipeline">▦ Pipeline</button><button data-v="followups">✓ Follow-ups</button><button data-v="territory">⌖ Territory</button><button data-v="guidelines">▣ Loan Guidelines</button><button data-v="boss">◆ Executive View</button><button data-v="integrations">⚙ Integrations</button></nav></aside><main><div class="top"><div><small>AI OPERATING SYSTEM FOR WHOLESALE AES</small><h1 id="title">Command Center</h1></div><div class="actions"><span class="today-chip" id="todayChip"></span><button class="btn theme-toggle" id="themeToggle" type="button" aria-label="Toggle dark mode">◐ Theme</button><button class="btn" id="import">Compliant Import</button><a class="btn" href="/api/export">Export CSV</a><button class="btn primary" id="add">+ Add Prospect</button></div></div>
+</style></head><body><div class="app"><aside><div class="brand">Broker<span>Beacon</span> AI</div><div class="version">VERSION 8.10 · ASH UNDERWRITER INDEX</div><nav><button class="active" data-v="dashboard">✦ Command Center</button><button data-v="salescoach">◈ Ash Sales Coach</button><button data-v="voiceagent">☎ AI Voice Agent</button><button data-v="copilot">✦ AI Copilot</button><button data-v="daily">⚡ Daily Plan</button><button data-v="prospects">◉ Prospects</button><button data-v="outreach">✎ Outreach</button><button data-v="campaigns">✉ Campaigns</button><button data-v="inbox">↩ Reply Inbox</button><button data-v="intelligence">◆ Opportunity Intelligence</button><button data-v="templates">▤ Templates & Sequences</button><button data-v="pipeline">▦ Pipeline</button><button data-v="followups">✓ Follow-ups</button><button data-v="territory">⌖ Territory</button><button data-v="guidelines">▣ Loan Guidelines</button><button data-v="boss">◆ Executive View</button><button data-v="integrations">⚙ Integrations</button></nav></aside><main><div class="top"><div><small>AI OPERATING SYSTEM FOR WHOLESALE AES</small><h1 id="title">Command Center</h1></div><div class="actions"><span class="today-chip" id="todayChip"></span><button class="btn theme-toggle" id="themeToggle" type="button" aria-label="Toggle dark mode">◐ Theme</button><button class="btn" id="import">Compliant Import</button><a class="btn" href="/api/export">Export CSV</a><button class="btn primary" id="add">+ Add Prospect</button></div></div>
 <section id="dashboard" class="view active">
 <div class="command-hero">
   <div class="command-copy"><div class="kicker">ASH · DAILY REVENUE COMMAND</div><h2>Good morning, Clay. Here is the fastest path to more business today.</h2><p>BrokerBeacon ranks the accounts, explains the opportunity, prepares the outreach, and converts the plan into action.</p></div>
@@ -288,7 +291,7 @@ Reply STOP to opt out of texts."></textarea></label><p class="contact-note">Avai
 <section id="guidelines" class="view">
 <div class="guide-hero"><div><div class="kicker">BROKERBEACON LOAN GUIDELINES LIBRARY</div><h2>Fast program guidance with links to the controlling sources.</h2><p>Use this workspace for sales conversations and initial scenario screening. It summarizes common agency requirements, but it does not replace the current agency guide, AUS findings, lender overlays, product matrices, or an underwriter’s decision.</p></div><div><span class="guide-chip">Reviewed July 29, 2026</span></div></div>
 <div class="guide-live-search panel">
-<div class="profile-head"><div><div class="kicker">LIVE OFFICIAL-GUIDE SEARCH</div><h3 style="margin:5px 0">Ask a guideline question or search a topic</h3><p class="muted" style="margin:0">BrokerBeacon searches official agency domains and returns source excerpts, section titles, and direct links. Results are not generated from memory.</p></div><span class="guide-chip">Official sources only</span></div>
+<div class="profile-head"><div><div class="kicker">ASH UNDERWRITER · LOCAL OFFICIAL-GUIDE INDEX</div><h3 style="margin:5px 0">Ask a guideline question or search a topic</h3><p class="muted" style="margin:0">BrokerBeacon searches official agency domains and returns source excerpts, section titles, and direct links. Results are not generated from memory.</p></div><span class="guide-chip">Official sources only</span></div>
 <div class="guide-query-row"><select id="guideProgram"><option value="all">All programs</option><option value="fannie">Fannie Mae</option><option value="freddie">Freddie Mac</option><option value="fha">FHA</option><option value="va">VA</option><option value="usda">USDA</option></select><input id="guideSearch" placeholder="Example: Can gift funds be used on a 2-unit primary residence?"><button class="btn primary" id="searchGuides" type="button">Search official guides</button></div>
 <div class="guide-example-row"><button class="btn smallbtn guide-example">Fannie gift funds</button><button class="btn smallbtn guide-example">Freddie student loan payment</button><button class="btn smallbtn guide-example">FHA manual underwriting collections</button><button class="btn smallbtn guide-example">VA residual income</button><button class="btn smallbtn guide-example">USDA manufactured housing</button></div>
 <div id="guideSearchStatus" class="muted" style="margin-top:10px"></div><div id="guideResults" class="guide-results"></div>
@@ -401,11 +404,11 @@ async function searchOfficialGuides(){
   const q=($('#guideSearch')?.value||'').trim(),program=$('#guideProgram')?.value||'all';
   if(q.length<3)return msg('Enter a guideline question or topic');
   const box=$('#guideResults'),status=$('#guideSearchStatus'),btn=$('#searchGuides');
-  btn.disabled=true;btn.textContent='Searching…';status.textContent='Searching current official agency sources…';box.innerHTML='<div class="guide-loading">Searching official guide pages and handbooks. This may take several seconds.</div>';
+  btn.disabled=true;btn.textContent='Searching…';status.textContent='Searching the locally indexed official guides…';box.innerHTML='<div class="guide-loading">Searching indexed guide sections and handbook pages…</div>';
   try{
     const d=await api('/api/guidelines/search?'+new URLSearchParams({q,program}));
-    status.textContent=`${d.results.length} official result${d.results.length===1?'':'s'} · searched ${d.program_label}`;
-    box.innerHTML=d.results.length?d.results.map(r=>`<article class="guide-result"><div class="guide-result-head"><div><div class="source-label">${esc(r.program)} · ${esc(r.source_type)}</div><h4>${esc(r.title)}</h4></div><a class="btn smallbtn" target="_blank" rel="noopener" href="${esc(r.url)}">Open official source ↗</a></div>${r.section?`<div class="guide-chip">${esc(r.section)}</div>`:''}<div class="excerpt">${esc(r.excerpt||'Open the official source to review the controlling language.')}</div><div class="result-url">${esc(r.display_url||r.url)}</div></article>`).join(''):`<div class="guide-empty"><b>No exact official page was returned.</b><p>Try fewer words or search one program at a time.</p>${(d.fallback_links||[]).map(x=>`<a class="btn smallbtn" target="_blank" rel="noopener" href="${esc(x.url)}">Search ${esc(x.label)} ↗</a>`).join(' ')}</div>`;
+    status.textContent=`${d.results.length} indexed result${d.results.length===1?'':'s'} · ${d.index_total||0} guide sections/pages available`; 
+    box.innerHTML=d.results.length?d.results.map(r=>`<article class="guide-result"><div class="guide-result-head"><div><div class="source-label">${esc(r.program)} · ${esc(r.source_type)}${r.page?' · page '+r.page:''}</div><h4>${esc(r.title)}</h4></div><a class="btn smallbtn" target="_blank" rel="noopener" href="${esc(r.url)}">Open official source ↗</a></div>${r.section?`<div class="guide-chip">${esc(r.section)}</div>`:''}<div class="excerpt">${String(r.excerpt||'Open the official source to review the controlling language.').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/&lt;mark&gt;/g,'<mark>').replace(/&lt;\/mark&gt;/g,'</mark>')}</div><div class="indexed-meta">Locally indexed from the cited official source. Verify current effective dates, AUS findings, and lender overlays.</div><div class="result-url">${esc(r.display_url||r.url)}</div></article>`).join(''):`<div class="guide-empty"><b>No exact official page was returned.</b><p>Try fewer words or search one program at a time.</p>${(d.fallback_links||[]).map(x=>`<a class="btn smallbtn" target="_blank" rel="noopener" href="${esc(x.url)}">Search ${esc(x.label)} ↗</a>`).join(' ')}</div>`;
     if(d.warning)box.insertAdjacentHTML('beforeend',`<div class="guide-warning">${esc(d.warning)}</div>`);
   }catch(e){status.textContent='Search unavailable';box.innerHTML=`<div class="guide-empty"><b>Could not reach the official-guide search.</b><p>${esc(e.message)}</p><p>Use the direct official guide links below while the connection is unavailable.</p></div>`}
   finally{btn.disabled=false;btn.textContent='Search official guides'}
@@ -711,6 +714,8 @@ def init():
         for definition in ["opened_at text default ''", "clicked_at text default ''", "replied_at text default ''", "bounced_at text default ''", "unsubscribed_at text default ''", "sequence_enrollment_id integer default 0", "step_id integer default 0"]:
             addcol(c, "campaign_recipients", definition)
         seed_templates(c)
+        seed_index(c)
+        index_fha_pdf(c, Path(__file__).with_name('fha_handbook_4000_1.pdf'))
         run_migrations(c)
         # No fictional prospect records. Templates are editable system content.
         ids = [r[0] for r in c.execute("select id from prospects")]
@@ -2180,29 +2185,30 @@ def guideline_search():
     program=(request.args.get('program') or 'all').lower()
     if len(query)<3:return jsonify({'error':'Enter at least three characters.'}),400
     if len(query)>240:return jsonify({'error':'Keep the search under 240 characters.'}),400
-    keys=list(GUIDE_SOURCES) if program=='all' else ([program] if program in GUIDE_SOURCES else [])
-    if not keys:return jsonify({'error':'Unknown loan program.'}),400
-    cache_key=(program,query.lower());cached=_GUIDE_CACHE.get(cache_key)
-    if cached and (datetime.now()-cached[0]).total_seconds()<1800:return jsonify(cached[1])
-    results=[];errors=[]
-    limit=3 if program=='all' else 7
-    with ThreadPoolExecutor(max_workers=min(5,len(keys))) as pool:
-        jobs={pool.submit(_search_official_source,query,GUIDE_SOURCES[key],limit):key for key in keys}
-        for job in as_completed(jobs):
-            key=jobs[job]
-            try:
-                found,backend=job.result();results.extend(found)
-            except Exception as exc:
-                errors.append(f"{GUIDE_SOURCES[key]['label']} ({str(exc)[:120]})")
-    # rank exact phrase/term coverage while keeping program diversity
-    terms=[t.lower() for t in re.findall(r'[A-Za-z0-9-]{3,}',query)]
-    for r in results:
-        hay=(r['title']+' '+r['excerpt']).lower();r['_score']=sum(3 if t in r['title'].lower() else 1 for t in terms if t in hay)
-    results=sorted(results,key=lambda x:x.pop('_score'),reverse=True)[:12]
-    label='all five agency guides' if program=='all' else GUIDE_SOURCES[program]['label']
-    payload={'query':query,'program':program,'program_label':label,'results':results,'fallback_links':_guide_fallback_links(keys,query),'warning':('Some official sites could not be reached during this search: '+', '.join(errors)+'.') if errors else ''}
-    _GUIDE_CACHE[cache_key]=(datetime.now(),payload)
-    return jsonify(payload)
+    valid={'all','fannie','freddie','fha','va','usda'}
+    if program not in valid:return jsonify({'error':'Unknown loan program.'}),400
+    with db() as c:
+        results=search_guideline_index(c,query,program,24)
+        st=guideline_index_stats(c)
+    labels={'all':'all five agency guides','fannie':'Fannie Mae','freddie':'Freddie Mac','fha':'FHA','va':'VA','usda':'USDA'}
+    return jsonify({'query':query,'program':program,'program_label':labels[program],
+      'results':results,'index_total':st['total'],'index_programs':st['programs'],
+      'fallback_links':_guide_fallback_links(list(GUIDE_SOURCES) if program=='all' else [program],query),
+      'warning':'' if results else 'No indexed section matched. Try the core topic and select one agency, or use the official-source links.'})
+
+@app.get('/api/guidelines/index-status')
+def guideline_index_status():
+    with db() as c:return jsonify(guideline_index_stats(c))
+
+@app.post('/api/guidelines/reindex')
+def guideline_reindex():
+    blocked=reject_demo_write()
+    if blocked:return blocked
+    with db() as c:
+        seed_index(c)
+        added=index_fha_pdf(c,Path(__file__).with_name('fha_handbook_4000_1.pdf'))
+        st=guideline_index_stats(c)
+    return jsonify(ok=True,fha_pages=added,**st)
 
 @app.get("/api/integrations")
 def gi():
