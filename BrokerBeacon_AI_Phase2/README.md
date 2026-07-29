@@ -1,3 +1,7 @@
+# BrokerBeacon AI v8.2 — Revenue Intelligence
+
+Sprint 3 adds outcome tracking, conversion reporting, campaign attribution, and clearly labeled projected-versus-recorded revenue metrics.
+
 # BrokerBeacon AI 8.1 — Opportunity Intelligence
 
 A prospect intelligence and workflow demo for wholesale mortgage account executives.
