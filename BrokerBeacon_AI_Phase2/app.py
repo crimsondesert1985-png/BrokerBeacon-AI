@@ -13,8 +13,8 @@ from voice_agent import configured as voice_configured, create_twilio_call, huma
 from guideline_index import seed_index, index_fha_pdf, search as search_guideline_index, stats as guideline_index_stats
 
 app = Flask(__name__)
-BUILD_VERSION = "12.9"
-BUILD_NAME = "NAVIGATION ARCHITECTURE"
+BUILD_VERSION = "13.0"
+BUILD_NAME = "ASH AGENT COMMAND CENTER"
 DB = Path(__file__).with_name("brokerbeacon.db")
 NOW = lambda: datetime.now().isoformat(timespec="seconds")
 
@@ -322,6 +322,9 @@ body.dark-mode .production-kpi,body.dark-mode .production-company{background:#10
 /* v12.3 Opportunity Engine */
 .oe-toolbar{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin:15px 0}.oe-filters{display:flex;gap:8px;flex-wrap:wrap}.oe-filters select{min-width:145px}.oe-list{display:grid;gap:12px}.oe-card{display:grid;grid-template-columns:76px minmax(0,1fr) auto;gap:15px;align-items:center;border:1px solid var(--line);border-radius:15px;background:#fff;padding:16px;box-shadow:0 5px 17px rgba(13,35,71,.05)}.oe-card:hover{border-color:#9db7d6;box-shadow:0 11px 27px rgba(13,35,71,.09)}.oe-score{width:65px;height:65px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(#174ea6 calc(var(--oe)*1%),#e5ebf3 0);position:relative}.oe-score:after{content:"";position:absolute;inset:8px;border-radius:50%;background:#fff}.oe-score strong{position:relative;z-index:1;color:#0d2347;font-size:20px}.oe-title{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.oe-title h4{margin:0;color:#0d2347}.oe-tier{display:inline-flex;padding:4px 8px;border-radius:999px;font-size:10px;font-weight:900}.oe-hot{background:#fdecef;color:#a51e33}.oe-warm{background:#fff3d2;color:#7c5700}.oe-watch{background:#e8f0fe;color:#174b91}.oe-research{background:#edf1f5;color:#526176}.oe-money{display:inline-flex;padding:5px 8px;border-radius:999px;background:#e5f6eb;color:#17653a;font-size:10px;font-weight:900}.oe-confidence{font-size:10px;color:#60708a}.oe-components{display:grid;grid-template-columns:repeat(5,minmax(90px,1fr));gap:7px;margin:9px 0}.oe-component{padding:8px;border-radius:9px;background:#f4f7fb;border:1px solid #e0e7f0}.oe-component small{display:block;color:#6b7b92;font-size:9px;text-transform:uppercase}.oe-component b{display:block;color:#173c70;margin-top:3px}.oe-explain{font-size:11px;color:#50637f;line-height:1.5}.oe-next{margin-top:7px;padding:9px 11px;border-left:3px solid #174ea6;background:#f2f7fe;border-radius:0 9px 9px 0;color:#304966;font-size:12px}.oe-actions{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}.dark-mode .oe-card,.dark-mode .oe-score:after{background:#101d34!important;border-color:#2b405f!important}.dark-mode .oe-title h4,.dark-mode .oe-score strong,.dark-mode .oe-component b{color:#edf4ff!important}.dark-mode .oe-component{background:#14223a;border-color:#2b405f}.dark-mode .oe-explain,.dark-mode .oe-confidence{color:#aebed4}.dark-mode .oe-next{background:#162946;color:#c3d3e7}.dark-mode .oe-score{background:conic-gradient(#4d91ea calc(var(--oe)*1%),#263750 0)}@media(max-width:900px){.oe-card{grid-template-columns:65px 1fr}.oe-actions{grid-column:1/-1;justify-content:flex-start}.oe-components{grid-template-columns:repeat(3,1fr)}}@media(max-width:580px){.oe-components{grid-template-columns:repeat(2,1fr)}.oe-filters{width:100%}.oe-filters select{flex:1;min-width:120px}}
 
+/* Sprint 21 · Ash Agent Command Center */
+.agent-center{margin:14px 0;padding:0!important;overflow:hidden}.agent-center-head{display:flex;justify-content:space-between;gap:18px;align-items:center;padding:18px 20px;background:linear-gradient(125deg,#0d2347,#17467d 72%,#5c2748 140%);color:#fff}.agent-center-head h3{margin:4px 0;color:#fff!important}.agent-center-head p{margin:0;color:#dce9f7}.agent-center-head .kicker{color:#ff9eaa!important}.agent-center-body{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(300px,.8fr);gap:14px;padding:16px}.agent-roster{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}.agent-card{border:1px solid #d9e4f1;border-radius:12px;background:#f8fbff;padding:11px}.agent-card-top{display:flex;align-items:center;gap:7px}.agent-avatar{width:27px;height:27px;border-radius:9px;display:grid;place-items:center;background:#e8f0fe;color:#174b91;font-weight:950}.agent-card b{display:block;color:#0d2347;font-size:11px}.agent-card small{display:block;margin-top:6px;line-height:1.35}.agent-run-status{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:13px 0 8px}.agent-step{display:grid;grid-template-columns:35px minmax(0,1fr) auto;gap:9px;align-items:start;padding:10px 0;border-bottom:1px solid #e2eaf3}.agent-step:last-child{border-bottom:0}.agent-step-order{width:29px;height:29px;border-radius:50%;display:grid;place-items:center;background:#174ea6;color:#fff;font-weight:900;font-size:11px}.agent-step b{color:#0d2347}.agent-step-result{font-size:11px;color:#5d6f88;margin-top:4px;line-height:1.4}.agent-confidence{font-size:10px;font-weight:850;color:#174b91;white-space:nowrap}.agent-warning{color:#9a6210!important}.agent-plan-account{display:grid;grid-template-columns:30px minmax(0,1fr) auto;gap:9px;padding:10px;border:1px solid #dce5f0;border-radius:11px;margin:7px 0;background:#fff}.agent-plan-rank{font-weight:950;color:#174ea6}.agent-plan-account b{color:#0d2347}.agent-plan-account p{margin:4px 0;font-size:11px;line-height:1.4;color:#53647c}.agent-plan-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}.agent-principle{padding:10px 12px;border-left:4px solid #c6283d;background:#fdeff1;border-radius:0 10px 10px 0;font-size:11px;color:#65333b}.agent-empty{padding:22px;text-align:center;color:#718097;border:1px dashed #c7d4e3;border-radius:12px}.dark-mode .agent-center-head{background:linear-gradient(125deg,#081a36,#173d6b 72%,#4a203a)}.dark-mode .agent-card,.dark-mode .agent-plan-account{background:#101d34!important;border-color:#2b405f!important}.dark-mode .agent-card b,.dark-mode .agent-step b,.dark-mode .agent-plan-account b{color:#edf4ff}.dark-mode .agent-step{border-color:#2b405f}.dark-mode .agent-step-result,.dark-mode .agent-plan-account p{color:#aebed4}.dark-mode .agent-principle{background:#351d25;color:#f1c9d0}@media(max-width:1050px){.agent-center-body{grid-template-columns:1fr}.agent-roster{grid-template-columns:repeat(3,1fr)}}@media(max-width:650px){.agent-center-head{align-items:flex-start;flex-direction:column}.agent-roster{grid-template-columns:1fr 1fr}.agent-step{grid-template-columns:32px 1fr}.agent-confidence{grid-column:2}.agent-plan-account{grid-template-columns:28px 1fr}.agent-plan-account>button{grid-column:2}}
+
 /* Sprint 15 · Call Prep Workspace */
 .cp-layout{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(300px,.75fr);gap:14px}.cp-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.cp-card{border:1px solid var(--line);border-radius:14px;background:#fff;padding:16px}.cp-card h3{margin:3px 0 10px;color:#0d2347}.cp-list{display:grid;gap:8px}.cp-item{padding:10px 12px;border:1px solid #e0e7f0;border-radius:10px;background:#f7f9fc;line-height:1.45}.cp-opener{padding:16px;border-left:4px solid #174ea6;border-radius:0 12px 12px 0;background:#f2f7fe;font-size:15px;line-height:1.55;color:#183554}.cp-score-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.cp-score{padding:11px;border-radius:10px;background:#f4f7fb;text-align:center}.cp-score small{display:block;color:#6b7b92;text-transform:uppercase;font-size:9px}.cp-score strong{display:block;margin-top:4px;color:#173c70;font-size:20px}.cp-contact{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.cp-actions{display:flex;gap:8px;flex-wrap:wrap}.dark-mode .cp-card{background:#101d34;border-color:#2b405f}.dark-mode .cp-card h3,.dark-mode .cp-score strong{color:#edf4ff}.dark-mode .cp-item,.dark-mode .cp-score{background:#14223a;border-color:#2b405f}.dark-mode .cp-opener{background:#162946;color:#d5e3f5}@media(max-width:950px){.cp-layout{grid-template-columns:1fr}.cp-grid{grid-template-columns:1fr}}@media(max-width:600px){.cp-score-row{grid-template-columns:repeat(2,1fr)}}
 .legal-footer{margin-top:28px;padding:16px 4px;text-align:center;color:#718097;font-size:11px;border-top:1px solid var(--line)}.legal-footer b{color:#40536e}.dark-mode .legal-footer{color:#91a2ba;border-color:#2b405f}.dark-mode .legal-footer b{color:#dce8f7}
@@ -330,6 +333,13 @@ body.dark-mode .production-kpi,body.dark-mode .production-company{background:#10
 <div class="command-hero">
   <div class="command-copy"><div class="kicker">ASH · DAILY REVENUE COMMAND</div><h2>Good morning, Clay. Here is the fastest path to more business today.</h2><p>BrokerBeacon ranks the accounts, explains the opportunity, prepares the outreach, and converts the plan into action.</p></div>
   <button class="btn start-day" id="startMyDayBtn"><span>▶</span> Start My Day</button>
+</div>
+<div class="panel agent-center">
+  <div class="agent-center-head"><div><div class="kicker">SPRINT 21 · MULTI-AGENT WORKSPACE</div><h3>Ash Agent Command Center</h3><p>Five specialized agents build one evidence-grounded plan. Nothing is activated until Clay approves it.</p></div><button class="btn start-day" id="runAgentTeamBtn"><span>✦</span> Build my plan with the agent team</button></div>
+  <div class="agent-center-body">
+    <div><div class="agent-roster" id="agentRoster"></div><div id="agentRunDetail" class="agent-empty">The agent team is ready. Start a run to build today’s coordinated plan.</div></div>
+    <div><div class="profile-head"><div><div class="kicker">SHARED WORK PRODUCT</div><h3>Clay’s approval queue</h3></div><span class="pill" id="agentRunBadge">No run yet</span></div><div id="agentPlan"></div><div class="agent-principle">Agents propose. BrokerBeacon verifies. Clay controls every consequential action.</div><div class="agent-plan-actions" id="agentDecisionActions"></div></div>
+  </div>
 </div>
 <div class="command-kpis">
   <div class="command-kpi"><span>12-month modeled opportunity</span><strong id="mcPotential">$0</strong><small>Modeled from stored account signals</small></div>
@@ -750,7 +760,7 @@ $('#pemail').textContent=p.email||'Not publicly listed';
 $('#pcontactactions').innerHTML=contactButtons(p)||'<span class="contact-missing">Open the source or company website to locate current contact information.</span>';
 $('#pcontactbadge').textContent=(p.phone||p.email)?'Direct contact ready':'Website contact available';
 $('#scores').innerHTML=[['Opportunity',p.score],['Growth',p.growth_score],['Government fit',p.gov_fit],['HELOC/Jumbo',p.niche_fit]].map(x=>`<div class=scorebox><span class=muted>${x[0]}</span><strong>${x[1]}</strong></div>`).join('');$('#psum').textContent=p.ai_summary;$('#preasons').innerHTML=p.score_reasons.map(x=>`<li>${esc(x)}</li>`).join('');$('#psource').innerHTML=[p.source_name?'<b>Source:</b> '+esc(p.source_name):'',p.source_url?'<a class="btn smallbtn" target="_blank" rel="noopener" href="'+esc(p.source_url)+'">Open source</a>':'',p.nmls?'<a class="btn smallbtn" target="_blank" rel="noopener" href="https://www.nmlsconsumeraccess.org/">Verify in NMLS Consumer Access</a>':'',p.verification_notes?'<div style="margin-top:8px">'+esc(p.verification_notes)+'</div>':''].filter(Boolean).join(' ');$('#pproducts').innerHTML=p.product_fit.split(',').filter(Boolean).map(x=>`<span class=tag>${esc(x.trim())}</span>`).join('');$('#pnext').textContent=p.next_best_action;$('#pcall').value=p.call_opener;$('#pobj').textContent=p.likely_objection;$('#presp').textContent=p.objection_response;$('#profileOut').onclick=()=>{show('outreach');$('#op').value=p.id;$('#profile').close()};renderMemory(p.memories);$('#profile').showModal()}
-$('#appVersion').textContent='VERSION 12.9 · NAVIGATION ARCHITECTURE';
+$('#appVersion').textContent='VERSION 13.0 · ASH AGENT COMMAND CENTER';
 document.querySelector('nav [data-v="opportunityengine"]')?.insertAdjacentHTML('afterend','<button data-v="callprep">☎ Call Prep</button>');
 document.querySelector('nav [data-v="callprep"]')?.addEventListener('click',()=>show('callprep'));
 const WORKFLOW_NAV=[
@@ -876,6 +886,41 @@ async function missionControl(){
   $('#mcGoals').innerHTML=`<div class="goalring" style="--goal:${d.goals.percent}"><div><span><strong>${d.goals.percent}%</strong><br><small>${d.goals.completed}/${d.goals.target}</small></span></div></div><p class="muted" style="text-align:center">Weekly selling actions</p>`;
   $('#mcCampaigns').innerHTML=`<p>Active <b style="float:right">${d.campaigns.active}</b></p><p>Queued <b style="float:right">${d.campaigns.queued}</b></p><p>Sent <b style="float:right">${d.campaigns.sent}</b></p><p>Failed <b style="float:right">${d.campaigns.failed}</b></p>`;
 }
+const AGENT_REGISTRY=[
+  {key:'scout',name:'Scout',icon:'S',role:'Selects the accounts most worth pursuing.'},
+  {key:'researcher',name:'Researcher',icon:'R',role:'Checks contacts, sources, and missing evidence.'},
+  {key:'strategist',name:'Strategist',icon:'T',role:'Chooses the channel, angle, and next move.'},
+  {key:'compliance',name:'Compliance',icon:'C',role:'Flags stale, suppressed, or unsupported actions.'},
+  {key:'ash',name:'Ash',icon:'A',role:'Combines the work into one plan for Clay.'}
+];
+function renderAgentRoster(){
+  const box=$('#agentRoster');if(!box)return;
+  box.innerHTML=AGENT_REGISTRY.map(a=>`<div class="agent-card"><div class="agent-card-top"><span class="agent-avatar">${a.icon}</span><b>${a.name}</b></div><small class="muted">${a.role}</small></div>`).join('');
+}
+function renderAgentRun(run){
+  const detail=$('#agentRunDetail'),plan=$('#agentPlan'),badge=$('#agentRunBadge'),actions=$('#agentDecisionActions');
+  if(!detail||!plan||!badge||!actions)return;
+  if(!run){detail.className='agent-empty';detail.textContent='The agent team is ready. Start a run to build today’s coordinated plan.';plan.innerHTML='<div class="agent-empty">No plan is awaiting review.</div>';badge.textContent='No run yet';actions.innerHTML='';return}
+  badge.textContent=run.status;
+  detail.className='';
+  detail.innerHTML=`<div class="agent-run-status"><div><b>Run #${run.id} · ${esc(run.run_type)}</b><div class="muted">${esc((run.completed_at||'').replace('T',' '))}</div></div><span class="pill">${run.confidence}% confidence</span></div>${run.steps.map(s=>`<div class="agent-step"><span class="agent-step-order">${s.step_order}</span><div><b>${esc(s.agent_name)}</b><div class="muted">${esc(s.assignment)}</div><div class="agent-step-result ${s.warning?'agent-warning':''}">${esc(s.result_summary)}${s.warning?' · '+esc(s.warning):''}</div></div><span class="agent-confidence">${s.confidence}%</span></div>`).join('')}`;
+  plan.innerHTML=`<p class="muted">${esc(run.summary)}</p>${run.accounts.map(a=>`<div class="agent-plan-account"><span class="agent-plan-rank">#${a.rank}</span><div><b>${esc(a.company)}</b> <span class="pill">${esc(a.contact_readiness)}</span><p>${esc(a.recommendation)}</p><small class="muted">${esc(a.recommended_channel)}${a.contact_name?' · '+esc(a.contact_name):''}${a.warnings.length?' · '+esc(a.warnings[0]):''}</small></div><button class="btn smallbtn" onclick="profile(${a.prospect_id})">Inspect</button></div>`).join('')||'<div class="agent-empty">No eligible accounts were found.</div>'}`;
+  actions.innerHTML=run.status==='Needs approval'?`<button class="btn primary" onclick="decideAgentRun(${run.id},'Approved')">Approve today’s plan</button><button class="btn" onclick="decideAgentRun(${run.id},'Rejected')">Reject plan</button>`:run.status==='Approved'?`<button class="btn primary" onclick="show('daily')">Open approved Daily Plan</button><span class="pill">${run.tasks_created||0} tasks activated</span>`:`<span class="pill">No tasks activated</span>`;
+}
+async function agentCommandCenter(){
+  renderAgentRoster();
+  try{const d=await api('/api/agent-command-center');renderAgentRun(d.latest)}catch(e){const box=$('#agentRunDetail');if(box){box.className='agent-empty';box.textContent=e.message||'Unable to load the agent team.'}}
+}
+async function runAgentTeam(){
+  const b=$('#runAgentTeamBtn');if(!b||b.disabled)return;b.disabled=true;b.innerHTML='<span>✦</span> Agents are working…';
+  try{const d=await api('/api/agent-runs',{method:'POST',body:JSON.stringify({run_type:'Daily plan'})});renderAgentRun(d.run);msg(`Ash coordinated ${d.run.steps.length} agents · ${d.run.accounts.length} accounts ready for review`)}
+  catch(e){msg(e.message||'The agent team could not complete the run')}
+  finally{b.disabled=false;b.innerHTML='<span>✦</span> Build my plan with the agent team'}
+}
+async function decideAgentRun(id,decision){
+  const note=decision==='Approved'?'Approved by Clay for today’s action queue.':'Rejected by Clay; no tasks activated.';
+  const d=await api(`/api/agent-runs/${id}/decision`,{method:'POST',body:JSON.stringify({decision,note})});renderAgentRun(d.run);msg(decision==='Approved'?`${d.tasks_created} approved tasks added to Daily Plan`:'Plan rejected · no actions activated');if(decision==='Approved')await Promise.all([dailyPlan(),missionControl()])
+}
 async function runStartMyDay(){
   const b=$('#startMyDayBtn');
   if(!b||b.disabled)return;
@@ -898,6 +943,8 @@ document.addEventListener('DOMContentLoaded',()=>{
   initProfessionalShell();initializeExecutiveUX();
   const b=$('#startMyDayBtn');
   if(b)b.addEventListener('click',runStartMyDay);
+  const agents=$('#runAgentTeamBtn');
+  if(agents)agents.addEventListener('click',runAgentTeam);
 });
 async function quickDraft(id){let d=await api('/api/start-my-day',{method:'POST',body:JSON.stringify({prospect_id:id})});msg(d.drafts_created?'Personalized draft created':'A draft already exists for this account today');outreach();show('outreach')}
 let marketingTemplates=[];
@@ -1036,7 +1083,7 @@ function renderIntelligence(){if(!OI)return;let tier=$('#oiTier').value;let xs=O
 async function saveIntelligenceSettings(){let weights={};$$('[data-weight]').forEach(x=>weights[x.dataset.weight]=+x.value);await api('/api/intelligence/settings',{method:'POST',body:JSON.stringify({weights})});msg('Scoring weights saved');await rescoreIntelligence()}
 async function rescoreIntelligence(){let d=await api('/api/intelligence/rescore',{method:'POST'});msg(`${d.updated} prospects rescored`);await loadIntelligence();missionControl();load()}
 
-load();dash();outreach();followups();dailyPlan();ints();missionControl();
+load();dash();outreach();followups();dailyPlan();ints();missionControl();agentCommandCenter();
 </script></body></html>'''
 
 def db():
@@ -2667,6 +2714,158 @@ def mission_control():
     recommendations=[]
     for x in top[:3]: recommendations.append({'title':f"{x['company']} · {x['health']}",'detail':f"{x['reason']} Modeled 12-month volume: ${x['modeled_annual_volume']:,.0f}."})
     return jsonify(metrics={'priority_calls':len(top),'new_alerts':len(alerts),'at_risk':len(at_risk),'meetings_week':meetings,'meeting_opportunities':min(4,max(0,len([x for x in top if x['score']>=75]))),'application_opportunities':projected_apps,'projected_pipeline_potential':projected_pipeline,'projected_revenue_potential':projected_revenue,'replies_attention':replies_attention},priorities=top,new_alerts=alerts,at_risk=at_risk[:6],products=products,health=health,recommendations=recommendations,goals={'completed':actions_week,'target':50,'percent':min(100,round(actions_week/50*100))},campaigns={'active':active,'queued':camps.get('Queued',0),'sent':camps.get('Sent',0),'failed':camps.get('Failed',0)},brief=brief,methodology='Modeled opportunity uses stored account score, relationship health, status, configured conversion assumptions, average loan amount, and revenue basis points. It is not recorded production or guaranteed revenue.')
+
+AGENT_REGISTRY = [
+    {'key':'scout','name':'Scout','assignment':'Select the accounts most worth pursuing from stored opportunity signals.'},
+    {'key':'researcher','name':'Researcher','assignment':'Check stored contacts, verification evidence, and information gaps.'},
+    {'key':'strategist','name':'Strategist','assignment':'Recommend the best channel, product angle, and next move.'},
+    {'key':'compliance','name':'Compliance','assignment':'Review suppression, evidence freshness, and unsupported-action risk.'},
+    {'key':'ash','name':'Ash','assignment':'Combine the specialist work into one plan for Clay to approve.'},
+]
+
+def _agent_run_payload(c, run_id):
+    run=c.execute("select * from agent_runs where id=?",(run_id,)).fetchone()
+    if not run:return None
+    run=dict(run)
+    steps=[]
+    for row in c.execute("select * from agent_steps where run_id=? order by step_order,id",(run_id,)):
+        step=dict(row)
+        try:result=json.loads(step.pop('result_json') or '{}')
+        except Exception:result={}
+        try:step['evidence']=json.loads(step.pop('evidence_json') or '[]')
+        except Exception:step['evidence']=[]
+        step['result_summary']=result.get('summary') or 'Step completed.'
+        step['result']=result
+        steps.append(step)
+    accounts=[]
+    for row in c.execute("select * from agent_run_accounts where run_id=? order by rank,id",(run_id,)):
+        account=dict(row)
+        try:account['evidence']=json.loads(account.pop('evidence_json') or '[]')
+        except Exception:account['evidence']=[]
+        try:account['warnings']=json.loads(account.pop('warnings_json') or '[]')
+        except Exception:account['warnings']=[]
+        accounts.append(account)
+    run['steps']=steps;run['accounts']=accounts
+    run['tasks_created']=c.execute(
+        "select count(*) from memories where note_type='Agent Plan' and note like ?",
+        (f'Agent run #{run_id}:%',)
+    ).fetchone()[0]
+    return run
+
+@app.get('/api/agent-command-center')
+def agent_command_center():
+    with db() as c:
+        latest=c.execute("select id from agent_runs order by id desc limit 1").fetchone()
+        recent=[dict(x) for x in c.execute("select id,run_type,status,confidence,warning_count,completed_at from agent_runs order by id desc limit 8")]
+        payload=_agent_run_payload(c,latest['id']) if latest else None
+    return jsonify(registry=AGENT_REGISTRY,latest=payload,recent=recent,principle='Agents propose. BrokerBeacon verifies. Clay controls every consequential action.')
+
+@app.post('/api/agent-runs')
+def create_agent_run():
+    blocked=reject_demo_write()
+    if blocked:return blocked
+    d=request.get_json(silent=True) or {}
+    run_type=(d.get('run_type') or 'Daily plan').strip()[:80]
+    started=NOW();today=datetime.now().date()
+    with db() as c:
+        prospects=[dict(x) for x in c.execute(
+            "select * from prospects where status not in ('Approved','Funded') order by score desc,id limit 5"
+        )]
+        prepared=[];warning_count=0
+        for rank,p in enumerate(prospects,1):
+            contact=c.execute(
+                "select * from contacts where prospect_id=? order by is_decision_maker desc,is_primary desc,id limit 1",
+                (p['id'],)
+            ).fetchone()
+            contact=dict(contact) if contact else None
+            destination=''
+            if contact:destination=contact.get('email') or contact.get('phone') or contact.get('mobile') or contact.get('linkedin_url') or ''
+            suppressed=bool(contact and contact.get('email') and c.execute(
+                "select 1 from suppressions where channel='EMAIL' and lower(destination)=lower(?)",
+                (contact.get('email'),)
+            ).fetchone())
+            verified_at=(contact or {}).get('verified_at') or ''
+            verified_age=None
+            if verified_at:
+                try:verified_age=(today-datetime.fromisoformat(verified_at[:10]).date()).days
+                except Exception:verified_age=None
+            warnings=[]
+            if not contact or not destination:warnings.append('No usable stored decision-maker contact.')
+            if contact and (contact.get('roster_status') or '')=='Former / inactive':warnings.append('Stored contact is marked former or inactive.')
+            if suppressed:warnings.append('Stored email recipient is suppressed.')
+            if contact and (verified_age is None or verified_age>180):warnings.append('Contact evidence needs a fresh verification date.')
+            if suppressed:readiness='Suppressed'
+            elif not contact or not destination:readiness='Missing contact'
+            elif warnings:readiness='Needs review'
+            else:readiness='Ready'
+            channel='Phone' if contact and (contact.get('phone') or contact.get('mobile')) else 'Email' if contact and contact.get('email') else 'LinkedIn' if contact and contact.get('linkedin_url') else 'Research'
+            recommendation=p.get('next_best_action') or ('Verify a decision-maker before outreach.' if readiness!='Ready' else 'Open Call Prep and complete the next relationship-building touch.')
+            evidence=[
+                f"Opportunity score {int(p.get('score') or 0)}/100",
+                f"Status: {p.get('status') or 'Unknown'}",
+                f"Signal: {p.get('signal') or 'No stored signal'}",
+                f"Contact readiness: {readiness}",
+            ]
+            if p.get('product_fit'):evidence.append(f"Product fit: {p.get('product_fit')}")
+            prepared.append({'prospect':p,'rank':rank,'contact':contact,'readiness':readiness,'channel':channel,'recommendation':recommendation,'evidence':evidence,'warnings':warnings})
+            warning_count+=len(warnings)
+        ready=sum(x['readiness']=='Ready' for x in prepared)
+        confidence=round(sum(max(35,min(95,int(x['prospect'].get('score') or 0)+(12 if x['readiness']=='Ready' else -8))) for x in prepared)/len(prepared)) if prepared else 0
+        summary=(f"Ash coordinated five specialist steps and prepared {len(prepared)} account"
+                 f"{'' if len(prepared)==1 else 's'} for review. {ready} have a ready verified recipient; "
+                 f"{warning_count} evidence or compliance warning{'' if warning_count==1 else 's'} require attention.")
+        cur=c.execute(
+            "insert into agent_runs(run_type,status,summary,confidence,warning_count,started_at,completed_at) values(?,?,?,?,?,?,?)",
+            (run_type,'Needs approval',summary,confidence,warning_count,started,NOW())
+        )
+        run_id=cur.lastrowid
+        for x in prepared:
+            c.execute("""insert into agent_run_accounts(run_id,prospect_id,rank,company,recommendation,recommended_channel,contact_name,contact_readiness,evidence_json,warnings_json)
+                         values(?,?,?,?,?,?,?,?,?,?)""",
+                      (run_id,x['prospect']['id'],x['rank'],x['prospect'].get('company') or '',x['recommendation'],x['channel'],(x['contact'] or {}).get('name') or '',x['readiness'],json.dumps(x['evidence']),json.dumps(x['warnings'])))
+        step_results=[
+            {'summary':f"Selected {len(prepared)} highest-priority eligible accounts.",'evidence':[f"Ranked {len(prospects)} stored prospects by current opportunity score"],'confidence':90 if prepared else 0,'warning':''},
+            {'summary':f"Found {ready} contact-ready accounts and {len(prepared)-ready} requiring review.",'evidence':[f"{len(prepared)} account contact rosters checked",f"{warning_count} total readiness warnings"],'confidence':max(40,90-warning_count*6) if prepared else 0,'warning':f"{len(prepared)-ready} accounts are not contact-ready." if len(prepared)-ready else ''},
+            {'summary':f"Prepared a recommended channel and next move for {len(prepared)} accounts.",'evidence':['Broker DNA, product fit, account status, and stored next-best actions'], 'confidence':82 if prepared else 0,'warning':''},
+            {'summary':'Completed suppression, freshness, and evidence review. No messages were sent.', 'evidence':['Email suppression registry','Contact roster status','Contact verification dates'], 'confidence':95,'warning':f"{warning_count} issue(s) remain for Clay to review." if warning_count else ''},
+            {'summary':f"Assembled one approval-ready daily plan with {len(prepared)} accounts.",'evidence':['Outputs from Scout, Researcher, Strategist, and Compliance'], 'confidence':confidence,'warning':'Human approval is required before tasks are activated.'},
+        ]
+        for order,(agent,result) in enumerate(zip(AGENT_REGISTRY,step_results),1):
+            stamp=NOW()
+            c.execute("""insert into agent_steps(run_id,agent_key,agent_name,step_order,status,assignment,evidence_json,result_json,confidence,warning,started_at,completed_at)
+                         values(?,?,?,?,?,?,?,?,?,?,?,?)""",
+                      (run_id,agent['key'],agent['name'],order,'Completed',agent['assignment'],json.dumps(result['evidence']),json.dumps({'summary':result['summary']}),result['confidence'],result['warning'],stamp,stamp))
+        c.execute("insert into activity(action,detail,created_at) values(?,?,?)",('Agent team completed',f'Run #{run_id} · {len(prepared)} accounts · awaiting Clay approval',NOW()))
+        payload=_agent_run_payload(c,run_id)
+    return jsonify(ok=True,run=payload),201
+
+@app.post('/api/agent-runs/<int:run_id>/decision')
+def decide_agent_run(run_id):
+    blocked=reject_demo_write()
+    if blocked:return blocked
+    d=request.get_json(silent=True) or {};decision=(d.get('decision') or '').strip().title();note=(d.get('note') or '').strip()[:500]
+    if decision not in {'Approved','Rejected'}:return jsonify(error='Decision must be Approved or Rejected.'),400
+    with db() as c:
+        run=c.execute("select * from agent_runs where id=?",(run_id,)).fetchone()
+        if not run:return jsonify(error='Agent run not found.'),404
+        if run['status']!='Needs approval':return jsonify(error=f"Agent run is already {run['status']}."),409
+        tasks=0
+        if decision=='Approved':
+            today=datetime.now().date().isoformat()
+            for x in c.execute("select * from agent_run_accounts where run_id=? order by rank",(run_id,)):
+                prefix=f"Agent run #{run_id}:"
+                exists=c.execute("select 1 from memories where prospect_id=? and note_type='Agent Plan' and note like ?",(x['prospect_id'],prefix+'%')).fetchone()
+                if not exists:
+                    text=f"{prefix} #{x['rank']} {x['recommendation']} Recommended channel: {x['recommended_channel']}."
+                    c.execute("insert into memories(prospect_id,note_type,note,follow_up_date,created_at) values(?,?,?,?,?)",(x['prospect_id'],'Agent Plan',text,today,NOW()));tasks+=1
+            c.execute("update agent_runs set status='Approved',approved_at=?,decision_note=? where id=?",(NOW(),note,run_id))
+            action='Agent plan approved';detail=f'Run #{run_id} · {tasks} tasks activated · no messages sent'
+        else:
+            c.execute("update agent_runs set status='Rejected',rejected_at=?,decision_note=? where id=?",(NOW(),note,run_id))
+            action='Agent plan rejected';detail=f'Run #{run_id} · no tasks activated'
+        c.execute("insert into activity(action,detail,created_at) values(?,?,?)",(action,detail,NOW()))
+        payload=_agent_run_payload(c,run_id)
+    return jsonify(ok=True,tasks_created=tasks,run=payload)
 
 @app.post('/api/start-my-day')
 def start_my_day():
