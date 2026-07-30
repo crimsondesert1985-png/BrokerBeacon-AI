@@ -83,6 +83,11 @@ create table if not exists outreach_events(
 );
 create index if not exists idx_outreach_status_schedule on outreach(status,scheduled_at);
 create index if not exists idx_outreach_events_outreach on outreach_events(outreach_id,id);
+"""),
+(10, "recipient_intelligence", """
+alter table outreach add column contact_id integer default 0;
+create index if not exists idx_outreach_contact on outreach(contact_id);
+create index if not exists idx_contacts_prospect_readiness on contacts(prospect_id,roster_status,is_decision_maker,is_primary);
 """)
 ]
 
