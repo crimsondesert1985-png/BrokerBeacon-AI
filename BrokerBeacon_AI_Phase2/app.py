@@ -1013,6 +1013,87 @@ def rescore(pid):
         a = analyze(dict(row))
         c.execute("""update prospects set score=:score,growth_score=:growth_score,gov_fit=:gov_fit,niche_fit=:niche_fit,product_fit=:product_fit,ai_summary=:ai_summary,score_reasons=:score_reasons,next_best_action=:next_best_action,call_opener=:call_opener,likely_objection=:likely_objection,objection_response=:objection_response,updated_at=:updated_at where id=:id""", {**a,"updated_at":NOW(),"id":pid})
 
+def _dna_clamp(value):
+    return max(0, min(100, int(round(value))))
+
+def _dna_parse_date(value):
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(str(value).replace('Z', '+00:00')).replace(tzinfo=None)
+    except (TypeError, ValueError):
+        return None
+
+def calculate_broker_dna(c, prospect):
+    """Calculate and persist explainable Broker DNA metrics from stored activity only."""
+    p = dict(prospect)
+    pid = int(p['id'])
+    now = datetime.now()
+
+    opportunity = _dna_clamp(p.get('score') or 0)
+    product_fit = _dna_clamp((int(p.get('gov_fit') or 0) + int(p.get('niche_fit') or 0) + int(p.get('growth_score') or 0)) / 3)
+
+    action_rows = c.execute("select outcome,created_at,follow_up_date from sales_actions where prospect_id=? order by created_at desc", (pid,)).fetchall()
+    outreach_rows = c.execute("select status,created_at from outreach where prospect_id=? order by created_at desc", (pid,)).fetchall()
+    inbound_count = c.execute("select count(*) from inbound_messages where prospect_id=?", (pid,)).fetchone()[0]
+    meeting_count = c.execute("select count(*) from appointments where prospect_id=? and lower(status) not in ('cancelled','canceled')", (pid,)).fetchone()[0]
+    revenue_count = c.execute("select count(*) from revenue_events where prospect_id=?", (pid,)).fetchone()[0]
+    contact_count = c.execute("select count(*) from contacts where prospect_id=?", (pid,)).fetchone()[0]
+
+    event_dates = [_dna_parse_date(p.get('updated_at')), _dna_parse_date(p.get('created_at'))]
+    event_dates += [_dna_parse_date(r['created_at']) for r in action_rows]
+    event_dates += [_dna_parse_date(r['created_at']) for r in outreach_rows]
+    event_dates = [d for d in event_dates if d]
+    last_touch = max(event_dates) if event_dates else None
+    days_since = (now - last_touch).days if last_touch else 999
+
+    relationship = 18
+    relationship += min(contact_count, 3) * 7
+    relationship += min(len(action_rows), 5) * 5
+    relationship += min(meeting_count, 2) * 14
+    relationship += min(revenue_count, 2) * 16
+    relationship += min(inbound_count, 3) * 10
+    if days_since <= 7: relationship += 16
+    elif days_since <= 30: relationship += 9
+    elif days_since <= 60: relationship += 3
+    elif days_since > 120: relationship -= 12
+    relationship = _dna_clamp(relationship)
+
+    sent_count = sum(1 for r in outreach_rows if str(r['status'] or '').lower() in {'sent','delivered','opened','replied'})
+    positive_actions = sum(1 for r in action_rows if any(k in str(r['outcome'] or '').lower() for k in ('reply','meeting','application','funded','interested','connected')) )
+    engagement = 8 + min(sent_count, 5) * 6 + min(inbound_count, 3) * 16 + min(positive_actions, 3) * 12 + min(meeting_count, 2) * 14
+    if days_since <= 14: engagement += 10
+    engagement = _dna_clamp(engagement)
+
+    dna_score = _dna_clamp(opportunity * .40 + relationship * .30 + engagement * .15 + product_fit * .15)
+    tier = 'A' if dna_score >= 85 else 'B' if dna_score >= 70 else 'C' if dna_score >= 55 else 'D'
+
+    reasons = []
+    reasons.append(f'Opportunity strength is {opportunity}/100 from BrokerBeacon scoring.')
+    if relationship >= 70: reasons.append('Stored activity indicates an established or advancing relationship.')
+    elif days_since > 60: reasons.append(f'No recent stored touchpoint; last activity is approximately {days_since} days old.')
+    else: reasons.append('Relationship history is still developing.')
+    if inbound_count: reasons.append(f'{inbound_count} inbound message(s) are linked to this account.')
+    if meeting_count: reasons.append(f'{meeting_count} scheduled or completed appointment(s) are linked to this account.')
+    if revenue_count: reasons.append(f'{revenue_count} revenue event(s) demonstrate realized account value.')
+    if contact_count == 0: reasons.append('No contact record is stored; contact research would improve outreach readiness.')
+
+    if inbound_count or meeting_count:
+        next_action = 'Review the latest conversation and advance the account with a specific scenario or meeting follow-up.'
+    elif days_since > 45:
+        next_action = 'Re-engage with a personalized value message, then schedule a phone follow-up within two business days.'
+    elif contact_count == 0:
+        next_action = 'Verify a decision-maker contact before beginning outreach.'
+    else:
+        next_action = p.get('next_best_action') or 'Complete the next recommended account action.'
+
+    calculated_at = NOW()
+    c.execute("""insert into broker_dna(prospect_id,dna_score,tier,relationship_health,opportunity_strength,engagement_score,product_fit_score,next_best_action,reasons_json,calculated_at,updated_at)
+                 values(?,?,?,?,?,?,?,?,?,?,?)
+                 on conflict(prospect_id) do update set dna_score=excluded.dna_score,tier=excluded.tier,relationship_health=excluded.relationship_health,opportunity_strength=excluded.opportunity_strength,engagement_score=excluded.engagement_score,product_fit_score=excluded.product_fit_score,next_best_action=excluded.next_best_action,reasons_json=excluded.reasons_json,calculated_at=excluded.calculated_at,updated_at=excluded.updated_at""",
+              (pid,dna_score,tier,relationship,opportunity,engagement,product_fit,next_action,json.dumps(reasons),calculated_at,calculated_at))
+    return dict(prospect_id=pid,company=p.get('company') or '',city=p.get('city') or '',state=p.get('state') or '',status=p.get('status') or '',dna_score=dna_score,tier=tier,relationship_health=relationship,opportunity_strength=opportunity,engagement_score=engagement,product_fit_score=product_fit,next_best_action=next_action,reasons=reasons,calculated_at=calculated_at)
+
 init()
 print(f"BrokerBeacon startup: VERSION {BUILD_VERSION} · {BUILD_NAME}", flush=True)
 
@@ -1219,6 +1300,37 @@ def global_ash_ask():
             answer='I did not find an account that matches those exact criteria. Broaden the location, score, product fit, or follow-up requirement.'
         actions=[{'label':'Open Prospects','view':'prospects'},{'label':'Open Daily Plan','view':'daily'}]
     return jsonify(headline=headline,answer=answer,bullets=bullets,results=results,actions=actions,scope=scope)
+
+@app.get("/api/broker-dna")
+def broker_dna_api():
+    """Return a live, ranked Broker DNA roster and persist the latest calculations."""
+    with db() as c:
+        rows = c.execute("select * from prospects order by score desc, company").fetchall()
+        results = [calculate_broker_dna(c, row) for row in rows]
+    results.sort(key=lambda x: (-x['dna_score'], x['company'].lower()))
+    summary = {
+        'total': len(results),
+        'tier_a': sum(1 for x in results if x['tier'] == 'A'),
+        'tier_b': sum(1 for x in results if x['tier'] == 'B'),
+        'at_risk': sum(1 for x in results if x['relationship_health'] < 45),
+        'average_score': round(sum(x['dna_score'] for x in results) / len(results)) if results else 0,
+    }
+    return jsonify(summary=summary, brokers=results, methodology={
+        'opportunity_strength': 40,
+        'relationship_health': 30,
+        'engagement_score': 15,
+        'product_fit_score': 15,
+        'note': 'Scores use only data stored in BrokerBeacon and are model-based, not recorded revenue.'
+    })
+
+@app.get("/api/broker-dna/<int:pid>")
+def broker_dna_detail_api(pid):
+    with db() as c:
+        row = c.execute("select * from prospects where id=?", (pid,)).fetchone()
+        if not row:
+            return jsonify(error="Prospect not found"), 404
+        result = calculate_broker_dna(c, row)
+    return jsonify(result)
 
 @app.get("/api/prospects")
 def prospects():
@@ -3046,8 +3158,3 @@ def si():
 if __name__=="__main__":
     init()
     app.run(host=os.getenv("HOST","127.0.0.1"), port=int(os.getenv("PORT","5000")), debug=False)
-
-
-# --- Broker DNA implementation placeholder ---
-def calculate_broker_dna(*args, **kwargs):
-    raise NotImplementedError("Broker DNA implementation pending")

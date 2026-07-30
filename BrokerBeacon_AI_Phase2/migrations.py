@@ -33,6 +33,25 @@ create index if not exists idx_prod_company on production_records(company);
 create index if not exists idx_prod_period on production_records(period_month);
 create index if not exists idx_prod_lo on production_records(lo_name);
 create index if not exists idx_prod_type on production_records(loan_type);
+"""),
+(6, "broker_dna", """
+create table if not exists broker_dna(
+    prospect_id integer primary key,
+    dna_score integer not null default 0,
+    tier text not null default 'D',
+    relationship_health integer not null default 0,
+    opportunity_strength integer not null default 0,
+    engagement_score integer not null default 0,
+    product_fit_score integer not null default 0,
+    next_best_action text not null default '',
+    reasons_json text not null default '[]',
+    calculated_at text not null,
+    updated_at text not null,
+    foreign key(prospect_id) references prospects(id) on delete cascade
+);
+create index if not exists idx_broker_dna_score on broker_dna(dna_score desc);
+create index if not exists idx_broker_dna_tier on broker_dna(tier);
+create index if not exists idx_broker_dna_relationship on broker_dna(relationship_health desc);
 """)
 ]
 
@@ -90,20 +109,3 @@ def run_migrations(conn):
         conn.execute('alter table campaign_recipients add column attempts integer default 0')
     if 'last_attempt_at' not in recipient_cols:
         conn.execute("alter table campaign_recipients add column last_attempt_at text default ''")
-
-
-# --- Broker DNA migration placeholder ---
-# TODO: Add Migration 6:
-# create table broker_dna(
-#   prospect_id integer primary key,
-#   dna_score integer not null,
-#   tier text not null,
-#   relationship_health integer not null,
-#   opportunity_strength integer not null,
-#   engagement_score integer not null,
-#   product_fit_score integer not null,
-#   next_best_action text not null,
-#   reasons_json text not null,
-#   calculated_at text not null,
-#   updated_at text not null
-# )
