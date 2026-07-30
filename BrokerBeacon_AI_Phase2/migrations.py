@@ -192,6 +192,61 @@ insert or ignore into scout_sources(state,label,source_type,verify_url,active) v
 ('*','NMLS Consumer Access','National license verification','https://www.nmlsconsumeraccess.org/',1),
 ('NC','NC Commissioner of Banks','State license verification','https://www.nccob.gov/online/NMLS/licensesearch.aspx',1),
 ('SC','SC Consumer Finance Licensee Lookup','State license verification','https://consumerfinance.sc.gov/look-licensee',1);
+"""),
+(13, "scout_autopilot", """
+create table if not exists scout_autopilot(
+    id integer primary key check(id=1),
+    enabled integer not null default 0,
+    states_json text not null default '["NC","SC"]',
+    cadence_hours integer not null default 24,
+    states_per_run integer not null default 1,
+    daily_query_budget integer not null default 12,
+    research_limit integer not null default 12,
+    next_run_at text default '',
+    last_run_at text default '',
+    updated_at text not null
+);
+create table if not exists scout_autopilot_runs(
+    id integer primary key,
+    status text not null default 'Running',
+    states_json text not null default '[]',
+    query_count integer not null default 0,
+    discovery_count integer not null default 0,
+    researched_count integer not null default 0,
+    duplicate_count integer not null default 0,
+    error text default '',
+    started_at text not null,
+    finished_at text default ''
+);
+create table if not exists scout_coverage(
+    state text primary key,
+    last_searched_at text default '',
+    run_count integer not null default 0,
+    query_count integer not null default 0,
+    discovery_count integer not null default 0,
+    duplicate_count integer not null default 0,
+    updated_at text not null
+);
+create table if not exists scout_research(
+    candidate_id integer primary key,
+    stage text not null default 'Research queued',
+    website_status text default '',
+    decision_maker text default '',
+    public_email text default '',
+    public_phone text default '',
+    nmls_clue text default '',
+    growth_signals text default '',
+    evidence_json text not null default '[]',
+    compliance_flags_json text not null default '[]',
+    ash_score integer not null default 0,
+    ash_reason text default '',
+    researched_at text default '',
+    updated_at text not null
+);
+create index if not exists idx_scout_autopilot_runs on scout_autopilot_runs(id desc);
+create index if not exists idx_scout_research_stage on scout_research(stage,ash_score desc);
+insert or ignore into scout_autopilot(id,enabled,states_json,cadence_hours,states_per_run,daily_query_budget,research_limit,next_run_at,last_run_at,updated_at)
+values(1,0,'["NC","SC"]',24,1,12,12,'','',datetime('now'));
 """)
 ]
 
