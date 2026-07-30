@@ -14,8 +14,8 @@ css = '''
 if '/* v12.2 Ash Mission Control */' not in text:
     text = text.replace('</style></head>', css + '</style></head>')
 
-old_js = """<div class=\"priority-title\"><b>${esc(p.company)}</b><span class=\"health ${p.health.toLowerCase().replace(' ','-')}\">${esc(p.health)}</span></div><div class=\"reason\">${esc(p.reason)}</div><small class=\"muted\">${esc(p.city||'')}, ${esc(p.state||'')} · ${esc(p.status)} · ${p.days_inactive>=999?'No activity logged':p.days_inactive+' days since activity'}</small>"""
-new_js = """<div class=\"priority-title\"><b>${esc(p.company)}</b><span class=\"health ${p.health.toLowerCase().replace(' ','-')}\">${esc(p.health)}</span><span class=\"mission-value\">${money(p.modeled_annual_volume||0)} modeled</span></div><div class=\"reason\">${esc(p.reason)}</div><div class=\"mission-impact\">Expected path: ${esc(p.expected_path||'Complete the next best action')}</div><small class=\"muted\">${esc(p.city||'')}, ${esc(p.state||'')} · ${esc(p.status)} · ${p.days_inactive>=999?'No activity logged':p.days_inactive+' days since activity'}</small>"""
+old_js = """<div class="priority-title"><b>${esc(p.company)}</b><span class="health ${p.health.toLowerCase().replace(' ','-')}">${esc(p.health)}</span></div><div class="reason">${esc(p.reason)}</div><small class="muted">${esc(p.city||'')}, ${esc(p.state||'')} · ${esc(p.status)} · ${p.days_inactive>=999?'No activity logged':p.days_inactive+' days since activity'}</small>"""
+new_js = """<div class="priority-title"><b>${esc(p.company)}</b><span class="health ${p.health.toLowerCase().replace(' ','-')}">${esc(p.health)}</span><span class="mission-value">${money(p.modeled_annual_volume||0)} modeled</span></div><div class="reason">${esc(p.reason)}</div><div class="mission-impact">Expected path: ${esc(p.expected_path||'Complete the next best action')}</div><small class="muted">${esc(p.city||'')}, ${esc(p.state||'')} · ${esc(p.status)} · ${p.days_inactive>=999?'No activity logged':p.days_inactive+' days since activity'}</small>"""
 if old_js in text:
     text = text.replace(old_js, new_js)
 else:
@@ -27,9 +27,9 @@ old_backend = """    top=ranked[:5]
     projected_pipeline=projected_apps*avg_loan
     strongest=max(products,key=lambda x:x['count'])['name'] if products else 'scenario support'
     lead=top[0] if top else None
-    brief=(f\"Start with {lead['company']}. {lead['reason']} \" if lead else \"Start with the highest-ranked account. \") + f\"There are {len(alerts)} new-account alerts, {len(at_risk)} relationships at risk, and {replies_attention} replies needing attention. The strongest product lane in the current database is {strongest}.\"
+    brief=(f"Start with {lead['company']}. {lead['reason']} " if lead else "Start with the highest-ranked account. ") + f"There are {len(alerts)} new-account alerts, {len(at_risk)} relationships at risk, and {replies_attention} replies needing attention. The strongest product lane in the current database is {strongest}."
     recommendations=[]
-    for x in top[:3]: recommendations.append({'title':f\"{x['company']} · {x['health']}\",'detail':x['reason']})
+    for x in top[:3]: recommendations.append({'title':f"{x['company']} · {x['health']}",'detail':x['reason']})
     return jsonify(metrics={'priority_calls':len(top),'new_alerts':len(alerts),'at_risk':len(at_risk),'meetings_week':meetings,'meeting_opportunities':min(4,max(0,len([x for x in top if x['score']>=75]))),'application_opportunities':projected_apps,'projected_pipeline_potential':projected_pipeline,'replies_attention':replies_attention},priorities=top,new_alerts=alerts,at_risk=at_risk[:6],products=products,health=health,recommendations=recommendations,goals={'completed':actions_week,'target':50,'percent':min(100,round(actions_week/50*100))},campaigns={'active':active,'queued':camps.get('Queued',0),'sent':camps.get('Sent',0),'failed':camps.get('Failed',0)},brief=brief)
 """
 new_backend = """    top=ranked[:5]
@@ -50,9 +50,9 @@ new_backend = """    top=ranked[:5]
     projected_revenue=sum(int(x.get('modeled_annual_revenue') or 0) for x in top)
     strongest=max(products,key=lambda x:x['count'])['name'] if products else 'scenario support'
     lead=top[0] if top else None
-    brief=(f\"Start with {lead['company']}. {lead['reason']} \" if lead else \"Start with the highest-ranked account. \") + f\"Completing today's five priority actions represents approximately ${projected_pipeline:,.0f} in modeled 12-month funded volume and ${projected_revenue:,.0f} in modeled lender revenue. These are planning estimates, not recorded or guaranteed results. There are {len(alerts)} new-account alerts, {len(at_risk)} relationships at risk, and {replies_attention} replies needing attention. The strongest product lane in the current database is {strongest}.\"
+    brief=(f"Start with {lead['company']}. {lead['reason']} " if lead else "Start with the highest-ranked account. ") + f"Completing today's five priority actions represents approximately ${projected_pipeline:,.0f} in modeled 12-month funded volume and ${projected_revenue:,.0f} in modeled lender revenue. These are planning estimates, not recorded or guaranteed results. There are {len(alerts)} new-account alerts, {len(at_risk)} relationships at risk, and {replies_attention} replies needing attention. The strongest product lane in the current database is {strongest}."
     recommendations=[]
-    for x in top[:3]: recommendations.append({'title':f\"{x['company']} · {x['health']}\",'detail':f\"{x['reason']} Modeled 12-month volume: ${x['modeled_annual_volume']:,.0f}.\"})
+    for x in top[:3]: recommendations.append({'title':f"{x['company']} · {x['health']}",'detail':f"{x['reason']} Modeled 12-month volume: ${x['modeled_annual_volume']:,.0f}."})
     return jsonify(metrics={'priority_calls':len(top),'new_alerts':len(alerts),'at_risk':len(at_risk),'meetings_week':meetings,'meeting_opportunities':min(4,max(0,len([x for x in top if x['score']>=75]))),'application_opportunities':projected_apps,'projected_pipeline_potential':projected_pipeline,'projected_revenue_potential':projected_revenue,'replies_attention':replies_attention},priorities=top,new_alerts=alerts,at_risk=at_risk[:6],products=products,health=health,recommendations=recommendations,goals={'completed':actions_week,'target':50,'percent':min(100,round(actions_week/50*100))},campaigns={'active':active,'queued':camps.get('Queued',0),'sent':camps.get('Sent',0),'failed':camps.get('Failed',0)},brief=brief,methodology='Modeled opportunity uses stored account score, relationship health, status, configured conversion assumptions, average loan amount, and revenue basis points. It is not recorded production or guaranteed revenue.')
 """
 if old_backend not in text:
@@ -60,3 +60,5 @@ if old_backend not in text:
 text = text.replace(old_backend, new_backend)
 APP.write_text(text, encoding='utf-8')
 print('Ash Mission Control 12.2 applied')
+
+# Workflow trigger marker: 2026-07-30
