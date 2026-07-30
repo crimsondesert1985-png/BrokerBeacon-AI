@@ -65,6 +65,24 @@ alter table outreach add column source_action_id integer default 0;
 alter table outreach add column recommended_send_at text default '';
 alter table outreach add column rationale text default '';
 create index if not exists idx_outreach_source_action on outreach(source_action_id);
+"""),
+(9, "outreach_execution_center", """
+alter table outreach add column destination text default '';
+alter table outreach add column scheduled_at text default '';
+alter table outreach add column approved_at text default '';
+alter table outreach add column sent_at text default '';
+alter table outreach add column error text default '';
+alter table outreach add column delivery_method text default '';
+alter table outreach add column updated_at text default '';
+create table if not exists outreach_events(
+    id integer primary key,
+    outreach_id integer not null,
+    event_type text not null,
+    detail text default '',
+    created_at text not null
+);
+create index if not exists idx_outreach_status_schedule on outreach(status,scheduled_at);
+create index if not exists idx_outreach_events_outreach on outreach_events(outreach_id,id);
 """)
 ]
 
