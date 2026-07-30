@@ -1,0 +1,40 @@
+name: Apply Ash Mission Control
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/ash-mission-control
+    paths:
+      - tools/apply_ash_mission_control.py
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/ash-mission-control
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Apply Mission Control patch
+        run: python tools/apply_ash_mission_control.py
+      - name: Validate Python syntax
+        run: |
+          python -m py_compile BrokerBeacon_AI_Phase2/app.py
+          python -m py_compile BrokerBeacon_AI_Phase2/migrations.py
+      - name: Commit generated application changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add BrokerBeacon_AI_Phase2/app.py
+          if git diff --cached --quiet; then
+            echo "No generated changes to commit"
+          else
+            git commit -m "Implement Ash Mission Control 12.2"
+            git push origin HEAD:feature/ash-mission-control
+          fi
