@@ -13,8 +13,8 @@ from voice_agent import configured as voice_configured, create_twilio_call, huma
 from guideline_index import seed_index, index_fha_pdf, search as search_guideline_index, stats as guideline_index_stats
 
 app = Flask(__name__)
-BUILD_VERSION = "13.1"
-BUILD_NAME = "SCOUT WEB DISCOVERY"
+BUILD_VERSION = "13.2"
+BUILD_NAME = "SCOUT MULTI-SOURCE DISCOVERY"
 DB = Path(__file__).with_name("brokerbeacon.db")
 NOW = lambda: datetime.now().isoformat(timespec="seconds")
 
@@ -763,7 +763,7 @@ $('#pemail').textContent=p.email||'Not publicly listed';
 $('#pcontactactions').innerHTML=contactButtons(p)||'<span class="contact-missing">Open the source or company website to locate current contact information.</span>';
 $('#pcontactbadge').textContent=(p.phone||p.email)?'Direct contact ready':'Website contact available';
 $('#scores').innerHTML=[['Opportunity',p.score],['Growth',p.growth_score],['Government fit',p.gov_fit],['HELOC/Jumbo',p.niche_fit]].map(x=>`<div class=scorebox><span class=muted>${x[0]}</span><strong>${x[1]}</strong></div>`).join('');$('#psum').textContent=p.ai_summary;$('#preasons').innerHTML=p.score_reasons.map(x=>`<li>${esc(x)}</li>`).join('');$('#psource').innerHTML=[p.source_name?'<b>Source:</b> '+esc(p.source_name):'',p.source_url?'<a class="btn smallbtn" target="_blank" rel="noopener" href="'+esc(p.source_url)+'">Open source</a>':'',p.nmls?'<a class="btn smallbtn" target="_blank" rel="noopener" href="https://www.nmlsconsumeraccess.org/">Verify in NMLS Consumer Access</a>':'',p.verification_notes?'<div style="margin-top:8px">'+esc(p.verification_notes)+'</div>':''].filter(Boolean).join(' ');$('#pproducts').innerHTML=p.product_fit.split(',').filter(Boolean).map(x=>`<span class=tag>${esc(x.trim())}</span>`).join('');$('#pnext').textContent=p.next_best_action;$('#pcall').value=p.call_opener;$('#pobj').textContent=p.likely_objection;$('#presp').textContent=p.objection_response;$('#profileOut').onclick=()=>{show('outreach');$('#op').value=p.id;$('#profile').close()};renderMemory(p.memories);$('#profile').showModal()}
-$('#appVersion').textContent='VERSION 13.1 · SCOUT WEB DISCOVERY';
+$('#appVersion').textContent='VERSION 13.2 · SCOUT MULTI-SOURCE DISCOVERY';
 document.querySelector('nav [data-v="opportunityengine"]')?.insertAdjacentHTML('afterend','<button data-v="callprep">☎ Call Prep</button>');
 document.querySelector('nav [data-v="callprep"]')?.addEventListener('click',()=>show('callprep'));
 const WORKFLOW_NAV=[
@@ -2773,9 +2773,9 @@ def _scout_company_guess(title):
     for separator in (' | ',' — ',' – ',' - '):
         if separator in value:
             parts=[x.strip() for x in value.split(separator) if x.strip()]
-            likely=next((x for x in parts if re.search(r'\b(mortgage|home loans?|lending|financial)\b',x,re.I)),parts[0] if parts else value)
-            value=likely;break
+            value=parts[0] if parts else value;break
     value=re.sub(r'^(new|meet|welcome to|introducing)\s+','',value,flags=re.I)
+    value=re.split(r'\b(?:launches|opens|expands|partners|unveils|announces|founds|founded|hires)\b',value,maxsplit=1,flags=re.I)[0].strip(' :,-')
     return value[:180]
 
 def _scout_bing_search(query,limit=8):
@@ -2797,7 +2797,35 @@ def _scout_bing_search(query,limit=8):
         if parsed.scheme not in {'http','https'} or not parsed.netloc or result_url in seen:continue
         haystack=(title+' '+snippet).lower()
         if 'mortgage' not in haystack or not any(term in haystack for term in ('broker','brokerage','home loan','lending')):continue
-        seen.add(result_url);results.append({'title':title,'snippet':snippet,'url':result_url})
+        seen.add(result_url);results.append({'title':title,'snippet':snippet,'url':result_url,'source_name':'Bing public web RSS'})
+        if len(results)>=limit:break
+    return results
+
+def _scout_google_news_search(query,limit=10):
+    url='https://news.google.com/rss/search?'+urllib.parse.urlencode({
+        'q':query,'hl':'en-US','gl':'US','ceid':'US:en'
+    })
+    req=urllib.request.Request(url,headers={
+        'User-Agent':'Mozilla/5.0 BrokerBeaconScout/1.0',
+        'Accept':'application/rss+xml, application/xml, text/xml;q=0.9, */*;q=0.8',
+        'Accept-Language':'en-US,en;q=0.9',
+    })
+    with urllib.request.urlopen(req,timeout=12) as response:
+        raw=response.read(1000000).decode('utf-8','ignore')
+    results=[];seen=set()
+    for item in re.findall(r'(?is)<item>(.*?)</item>',raw):
+        def tag(name):
+            match=re.search(rf'(?is)<{name}>(.*?)</{name}>',item)
+            return html.unescape(re.sub(r'^<!\[CDATA\[|\]\]>$','',match.group(1).strip())) if match else ''
+        result_url=tag('link').strip();title=_scout_text(tag('title'));snippet=_scout_text(tag('description'))
+        parsed=urllib.parse.urlparse(result_url)
+        if parsed.scheme not in {'http','https'} or not parsed.netloc or result_url in seen:continue
+        haystack=(title+' '+snippet).lower()
+        if 'mortgage' not in haystack or not any(term in haystack for term in ('broker','brokerage','home loan','lending','lender')):continue
+        if not any(term in haystack for term in ('launch','open','new','license','expand','growth','hire','branch','founded')):continue
+        seen.add(result_url);results.append({
+            'title':title,'snippet':snippet,'url':result_url,'source_name':'Google News public RSS'
+        })
         if len(results)>=limit:break
     return results
 
@@ -2817,7 +2845,7 @@ def _scout_candidate_from_result(result,state,metro):
         'nmls':nmls_match.group(1) if nmls_match else '','owner':'',
         'email':email_match.group(0) if email_match else '','phone':phone_match.group(0) if phone_match else '',
         'website':website,'linkedin_url':linkedin,'signal':signal,'evidence':snippet[:900],
-        'source_name':'Bing public web RSS','source_url':source_url,'confidence':min(90,confidence)
+        'source_name':result.get('source_name') or 'Public web search','source_url':source_url,'confidence':min(90,confidence)
     }
 
 @app.get('/api/scout-discovery')
@@ -2847,21 +2875,33 @@ def run_scout_discovery():
     state_name=US_STATES[state]
     metros=[metro] if metro else SCOUT_DEFAULT_METROS.get(state,[])[:3]
     query_places=metros or [state_name]
-    queries=[
+    web_queries=[
         f'"mortgage broker" ("newly licensed" OR opened OR launched) "{state_name}"',
         f'"independent mortgage broker" (hiring OR growing OR "new branch") "{state_name}"',
     ]
-    queries.extend(f'"mortgage broker" (opened OR launched OR hiring) "{place}" {state}' for place in query_places)
-    queries=list(dict.fromkeys(queries))[:5];started=NOW()
+    web_queries.extend(f'"mortgage broker" (opened OR launched OR hiring) "{place}" {state}' for place in query_places)
+    web_queries=list(dict.fromkeys(web_queries))[:5]
+    news_queries=[
+        f'"mortgage broker" (launches OR opens OR expands OR licensed) "{state_name}"',
+        f'"mortgage brokerage" (launch OR new OR opens OR expansion) "{state_name}"',
+        f'"home loans" (launches OR opens OR expands OR founded) "{state_name}"',
+    ]
+    if metro:news_queries.append(f'"mortgage broker" (launches OR opens OR expands) "{metro}"')
+    search_jobs=[(_scout_bing_search,q,8) for q in web_queries]+[(_scout_google_news_search,q,10) for q in news_queries]
+    query_count=len(search_jobs);started=NOW()
     with db() as c:
-        run_id=c.execute("insert into scout_runs(state,metro,status,query_count,started_at) values(?,?,?,?,?)",(state,metro,'Running',len(queries),started)).lastrowid
+        run_id=c.execute("insert into scout_runs(state,metro,status,query_count,started_at) values(?,?,?,?,?)",(state,metro,'Running',query_count,started)).lastrowid
     raw_results=[];errors=[]
-    with ThreadPoolExecutor(max_workers=min(3,len(queries))) as pool:
-        futures={pool.submit(_scout_bing_search,q,8):q for q in queries}
+    with ThreadPoolExecutor(max_workers=min(4,query_count)) as pool:
+        futures={pool.submit(fn,q,limit):(fn.__name__,q) for fn,q,limit in search_jobs}
         for future in as_completed(futures):
             try:raw_results.extend(future.result())
             except Exception as exc:errors.append(f"{type(exc).__name__}: {str(exc)[:120]}")
-    unique={x['url']:x for x in raw_results};new_count=duplicate_count=0
+    territory_terms=[state_name.lower()]+([metro.lower()] if metro else [])
+    unique={
+        x['url']:x for x in raw_results
+        if any(term in (x.get('title','')+' '+x.get('snippet','')).lower() for term in territory_terms)
+    };new_count=duplicate_count=0
     with db() as c:
         for result in unique.values():
             candidate=_scout_candidate_from_result(result,state,metro)
@@ -2883,7 +2923,7 @@ def run_scout_discovery():
         c.execute("update scout_runs set status=?,result_count=?,new_count=?,duplicate_count=?,error=?,finished_at=? where id=?",(final_status,len(unique),new_count,duplicate_count,error,NOW(),run_id))
         c.execute("insert into activity(action,detail,created_at) values(?,?,?)",('Scout web discovery',f'{state} · {len(unique)} results · {new_count} candidates · human review required',NOW()))
     if not unique and errors:return jsonify(error='Public web search was unavailable. Scout recorded the failed run; try again later.',detail=errors[:3]),502
-    return jsonify(ok=True,run_id=run_id,state=state,queries=len(queries),results=len(unique),new_candidates=new_count,duplicates=duplicate_count,errors=errors)
+    return jsonify(ok=True,run_id=run_id,state=state,queries=query_count,results=len(unique),new_candidates=new_count,duplicates=duplicate_count,errors=errors)
 
 @app.post('/api/scout-candidates/<int:candidate_id>/approve')
 def approve_scout_candidate(candidate_id):
