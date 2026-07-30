@@ -59,6 +59,12 @@ alter table sales_actions add column next_step text default '';
 alter table sales_actions add column source_view text default '';
 create index if not exists idx_sales_actions_prospect_created on sales_actions(prospect_id,created_at desc);
 create index if not exists idx_sales_actions_follow_up on sales_actions(follow_up_date);
+"""),
+(8, "intelligent_follow_up", """
+alter table outreach add column source_action_id integer default 0;
+alter table outreach add column recommended_send_at text default '';
+alter table outreach add column rationale text default '';
+create index if not exists idx_outreach_source_action on outreach(source_action_id);
 """)
 ]
 
