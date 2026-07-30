@@ -13,8 +13,8 @@ from voice_agent import configured as voice_configured, create_twilio_call, huma
 from guideline_index import seed_index, index_fha_pdf, search as search_guideline_index, stats as guideline_index_stats
 
 app = Flask(__name__)
-BUILD_VERSION = "15.0"
-BUILD_NAME = "SCOUT AUTOPILOT"
+BUILD_VERSION = "16.0"
+BUILD_NAME = "AUTOPILOT CONTROL TOWER"
 DB = Path(os.getenv("BROKERBEACON_DB_PATH") or Path(__file__).with_name("brokerbeacon.db"))
 NOW = lambda: datetime.now().isoformat(timespec="seconds")
 
@@ -326,6 +326,7 @@ body.dark-mode .production-kpi,body.dark-mode .production-company{background:#10
 .scout-discovery{margin-bottom:14px;padding:0!important;overflow:hidden}.scout-head{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:17px 19px;background:linear-gradient(125deg,#0d2347,#164b82 74%,#1a6c75);color:#fff}.scout-head h3{color:#fff!important;margin:4px 0}.scout-head p{margin:0;color:#dce9f7}.scout-head .kicker{color:#8be7f2!important}.scout-controls{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.scout-controls select,.scout-controls input{min-width:145px;background:#fff!important}.scout-body{padding:15px 18px}.scout-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}.scout-metric{padding:11px;border:1px solid #dce5f0;border-radius:11px;background:#f8fbff}.scout-metric small{display:block;color:#718097;font-size:9px;text-transform:uppercase;font-weight:850}.scout-metric b{display:block;color:#0d2347;font-size:20px;margin-top:4px}.scout-candidates{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.scout-candidate{border:1px solid #d8e3ef;border-radius:13px;padding:13px;background:#fff}.scout-candidate-top{display:flex;justify-content:space-between;gap:10px}.scout-candidate h4{margin:0 0 4px;color:#0d2347}.scout-fields{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px}.scout-fields input{width:100%;padding:8px;font-size:11px}.scout-evidence{margin-top:8px;padding:9px;border-left:3px solid #174ea6;background:#f3f7fc;border-radius:0 9px 9px 0;font-size:11px;line-height:1.4;color:#52647c}.scout-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}.scout-sources{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 12px}.scout-source{font-size:10px;padding:5px 8px;border:1px solid #cbd9ea;border-radius:999px;background:#f7faff;color:#174b91;text-decoration:none}.scout-safety{font-size:11px;color:#65758c;margin-top:10px}.dark-mode .scout-head{background:linear-gradient(125deg,#081a36,#163b68 74%,#164b52)}.dark-mode .scout-metric,.dark-mode .scout-candidate{background:#101d34!important;border-color:#2b405f!important}.dark-mode .scout-metric b,.dark-mode .scout-candidate h4{color:#edf4ff}.dark-mode .scout-evidence{background:#14243e;color:#b8c9df}.dark-mode .scout-source{background:#142642;color:#c9ddfa;border-color:#345375}@media(max-width:900px){.scout-candidates{grid-template-columns:1fr}.scout-metrics{grid-template-columns:repeat(2,1fr)}}@media(max-width:600px){.scout-head{align-items:flex-start;flex-direction:column}.scout-controls{width:100%}.scout-controls>*{flex:1}.scout-fields{grid-template-columns:1fr}}
 /* Sprint 23 · Scout Autopilot */
 .autopilot-shell{margin:14px 18px 0;border:1px solid #cfdced;border-radius:15px;background:linear-gradient(135deg,#f8fbff,#f2f0ff);overflow:hidden}.autopilot-top{display:flex;justify-content:space-between;gap:14px;align-items:center;padding:14px 15px;border-bottom:1px solid #dce5f0}.autopilot-title{display:flex;align-items:center;gap:10px}.autopilot-orb{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,#2563eb,#7657ff);box-shadow:0 8px 18px rgba(37,99,235,.22)}.autopilot-title h4{margin:0}.autopilot-title small{display:block;margin-top:3px}.autopilot-switch{display:flex;align-items:center;gap:8px;font-weight:800;color:#344865}.autopilot-body{padding:14px 15px}.autopilot-grid{display:grid;grid-template-columns:1.3fr repeat(4,minmax(100px,.55fr));gap:8px;align-items:end}.autopilot-states{min-height:72px;max-height:120px;overflow:auto;display:flex;gap:5px;flex-wrap:wrap;padding:8px;border:1px solid #ccd9ea;border-radius:10px;background:#fff}.autopilot-state{display:inline-flex;gap:4px;align-items:center;padding:4px 7px;border:1px solid #d5e0ed;border-radius:999px;font-size:10px}.autopilot-state input{min-height:0}.autopilot-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:11px}.autopilot-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:11px}.autopilot-stat{padding:9px;border:1px solid #dce5f0;border-radius:10px;background:#fff}.autopilot-stat small{display:block;font-size:8px;text-transform:uppercase;color:#75849a;font-weight:900}.autopilot-stat b{display:block;margin-top:4px;color:#102a51}.research-queue{margin-top:13px}.research-card{display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:11px;align-items:center;padding:11px;border:1px solid #dce5f0;border-radius:12px;background:#fff;margin-top:7px}.research-score{width:45px;height:45px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,#e8f0ff,#efeaff);color:#174ea6;font-weight:950}.research-flags{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}.research-flag{padding:3px 6px;border-radius:999px;background:#fff3db;color:#7e5b13;font-size:9px}.coverage-strip{display:flex;gap:6px;overflow:auto;padding-bottom:4px;margin-top:10px}.coverage-state{min-width:92px;padding:8px;border-radius:9px;background:#edf4fc;border:1px solid #d5e1ef;font-size:9px}.coverage-state b{display:block;color:#173c70;margin-bottom:3px}.dark-mode .autopilot-shell{background:linear-gradient(135deg,#0e2039,#1a1d3e);border-color:#2c4260}.dark-mode .autopilot-top{border-color:#2c4260}.dark-mode .autopilot-states,.dark-mode .autopilot-stat,.dark-mode .research-card{background:#10233e;border-color:#2d4462}.dark-mode .autopilot-title h4,.dark-mode .autopilot-stat b{color:#edf4ff!important}.dark-mode .coverage-state{background:#142946;border-color:#304966}.dark-mode .coverage-state b{color:#d8e7fb}@media(max-width:1050px){.autopilot-grid{grid-template-columns:1fr 1fr 1fr}.autopilot-grid>div:first-child{grid-column:1/-1}}@media(max-width:700px){.autopilot-shell{margin:12px 10px 0}.autopilot-top{align-items:flex-start;flex-direction:column}.autopilot-grid,.autopilot-summary{grid-template-columns:1fr 1fr}.research-card{grid-template-columns:45px 1fr}.research-card>button{grid-column:1/-1}}
+.control-tower{margin:14px 18px 0;padding:16px;border:1px solid #cbd9ec;border-radius:16px;background:radial-gradient(circle at 85% 0,#d8e7ff 0,transparent 34%),linear-gradient(145deg,#071a37,#102f5d);color:#f8fbff;box-shadow:0 18px 36px rgba(12,41,82,.2)}.tower-head{display:flex;justify-content:space-between;gap:16px;align-items:center}.tower-head h3{margin:3px 0;color:#fff}.tower-head p{margin:0;color:#b9c9df}.tower-controls{display:flex;gap:7px;align-items:end;flex-wrap:wrap}.tower-controls label{color:#c9d6e8;margin:0}.tower-controls select,.tower-controls input{background:#ffffff12;color:#fff;border-color:#ffffff2e}.tower-controls option{color:#102a51}.tower-stop{border-color:#ff7185!important;color:#ffb5c0!important}.tower-stop.active{background:#e33e58!important;color:#fff!important}.agent-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px}.control-tower .agent-card{padding:11px;border:1px solid #ffffff1f;border-radius:12px;background:#ffffff0c}.control-tower .agent-card b{color:#fff}.control-tower .agent-card-top{display:flex;justify-content:space-between;gap:8px}.control-tower .agent-card small{color:#aebfd7}.agent-status{font-size:9px;padding:4px 7px;border-radius:999px;background:#4de0aa20;color:#78f0c4}.agent-status.working{background:#60a5fa25;color:#a8ccff}.tower-metrics{display:grid;grid-template-columns:repeat(6,1fr);gap:7px;margin-top:10px}.tower-metric{padding:9px;border:1px solid #ffffff19;border-radius:10px;background:#050f2240}.tower-metric small{display:block;color:#a9bad1;font-size:8px;text-transform:uppercase}.tower-metric b{display:block;margin-top:4px;font-size:17px;color:#fff}.tower-lower{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.tower-box{padding:11px;border:1px solid #ffffff19;border-radius:11px;background:#07172d90}.tower-box h4{margin:0 0 7px;color:#fff}.tower-run{display:grid;grid-template-columns:88px 1fr auto;gap:8px;padding:7px 0;border-bottom:1px solid #ffffff14;font-size:10px}.tower-run:last-child{border:0}.tower-run .warn{color:#ffcc75}.tower-empty{padding:12px;color:#aebfd7;text-align:center}.dark-mode .control-tower{border-color:#2f4c73}@media(max-width:1050px){.agent-grid{grid-template-columns:1fr 1fr}.tower-metrics{grid-template-columns:repeat(3,1fr)}}@media(max-width:700px){.control-tower{margin:12px 10px}.tower-head{align-items:flex-start;flex-direction:column}.agent-grid,.tower-lower{grid-template-columns:1fr}.tower-metrics{grid-template-columns:1fr 1fr}}
 
 /* Sprint 21 · Ash Agent Command Center */
 .agent-center{margin:14px 0;padding:0!important;overflow:hidden}.agent-center-head{display:flex;justify-content:space-between;gap:18px;align-items:center;padding:18px 20px;background:linear-gradient(125deg,#0d2347,#17467d 72%,#5c2748 140%);color:#fff}.agent-center-head h3{margin:4px 0;color:#fff!important}.agent-center-head p{margin:0;color:#dce9f7}.agent-center-head .kicker{color:#ff9eaa!important}.agent-center-body{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(300px,.8fr);gap:14px;padding:16px}.agent-roster{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}.agent-card{border:1px solid #d9e4f1;border-radius:12px;background:#f8fbff;padding:11px}.agent-card-top{display:flex;align-items:center;gap:7px}.agent-avatar{width:27px;height:27px;border-radius:9px;display:grid;place-items:center;background:#e8f0fe;color:#174b91;font-weight:950}.agent-card b{display:block;color:#0d2347;font-size:11px}.agent-card small{display:block;margin-top:6px;line-height:1.35}.agent-run-status{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:13px 0 8px}.agent-step{display:grid;grid-template-columns:35px minmax(0,1fr) auto;gap:9px;align-items:start;padding:10px 0;border-bottom:1px solid #e2eaf3}.agent-step:last-child{border-bottom:0}.agent-step-order{width:29px;height:29px;border-radius:50%;display:grid;place-items:center;background:#174ea6;color:#fff;font-weight:900;font-size:11px}.agent-step b{color:#0d2347}.agent-step-result{font-size:11px;color:#5d6f88;margin-top:4px;line-height:1.4}.agent-confidence{font-size:10px;font-weight:850;color:#174b91;white-space:nowrap}.agent-warning{color:#9a6210!important}.agent-plan-account{display:grid;grid-template-columns:30px minmax(0,1fr) auto;gap:9px;padding:10px;border:1px solid #dce5f0;border-radius:11px;margin:7px 0;background:#fff}.agent-plan-rank{font-weight:950;color:#174ea6}.agent-plan-account b{color:#0d2347}.agent-plan-account p{margin:4px 0;font-size:11px;line-height:1.4;color:#53647c}.agent-plan-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}.agent-principle{padding:10px 12px;border-left:4px solid #c6283d;background:#fdeff1;border-radius:0 10px 10px 0;font-size:11px;color:#65333b}.agent-empty{padding:22px;text-align:center;color:#718097;border:1px dashed #c7d4e3;border-radius:12px}.dark-mode .agent-center-head{background:linear-gradient(125deg,#081a36,#173d6b 72%,#4a203a)}.dark-mode .agent-card,.dark-mode .agent-plan-account{background:#101d34!important;border-color:#2b405f!important}.dark-mode .agent-card b,.dark-mode .agent-step b,.dark-mode .agent-plan-account b{color:#edf4ff}.dark-mode .agent-step{border-color:#2b405f}.dark-mode .agent-step-result,.dark-mode .agent-plan-account p{color:#aebed4}.dark-mode .agent-principle{background:#351d25;color:#f1c9d0}@media(max-width:1050px){.agent-center-body{grid-template-columns:1fr}.agent-roster{grid-template-columns:repeat(3,1fr)}}@media(max-width:650px){.agent-center-head{align-items:flex-start;flex-direction:column}.agent-roster{grid-template-columns:1fr 1fr}.agent-step{grid-template-columns:32px 1fr}.agent-confidence{grid-column:2}.agent-plan-account{grid-template-columns:28px 1fr}.agent-plan-account>button{grid-column:2}}
@@ -797,7 +798,7 @@ $('#pemail').textContent=p.email||'Not publicly listed';
 $('#pcontactactions').innerHTML=contactButtons(p)||'<span class="contact-missing">Open the source or company website to locate current contact information.</span>';
 $('#pcontactbadge').textContent=(p.phone||p.email)?'Direct contact ready':'Website contact available';
 $('#scores').innerHTML=[['Opportunity',p.score],['Growth',p.growth_score],['Government fit',p.gov_fit],['HELOC/Jumbo',p.niche_fit]].map(x=>`<div class=scorebox><span class=muted>${x[0]}</span><strong>${x[1]}</strong></div>`).join('');$('#psum').textContent=p.ai_summary;$('#preasons').innerHTML=p.score_reasons.map(x=>`<li>${esc(x)}</li>`).join('');$('#psource').innerHTML=[p.source_name?'<b>Source:</b> '+esc(p.source_name):'',p.source_url?'<a class="btn smallbtn" target="_blank" rel="noopener" href="'+esc(p.source_url)+'">Open source</a>':'',p.nmls?'<a class="btn smallbtn" target="_blank" rel="noopener" href="https://www.nmlsconsumeraccess.org/">Verify in NMLS Consumer Access</a>':'',p.verification_notes?'<div style="margin-top:8px">'+esc(p.verification_notes)+'</div>':''].filter(Boolean).join(' ');$('#pproducts').innerHTML=p.product_fit.split(',').filter(Boolean).map(x=>`<span class=tag>${esc(x.trim())}</span>`).join('');$('#pnext').textContent=p.next_best_action;$('#pcall').value=p.call_opener;$('#pobj').textContent=p.likely_objection;$('#presp').textContent=p.objection_response;$('#profileOut').onclick=()=>{show('outreach');$('#op').value=p.id;$('#profile').close()};renderMemory(p.memories);$('#profile').showModal()}
-$('#appVersion').textContent='VERSION 15.0 · SCOUT AUTOPILOT';
+$('#appVersion').textContent='VERSION 16.0 · AUTOPILOT CONTROL TOWER';
 document.querySelector('nav [data-v="opportunityengine"]')?.insertAdjacentHTML('afterend','<button data-v="callprep">☎ Call Prep</button>');
 document.querySelector('nav [data-v="callprep"]')?.addEventListener('click',()=>show('callprep'));
 const WORKFLOW_NAV=[
@@ -896,9 +897,11 @@ function ensureScoutDiscovery(){
   const shell=document.createElement('div');shell.id='scoutDiscovery';shell.className='panel scout-discovery';
   shell.innerHTML=`<div class="scout-head"><div><div class="kicker">SPRINT 22 · SCOUT WEB DISCOVERY</div><h3>Find newly established and newly licensed brokers</h3><p>Scout searches ordinary public web results, deduplicates discoveries, and stages every candidate for Clay’s review.</p></div><div class="scout-controls"><select id="scoutState" aria-label="Discovery state"><option value="NC">North Carolina</option><option value="SC">South Carolina</option></select><input id="scoutMetro" placeholder="Optional metro or city"><button class="btn start-day" id="runScoutBtn" type="button">⌖ Discover new brokers</button></div></div><div class="scout-body"><div class="scout-metrics"><div class="scout-metric"><small>Pending review</small><b id="scoutPending">0</b></div><div class="scout-metric"><small>Approved</small><b id="scoutApproved">0</b></div><div class="scout-metric"><small>Duplicates</small><b id="scoutDuplicates">0</b></div><div class="scout-metric"><small>Last run</small><b id="scoutLastRun" style="font-size:13px">Not run</b></div></div><div class="profile-head"><div><h3>Discovery Inbox</h3><p class="muted">Edit the guessed fields, inspect the evidence, verify licensing, then approve or reject.</p></div><select id="scoutStatus" onchange="scoutDiscovery()"><option>Pending review</option><option>Approved</option><option>Rejected</option><option>Duplicate</option><option>All</option></select></div><div id="scoutSources" class="scout-sources"></div><div id="scoutCandidates" class="scout-candidates"><div class="agent-empty">Scout has not searched this territory yet.</div></div><div class="scout-safety">Scout does not scrape NMLS or regulator portals. Official sources are provided for human verification, and no candidate enters Prospects or Outreach without approval.</div></div>`;
   shell.querySelector('.scout-body').insertAdjacentHTML('beforebegin',`<section class="autopilot-shell" id="scoutAutopilot"><div class="autopilot-top"><div class="autopilot-title"><span class="autopilot-orb">✦</span><div><div class="kicker">SPRINT 23 · AGENT HANDOFF</div><h4>Scout Autopilot & Research Queue</h4><small class="muted">Scout discovers → Researcher enriches → Compliance flags → Ash ranks → Clay approves.</small></div></div><label class="autopilot-switch"><input id="autopilotEnabled" type="checkbox"> Autopilot</label></div><div class="autopilot-body"><div class="autopilot-grid"><div><label>Territory rotation</label><div class="autopilot-states" id="autopilotStates"></div></div><div><label>Cadence<select id="autopilotCadence" class="full"><option value="12">Every 12 hours</option><option value="24">Daily</option><option value="48">Every 2 days</option><option value="168">Weekly</option></select></label></div><div><label>States per run<input id="autopilotStatesPerRun" class="full" type="number" min="1" max="5" value="1"></label></div><div><label>Daily query budget<input id="autopilotBudget" class="full" type="number" min="2" max="100" value="12"></label></div><div><label>Research limit<input id="autopilotResearchLimit" class="full" type="number" min="1" max="40" value="12"></label></div></div><div class="autopilot-actions"><button class="btn" id="saveAutopilot">Save Autopilot</button><button class="btn primary" id="runAutopilotNow">Run agent pipeline now</button><span class="muted" id="autopilotNext"></span></div><div class="autopilot-summary"><div class="autopilot-stat"><small>Queries today</small><b id="autopilotQueries">0 / 0</b></div><div class="autopilot-stat"><small>States covered</small><b id="autopilotCovered">0</b></div><div class="autopilot-stat"><small>Research ready</small><b id="autopilotReady">0</b></div><div class="autopilot-stat"><small>Last agent run</small><b id="autopilotLast">Never</b></div></div><div class="coverage-strip" id="autopilotCoverage"></div><div class="research-queue"><div class="profile-head"><div><h4>Ash-ranked research queue</h4><small class="muted">Nothing enters Prospects or Outreach until you approve the underlying Scout candidate.</small></div><span class="pill" id="researchQueueCount">0 ready</span></div><div id="researchQueue"></div></div></div></section>`);
-  page.prepend(shell);$('#runScoutBtn').onclick=runScoutDiscovery;$('#scoutState').onchange=()=>scoutDiscovery();$('#saveAutopilot').onclick=saveScoutAutopilot;$('#runAutopilotNow').onclick=runScoutAutopilot;
+  shell.querySelector('#scoutAutopilot').insertAdjacentHTML('beforebegin',`<section class="control-tower" id="scoutControlTower"><div class="tower-head"><div><div class="kicker">SPRINT 24 · AUTOPILOT CONTROL TOWER</div><h3>Your supervised AI workforce</h3><p>See every handoff, control spend, run a one-state pilot, and stop the pipeline instantly.</p></div><div class="tower-controls"><label>Pilot state<select id="towerPilotState"></select></label><label>Daily ceiling (cents)<input id="towerCostLimit" type="number" min="10" max="10000" step="10" value="100" style="width:95px"></label><button class="btn primary" id="runPilotNow">Run pilot now</button><button class="btn tower-stop" id="towerEmergencyStop">Emergency stop</button></div></div><div class="agent-grid" id="towerAgents"></div><div class="tower-metrics"><div class="tower-metric"><small>Queries today</small><b id="towerQueries">0</b></div><div class="tower-metric"><small>Estimated spend</small><b id="towerSpend">$0.00</b></div><div class="tower-metric"><small>Discovered</small><b id="towerDiscovered">0</b></div><div class="tower-metric"><small>Researched</small><b id="towerResearched">0</b></div><div class="tower-metric"><small>Duplicates</small><b id="towerDuplicates">0</b></div><div class="tower-metric"><small>Ready for Clay</small><b id="towerReady">0</b></div></div><div class="tower-lower"><div class="tower-box"><h4>Recent runs</h4><div id="towerRuns"></div></div><div class="tower-box"><h4>Agent activity</h4><div id="towerEvents"></div></div></div></section>`);
+  page.prepend(shell);$('#runScoutBtn').onclick=runScoutDiscovery;$('#scoutState').onchange=()=>scoutDiscovery();$('#saveAutopilot').onclick=saveScoutAutopilot;$('#runAutopilotNow').onclick=runScoutAutopilot;$('#runPilotNow').onclick=runScoutPilot;$('#towerEmergencyStop').onclick=toggleScoutEmergencyStop;$('#towerCostLimit').onchange=saveScoutControlTower;
 }
 let autopilotStateLoaded=false;
+let scoutControlState=null,towerStatesLoaded=false;
 function autopilotSelectedStates(){return $$('#autopilotStates input:checked').map(x=>x.value)}
 function renderResearchQueue(items){
   $('#researchQueueCount').textContent=`${items.length} ready`;
@@ -914,7 +917,34 @@ async function scoutAutopilot(){
     $('#autopilotLast').textContent=s.last_run_at?s.last_run_at.replace('T',' '):'Never';
     $('#autopilotCoverage').innerHTML=d.coverage.length?d.coverage.map(x=>`<div class="coverage-state"><b>${esc(x.state)}</b>${x.run_count} run${x.run_count===1?'':'s'}<br>${x.discovery_count} found<br>${x.last_searched_at?esc(x.last_searched_at.slice(0,10)):'Not searched'}</div>`).join(''):'<div class="muted">Coverage appears after the first Autopilot run.</div>';
     renderResearchQueue(d.queue);
+    await scoutControlTower(d.states);
   }catch(e){$('#researchQueue').innerHTML=`<div class="agent-empty">${esc(e.message||'Unable to load Scout Autopilot.')}</div>`}
+}
+async function scoutControlTower(states=[]){
+  const d=await api('/api/scout-control-tower');scoutControlState=d.control;
+  if(!towerStatesLoaded){$('#towerPilotState').innerHTML=states.map(x=>`<option value="${x.code}">${esc(x.name)}</option>`).join('');towerStatesLoaded=true}
+  $('#towerPilotState').value=d.control.pilot_state||'ME';$('#towerCostLimit').value=d.control.daily_cost_limit_cents;
+  const stop=$('#towerEmergencyStop');stop.classList.toggle('active',!!d.control.emergency_stop);stop.textContent=d.control.emergency_stop?'Resume agents':'Emergency stop';
+  $('#runPilotNow').disabled=!!d.control.emergency_stop;
+  $('#towerAgents').innerHTML=d.agents.map(x=>`<div class="agent-card"><div class="agent-card-top"><b>${esc(x.name)}</b><span class="agent-status ${x.status==='Working'?'working':''}">${esc(x.status)}</span></div><small>${esc(x.purpose)}</small><div class="reason">${esc(x.detail)}</div>${x.updated_at?`<small>${esc(x.updated_at.replace('T',' '))}</small>`:''}</div>`).join('');
+  $('#towerQueries').textContent=d.cost.queries_today;$('#towerSpend').textContent=`$${(+d.cost.estimated_cents/100).toFixed(2)}`;$('#towerDiscovered').textContent=d.quality.discovered;$('#towerResearched').textContent=d.quality.researched;$('#towerDuplicates').textContent=d.quality.duplicates;$('#towerReady').textContent=d.quality.ready_for_review;
+  $('#towerRuns').innerHTML=d.runs.length?d.runs.slice(0,6).map(x=>`<div class="tower-run"><b>#${x.id} ${esc((JSON.parse(x.states_json||'[]')).join(', '))}</b><span>${x.discovery_count} found · ${x.researched_count} researched · ${x.query_count} queries${x.error?`<br><span class="warn">${esc(x.error)}</span>`:''}</span><span>${esc(x.status)}</span></div>`).join(''):'<div class="tower-empty">No controlled runs yet.</div>';
+  $('#towerEvents').innerHTML=d.events.length?d.events.slice(0,8).map(x=>`<div class="tower-run"><b>${esc(x.agent)}</b><span>${esc(x.detail)}</span><span>${esc(x.status)}</span></div>`).join(''):'<div class="tower-empty">Agent activity appears after the first pilot.</div>';
+}
+async function saveScoutControlTower(){
+  const payload={pilot_state:$('#towerPilotState').value,daily_cost_limit_cents:+$('#towerCostLimit').value,estimated_query_cost_micros:scoutControlState?.estimated_query_cost_micros||32000,emergency_stop:!!scoutControlState?.emergency_stop};
+  await api('/api/scout-control-tower',{method:'PUT',body:JSON.stringify(payload)});msg('Control Tower settings saved');await scoutControlTower();
+}
+async function toggleScoutEmergencyStop(){
+  const stopping=!scoutControlState?.emergency_stop;
+  const payload={pilot_state:$('#towerPilotState').value,daily_cost_limit_cents:+$('#towerCostLimit').value,estimated_query_cost_micros:scoutControlState?.estimated_query_cost_micros||32000,emergency_stop:stopping};
+  await api('/api/scout-control-tower',{method:'PUT',body:JSON.stringify(payload)});msg(stopping?'All Scout agents stopped':'Scout agents ready · Autopilot remains paused until enabled');await scoutAutopilot();
+}
+async function runScoutPilot(){
+  const b=$('#runPilotNow'),state=$('#towerPilotState').value;b.disabled=true;b.textContent=`Running ${state} pilot…`;
+  try{await saveScoutControlTower();const d=await api('/api/scout-control-tower/pilot',{method:'POST',body:JSON.stringify({state})});msg(`${state} pilot complete · ${d.discoveries} discovered · ${d.researched} researched`);await Promise.all([scoutAutopilot(),scoutDiscovery()])}
+  catch(e){msg(e.message||`${state} pilot could not complete`);await scoutControlTower()}
+  finally{b.disabled=!!scoutControlState?.emergency_stop;b.textContent='Run pilot now'}
 }
 async function saveScoutAutopilot(){
   const payload={enabled:$('#autopilotEnabled').checked,states:autopilotSelectedStates(),cadence_hours:+$('#autopilotCadence').value,states_per_run:+$('#autopilotStatesPerRun').value,daily_query_budget:+$('#autopilotBudget').value,research_limit:+$('#autopilotResearchLimit').value};
@@ -3141,9 +3171,73 @@ def _autopilot_payload():
     settings['states']=states;settings['queries_used_today']=spent;settings['queries_remaining']=max(0,int(settings['daily_query_budget'])-spent)
     return {'settings':settings,'coverage':coverage,'queue':queue,'recent_runs':last,'states':[{'code':k,'name':v} for k,v in sorted(US_STATES.items(),key=lambda x:x[1])]}
 
+def _agent_event(run_id,agent,status,state='',detail='',item_count=0):
+    with db() as c:
+        c.execute("""insert into scout_agent_events(run_id,agent,status,state,detail,item_count,created_at)
+                     values(?,?,?,?,?,?,?)""",(run_id,agent,status,state,detail[:600],int(item_count or 0),NOW()))
+
+def _control_tower_payload():
+    with db() as c:
+        control=dict(c.execute("select * from scout_control_settings where id=1").fetchone())
+        today=datetime.now().date().isoformat()
+        runs=[dict(x) for x in c.execute("select * from scout_autopilot_runs order by id desc limit 20")]
+        events=[dict(x) for x in c.execute("select * from scout_agent_events order by id desc limit 40")]
+        totals=dict(c.execute("""select count(*) total,
+            coalesce(sum(discovery_count),0) discovered,
+            coalesce(sum(researched_count),0) researched,
+            coalesce(sum(duplicate_count),0) duplicates,
+            coalesce(sum(query_count),0) queries,
+            coalesce(sum(case when status='Failed' then 1 else 0 end),0) failed
+            from scout_autopilot_runs""").fetchone())
+        today_queries=c.execute("select coalesce(sum(query_count),0) from scout_autopilot_runs where substr(started_at,1,10)=?",(today,)).fetchone()[0]
+        candidate_counts={r['status']:r['n'] for r in c.execute("select status,count(*) n from scout_candidates group by status")}
+        ready=c.execute("select count(*) from scout_research r join scout_candidates c on c.id=r.candidate_id where c.status='Pending review'").fetchone()[0]
+        last_by_agent={}
+        for event in events:
+            last_by_agent.setdefault(event['agent'],event)
+    cost_micros=int(today_queries)*int(control['estimated_query_cost_micros'])
+    daily_limit_micros=int(control['daily_cost_limit_cents'])*10000
+    agents=[]
+    for name,purpose in [('Scout','Public discovery'),('Researcher','Website enrichment'),('Compliance','Evidence and duplicate checks'),('Ash','Priority ranking')]:
+        event=last_by_agent.get(name)
+        agents.append({'name':name,'purpose':purpose,'status':event['status'] if event else 'Standing by',
+                       'detail':event['detail'] if event else 'Waiting for the first controlled run.',
+                       'state':event['state'] if event else '','updated_at':event['created_at'] if event else ''})
+    quality={'discovered':totals['discovered'],'researched':totals['researched'],'duplicates':totals['duplicates'],
+             'approved':candidate_counts.get('Approved',0),'rejected':candidate_counts.get('Rejected',0),
+             'ready_for_review':ready,'failed_runs':totals['failed']}
+    return {'control':control,'agents':agents,'runs':runs,'events':events,'quality':quality,
+            'cost':{'queries_today':today_queries,'estimated_cents':round(cost_micros/10000,2),
+                    'daily_limit_cents':control['daily_cost_limit_cents'],
+                    'remaining_cents':round(max(0,daily_limit_micros-cost_micros)/10000,2)}}
+
 @app.get('/api/scout-autopilot')
 def scout_autopilot_status():
     return jsonify(_autopilot_payload())
+
+@app.get('/api/scout-control-tower')
+def scout_control_tower():
+    return jsonify(_control_tower_payload())
+
+@app.put('/api/scout-control-tower')
+def update_scout_control_tower():
+    blocked=reject_demo_write()
+    if blocked:return blocked
+    d=request.get_json(silent=True) or {}
+    state=str(d.get('pilot_state') or 'ME').upper()
+    if state not in US_STATES:return jsonify(error='Choose a valid U.S. pilot state.'),400
+    emergency=1 if d.get('emergency_stop') else 0
+    query_cost=max(0,min(1000000,int(d.get('estimated_query_cost_micros') or 32000)))
+    cost_limit=max(10,min(10000,int(d.get('daily_cost_limit_cents') or 100)))
+    with db() as c:
+        c.execute("""update scout_control_settings set emergency_stop=?,pilot_state=?,estimated_query_cost_micros=?,
+                     daily_cost_limit_cents=?,updated_at=? where id=1""",(emergency,state,query_cost,cost_limit,NOW()))
+        if emergency:
+            c.execute("update scout_autopilot set enabled=0,next_run_at='',updated_at=? where id=1",(NOW(),))
+        c.execute("insert into activity(action,detail,created_at) values(?,?,?)",
+                  ('Scout emergency stop' if emergency else 'Scout control settings updated',
+                   f"{'All agent runs stopped' if emergency else state+' pilot · $'+format(cost_limit/100,'.2f')+' daily ceiling'}",NOW()))
+    return jsonify(_control_tower_payload())
 
 @app.put('/api/scout-autopilot')
 def update_scout_autopilot():
@@ -3165,30 +3259,46 @@ def update_scout_autopilot():
         c.execute("insert into activity(action,detail,created_at) values(?,?,?)",('Scout Autopilot updated',f"{'Enabled' if enabled else 'Paused'} · {len(states)} states · {budget} daily queries",NOW()))
     return jsonify(_autopilot_payload())
 
-def _run_scout_autopilot(force=False):
+def _run_scout_autopilot(force=False,selected_states=None):
     with db() as c:
         s=dict(c.execute("select * from scout_autopilot where id=1").fetchone())
+        control=dict(c.execute("select * from scout_control_settings where id=1").fetchone())
+        if control['emergency_stop']:return {'skipped':True,'reason':'Emergency stop is active. Resume the Control Tower before running agents.'}
         if not s['enabled'] and not force:return {'skipped':True,'reason':'Autopilot is paused.'}
         if not force and s.get('next_run_at') and datetime.fromisoformat(s['next_run_at'])>datetime.now():return {'skipped':True,'reason':'Next run is not due.'}
         states=[x for x in json.loads(s['states_json'] or '[]') if x in US_STATES]
         today=datetime.now().date().isoformat()
         spent=c.execute("select coalesce(sum(query_count),0) from scout_autopilot_runs where substr(started_at,1,10)=?",(today,)).fetchone()[0]
         remaining=max(0,int(s['daily_query_budget'])-spent)
+        remaining_cost_micros=max(0,int(control['daily_cost_limit_cents'])*10000-spent*int(control['estimated_query_cost_micros']))
+        affordable_queries=remaining_cost_micros//max(1,int(control['estimated_query_cost_micros']))
+        remaining=min(remaining,affordable_queries)
         state_limit=min(int(s['states_per_run']),remaining//2)
-        if state_limit<1:return {'skipped':True,'reason':'Daily Google query budget reached.'}
+        if state_limit<1:return {'skipped':True,'reason':'Daily query or estimated cost ceiling reached.'}
         coverage={r['state']:r['last_searched_at'] for r in c.execute("select state,last_searched_at from scout_coverage")}
-        chosen=sorted(states,key=lambda x:(coverage.get(x,'') or '',x))[:state_limit]
+        requested=[x for x in (selected_states or []) if x in US_STATES]
+        chosen=requested[:state_limit] if requested else sorted(states,key=lambda x:(coverage.get(x,'') or '',x))[:state_limit]
+        if not chosen:return {'skipped':True,'reason':'The selected pilot state is not enabled in Autopilot territories.'}
         cur=c.execute("insert into scout_autopilot_runs(status,states_json,started_at) values('Running',?,?)",(json.dumps(chosen),NOW()));autopilot_id=cur.lastrowid
+    _agent_event(autopilot_id,'Scout','Working',','.join(chosen),'Searching ordinary public Google Places results.')
     discoveries=duplicates=queries=researched=0;errors=[];candidate_ids=[]
     for state in chosen:
         try:
             result=_run_scout_territory(state,'','Autopilot');discoveries+=result['new_candidates'];duplicates+=result['duplicates'];queries+=result['queries'];candidate_ids+=result['candidate_ids']
         except Exception as exc:errors.append(f'{state}: {type(exc).__name__}: {str(exc)[:120]}')
+    _agent_event(autopilot_id,'Scout','Completed with warnings' if errors else 'Completed',','.join(chosen),
+                 f'{discoveries} new discoveries · {duplicates} duplicates · {queries} queries.',discoveries)
+    _agent_event(autopilot_id,'Researcher','Working',','.join(chosen),'Inspecting public company websites and contact evidence.')
     research_ids=candidate_ids[:int(s['research_limit'])]
     for candidate_id in research_ids:
         try:
             if _research_scout_candidate(candidate_id):researched+=1
         except Exception as exc:errors.append(f'Candidate {candidate_id}: {type(exc).__name__}')
+    _agent_event(autopilot_id,'Researcher','Completed',','.join(chosen),f'{researched} candidates enriched from public evidence.',researched)
+    _agent_event(autopilot_id,'Compliance','Completed',','.join(chosen),
+                 f'{duplicates} duplicates isolated; licensing and contact verification remain human review gates.',duplicates)
+    _agent_event(autopilot_id,'Ash','Completed',','.join(chosen),
+                 f'{researched} researched candidates ranked for Clay. No prospects or outreach created automatically.',researched)
     next_run=(datetime.now()+timedelta(hours=int(s['cadence_hours']))).isoformat(timespec='seconds')
     status='Completed' if not errors else 'Completed with warnings' if discoveries or researched else 'Failed'
     with db() as c:
@@ -3203,6 +3313,17 @@ def run_scout_autopilot_now():
     blocked=reject_demo_write()
     if blocked:return blocked
     result=_run_scout_autopilot(force=True)
+    return jsonify(result),200 if not result.get('skipped') else 409
+
+@app.post('/api/scout-control-tower/pilot')
+def run_scout_pilot():
+    blocked=reject_demo_write()
+    if blocked:return blocked
+    d=request.get_json(silent=True) or {}
+    with db() as c:control=dict(c.execute("select * from scout_control_settings where id=1").fetchone())
+    state=str(d.get('state') or control['pilot_state'] or 'ME').upper()
+    if state not in US_STATES:return jsonify(error='Choose a valid U.S. pilot state.'),400
+    result=_run_scout_autopilot(force=True,selected_states=[state])
     return jsonify(result),200 if not result.get('skipped') else 409
 
 @app.post('/api/scout-candidates/<int:candidate_id>/research')
