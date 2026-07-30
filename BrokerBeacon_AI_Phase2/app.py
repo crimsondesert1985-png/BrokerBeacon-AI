@@ -13,8 +13,8 @@ from voice_agent import configured as voice_configured, create_twilio_call, huma
 from guideline_index import seed_index, index_fha_pdf, search as search_guideline_index, stats as guideline_index_stats
 
 app = Flask(__name__)
-BUILD_VERSION = "12.6"
-BUILD_NAME = "INTELLIGENT FOLLOW-UP"
+BUILD_VERSION = "12.7"
+BUILD_NAME = "OUTREACH EXECUTION CENTER"
 DB = Path(__file__).with_name("brokerbeacon.db")
 NOW = lambda: datetime.now().isoformat(timespec="seconds")
 
@@ -381,7 +381,7 @@ body.dark-mode .production-kpi,body.dark-mode .production-company{background:#10
   <div id="scQueue" class="coach-queue"><div class="empty">Loading coaching recommendations…</div></div>
 </div>
 </section>
-<section id="outreach" class="view"><div class="hero"><div><div class="kicker">SPRINT 17 · INTELLIGENT FOLLOW-UP</div><h2>Turn every conversation into the right next message.</h2><p>Follow-up drafts use recorded outcomes, objections, commitments, and product fit. Review every message before it enters the queue.</p></div><span class="pill">Human-approved</span></div><div class="metrics"><div class="metric"><span>Outcome-based drafts</span><strong id="fuDrafts">0</strong></div><div class="metric"><span>Queued follow-ups</span><strong id="fuQueued">0</strong></div><div class="metric"><span>Objections captured</span><strong id="fuObjections">0</strong></div><div class="metric"><span>Positive outcomes</span><strong id="fuPositive">0</strong></div></div><div class="grid"><div class="panel"><h3>Personalized outreach builder</h3><label>Prospect</label><select id="op" class="full"></select><label>Channel</label><select id="channel" class="full"><option>Email</option><option>LinkedIn</option><option>Phone</option></select><label>Angle</label><select id="angle" class="full"><option>Recommended by intelligence engine</option><option>Congratulations + growth support</option><option>VA/FHA scenario support</option><option>Fast onboarding</option><option>HELOC and niche products</option></select><button class="btn primary full" id="gen" style="margin-top:15px">Generate personalized draft</button></div><div class="panel"><button class="btn primary" id="queue" disabled style="float:right">Approve & queue</button><h3>Review draft</h3><input id="subject" class="subject" placeholder="Subject"><textarea id="body"></textarea></div></div><div class="grid" style="margin-top:14px"><div class="panel"><h3>Recent outreach</h3><div id="olist"></div></div><div class="panel"><h3>Objection intelligence</h3><p class="muted">Themes come only from objections recorded in BrokerBeacon.</p><div id="fuThemes"></div></div></div></section>
+<section id="outreach" class="view"><div class="hero"><div><div class="kicker">SPRINT 18 · OUTREACH EXECUTION CENTER</div><h2>Review, approve, launch, and track every follow-up.</h2><p>Recipient verification and human approval are required. BrokerBeacon distinguishes confirmed delivery from messages prepared for external sending.</p></div><span class="pill" id="executionProvider">Checking delivery…</span></div><div class="metrics"><div class="metric"><span>Needs review</span><strong id="exDrafts">0</strong></div><div class="metric"><span>Approved</span><strong id="exApproved">0</strong></div><div class="metric"><span>Scheduled</span><strong id="exScheduled">0</strong></div><div class="metric"><span>Sent</span><strong id="exSent">0</strong></div></div><div class="grid"><div class="panel"><div class="profile-head"><div><h3>Execution queue</h3><p class="muted">Draft → Approved → Scheduled → Sent → Replied</p></div><select id="executionFilter" onchange="renderExecutionQueue()"><option>All</option><option>Draft</option><option>Approved</option><option>Scheduled</option><option>Prepared</option><option>Sent</option><option>Replied</option><option>Failed</option><option>Discarded</option></select></div><div id="executionQueue"></div></div><div class="panel"><div id="executionEditor"><h3>Select a follow-up</h3><p class="muted">Open a queue item to verify its recipient, edit the message, approve it, or launch it.</p></div></div></div><div class="grid" style="margin-top:14px"><div class="panel"><h3>Create another personalized draft</h3><label>Prospect</label><select id="op" class="full"></select><label>Channel</label><select id="channel" class="full"><option>Email</option><option>LinkedIn</option><option>Phone</option></select><label>Angle</label><select id="angle" class="full"><option>Recommended by intelligence engine</option><option>Congratulations + growth support</option><option>VA/FHA scenario support</option><option>Fast onboarding</option><option>HELOC and niche products</option></select><button class="btn primary full" id="gen" style="margin-top:15px">Generate personalized draft</button><input id="subject" class="subject" placeholder="Subject" style="margin-top:12px"><textarea id="body"></textarea><button class="btn" id="queue" disabled>Move draft to execution queue</button></div><div class="panel"><h3>Objection intelligence</h3><p class="muted">Themes come only from objections recorded in BrokerBeacon.</p><div id="fuThemes"></div></div></div></section>
 <section id="marketing" class="view"><div class="hero"><div><div class="kicker">ASH MARKETING CENTER</div><h2>Create, approve, and launch broker marketing.</h2><p>Build compliant email and SMS content, save reusable templates, target the right broker audience, and hand approved content directly to the automated campaign engine.</p></div><span class="pill" id="marketingStatus">READY</span></div><div class="metrics"><div class="metric"><span>Templates</span><strong id="mkTemplateCount">0</strong></div><div class="metric"><span>Pending approval</span><strong id="mkPendingCount">0</strong></div><div class="metric"><span>Approved</span><strong id="mkApprovedCount">0</strong></div><div class="metric"><span>Active triggers</span><strong id="mkTriggerCount">0</strong></div></div><div class="marketing-grid"><div class="marketing-card"><div class="kicker">AI CONTENT STUDIO</div><h3>Create a broker campaign</h3><div class="formgrid"><label>Campaign goal<select id="mkGoal"><option>Product spotlight</option><option>New broker introduction</option><option>Rate update</option><option>Guideline update</option><option>Re-engagement</option><option>Event invitation</option></select></label><label>Product / topic<input id="mkTopic" placeholder="Example: VA loans, HELOC, DPA"></label><label>Channel<select id="mkChannel"><option>Email</option><option>SMS</option></select></label><label>Tone<select id="mkTone"><option>Professional</option><option>Conversational</option><option>Concise</option><option>Warm</option></select></label><label>Audience<select id="mkAudience"><option>All eligible brokers</option><option>High-priority prospects</option><option>Government-focused brokers</option><option>Inactive 30+ days</option><option>New prospects</option></select></label><label>Call to action<input id="mkCta" value="Reply with a scenario you would like me to review."></label></div><label>Key details<textarea id="mkDetails" placeholder="Enter pricing highlights, product advantages, eligibility notes, event details, or approved talking points."></textarea></label><button class="btn primary" onclick="generateMarketingContent()">✦ Generate with Ash</button><div style="margin-top:14px"><label>Subject<input id="mkSubject" class="full"></label><label>Message<textarea id="mkBody" style="min-height:210px"></textarea></label></div><div class="marketing-actions"><button class="btn" onclick="saveMarketingTemplate()">Save template</button><button class="btn" onclick="submitMarketingApproval()">Submit for approval</button><button class="btn primary" onclick="useMarketingCampaign()">Use in campaign</button></div><p class="contact-note">Messages support {{first_name}}, {{full_name}}, {{company}}, {{city}}, {{state}}, and {{specialties}}. Review pricing, legal claims, and required disclosures before sending.</p></div><div><div class="marketing-card"><div class="profile-head"><div><div class="kicker">COMPLIANCE WORKFLOW</div><h3>Approval queue</h3></div><button class="btn smallbtn" onclick="marketingCenter()">Refresh</button></div><div id="mkApprovals"></div></div><div class="marketing-card" style="margin-top:14px"><div class="kicker">AUTOMATED TRIGGERS</div><h3>Relationship-based marketing</h3><div class="formgrid"><label>Trigger<select id="mkTriggerType"><option>New prospect added</option><option>No contact for 30 days</option><option>Meeting completed</option><option>Birthday</option><option>Product launch</option></select></label><label>Template<select id="mkTriggerTemplate"></select></label></div><button class="btn" onclick="saveMarketingTrigger()">Add trigger</button><div id="mkTriggers" style="margin-top:10px"></div></div><div class="marketing-card" style="margin-top:14px"><div class="kicker">MARKETING ASSETS</div><h3>Approved resource links</h3><div class="formgrid"><label>Name<input id="mkAssetName" placeholder="VA product flyer"></label><label>URL<input id="mkAssetUrl" placeholder="https://..."></label></div><button class="btn" onclick="saveMarketingAsset()">Save asset</button><div id="mkAssets" style="margin-top:10px"></div></div></div></div></section><section id="campaigns" class="view"><div class="hero"><div><div class="kicker">AUTOMATED DRIP CAMPAIGNS</div><h2>Email and text follow-up that runs on schedule.</h2><p>Build one-time campaigns or launch multi-touch sequences. BrokerBeacon personalizes every message, respects SMS consent and quiet hours, stops future steps on replies or opt-outs, retries temporary failures, and records delivery history.</p></div><span class="pill" id="campaignMode">Checking providers…</span></div><div class="metrics"><div class="metric"><span>Automation</span><strong id="autoState" style="font-size:20px">—</strong></div><div class="metric"><span>Email provider</span><strong id="emailState" style="font-size:20px">—</strong></div><div class="metric"><span>Text provider</span><strong id="smsState" style="font-size:20px">—</strong></div><div class="metric"><span>Due now</span><strong id="dueNow">0</strong></div></div><div class="callout" id="automationHelp">A secure scheduler endpoint is included for Render Cron Jobs. Manual processing remains available for testing.</div><div class="campaign-layout"><div class="panel"><h3>Create campaign</h3><label>Campaign name<input id="campName" class="full" placeholder="Example: Carolinas VA Scenario Support"></label><div class="formgrid"><label>Channel<select id="campChannel"><option>Email</option><option>SMS</option></select></label><label>Minimum score<input id="campScore" type="number" min="0" max="100" value="70"></label><label>State<select id="campState"><option value="">All states</option><option>NC</option><option>SC</option><option>VA</option><option>GA</option><option>TN</option><option>MI</option></select></label><label>Status<select id="campStatus"><option value="">Any status</option><option>New</option><option>Contacted</option><option>Replied</option><option>Meeting</option></select></label><label>Send date/time<input id="campSchedule" type="datetime-local"></label><label>Daily send limit<input id="campLimit" type="number" min="1" max="500" value="50"></label></div><label>Email subject<input id="campSubject" class="full" placeholder="A quick resource for {{company}}"></label><label>Message body<textarea id="campBody" placeholder="Hi {{first_name}},
 
 I’m Clay with Union Home Mortgage...
@@ -731,7 +731,7 @@ $('#pemail').textContent=p.email||'Not publicly listed';
 $('#pcontactactions').innerHTML=contactButtons(p)||'<span class="contact-missing">Open the source or company website to locate current contact information.</span>';
 $('#pcontactbadge').textContent=(p.phone||p.email)?'Direct contact ready':'Website contact available';
 $('#scores').innerHTML=[['Opportunity',p.score],['Growth',p.growth_score],['Government fit',p.gov_fit],['HELOC/Jumbo',p.niche_fit]].map(x=>`<div class=scorebox><span class=muted>${x[0]}</span><strong>${x[1]}</strong></div>`).join('');$('#psum').textContent=p.ai_summary;$('#preasons').innerHTML=p.score_reasons.map(x=>`<li>${esc(x)}</li>`).join('');$('#psource').innerHTML=[p.source_name?'<b>Source:</b> '+esc(p.source_name):'',p.source_url?'<a class="btn smallbtn" target="_blank" rel="noopener" href="'+esc(p.source_url)+'">Open source</a>':'',p.nmls?'<a class="btn smallbtn" target="_blank" rel="noopener" href="https://www.nmlsconsumeraccess.org/">Verify in NMLS Consumer Access</a>':'',p.verification_notes?'<div style="margin-top:8px">'+esc(p.verification_notes)+'</div>':''].filter(Boolean).join(' ');$('#pproducts').innerHTML=p.product_fit.split(',').filter(Boolean).map(x=>`<span class=tag>${esc(x.trim())}</span>`).join('');$('#pnext').textContent=p.next_best_action;$('#pcall').value=p.call_opener;$('#pobj').textContent=p.likely_objection;$('#presp').textContent=p.objection_response;$('#profileOut').onclick=()=>{show('outreach');$('#op').value=p.id;$('#profile').close()};renderMemory(p.memories);$('#profile').showModal()}
-$('#appVersion').textContent='VERSION 12.6 · INTELLIGENT FOLLOW-UP';
+$('#appVersion').textContent='VERSION 12.7 · OUTREACH EXECUTION CENTER';
 document.querySelector('nav [data-v="opportunityengine"]')?.insertAdjacentHTML('afterend','<button data-v="callprep">☎ Call Prep</button>');
 document.querySelector('nav [data-v="callprep"]')?.addEventListener('click',()=>show('callprep'));
 let callPrepProspectId=null;
@@ -760,8 +760,18 @@ $('#msave').onclick=async()=>{if(!$('#mnote').value.trim())return msg('Enter a n
 async function pipe(){P=await api('/api/prospects');let S=['New','Contacted','Replied','Meeting','Approved'];$('#board').innerHTML=S.map(s=>`<div class=col><h3>${s}</h3>${P.filter(p=>p.status===s).map(p=>`<div class=card><b>${esc(p.company)}</b><p><small>${esc(p.owner||'')} · Score ${p.score}</small></p><select class=full ${document.body.dataset.demo==='1'?'disabled title="Read-only demo"':'onchange="status(${p.id},this.value)"'}>${S.map(x=>`<option ${x===p.status?'selected':''}>${x}</option>`).join('')}</select></div>`).join('')}</div>`).join('')}
 async function status(id,s){await api('/api/status/'+id,{method:'POST',body:JSON.stringify({status:s})});msg('Pipeline updated');load();dash();pipe()}
 $('#gen').onclick=async()=>{let d=await api('/api/generate',{method:'POST',body:JSON.stringify({id:+$('#op').value,channel:$('#channel').value,angle:$('#angle').value})});draft=d.id;$('#subject').value=d.subject;$('#subject').style.display=$('#channel').value==='Email'?'block':'none';$('#body').value=d.body;$('#queue').disabled=false;outreach()}
-$('#queue').onclick=async()=>{await api('/api/queue/'+draft,{method:'POST',body:'{}'});msg('Queued');$('#queue').disabled=true;load();dash();outreach()}
-async function outreach(){let [d,intel]=await Promise.all([api('/api/outreach'),api('/api/follow-up-intelligence')]);$('#olist').innerHTML=d.length?d.map(x=>`<div class="timeline-item"><b>${esc(x.company)}</b> · ${esc(x.channel)} · ${esc(x.status)}${x.source_action_id?` <span class="activity-chip">Outcome follow-up</span>`:''}${x.rationale?`<div class="muted">${esc(x.rationale)}</div>`:''}</div>`).join(''):'No drafts yet.';$('#fuDrafts').textContent=intel.metrics.outcome_drafts;$('#fuQueued').textContent=intel.metrics.queued;$('#fuObjections').textContent=intel.metrics.objections;$('#fuPositive').textContent=intel.metrics.positive_outcomes;$('#fuThemes').innerHTML=intel.themes.length?intel.themes.map(x=>`<div class="cp-item"><b>${esc(x.theme)}</b><br><span class="muted">${x.count} recorded</span></div>`).join(''):'<div class="empty">No objection themes recorded yet.</div>'}
+$('#queue').onclick=async()=>{await outreach();openExecutionDraft(draft);$('#queue').disabled=true}
+let executionItems=[],selectedExecutionId=0;
+function renderExecutionQueue(){const filter=$('#executionFilter').value,items=filter==='All'?executionItems:executionItems.filter(x=>x.status===filter);$('#executionQueue').innerHTML=items.length?items.map(x=>`<div class="priority-card"><div class="orb" style="--s:${x.status==='Sent'||x.status==='Replied'?100:x.status==='Failed'?20:65}">${esc((x.status||'D')[0])}</div><div><b>${esc(x.company)}</b> <span class="activity-chip">${esc(x.status)}</span><div class="reason">${esc(x.subject||x.body.slice(0,100))}</div><small class="muted">${esc(x.channel)} · ${esc(x.destination||'Recipient verification required')}${x.scheduled_at?' · '+esc(x.scheduled_at.replace('T',' ')):''}</small></div><button class="btn smallbtn" onclick="openExecutionDraft(${x.id})">Open</button></div>`).join(''):'<div class="empty">No outreach matches this stage.</div>'}
+function openExecutionDraft(id){const x=executionItems.find(v=>v.id===id);if(!x)return;selectedExecutionId=id;$('#executionEditor').innerHTML=`<div class="profile-head"><div><div class="kicker">EXECUTION REVIEW</div><h3>${esc(x.company)}</h3></div><span class="pill">${esc(x.status)}</span></div><label>Verified recipient<input id="exDestination" class="full" value="${esc(x.destination||x.suggested_destination||'')}" placeholder="${x.channel==='Email'?'name@company.com':'Public LinkedIn profile URL'}"></label><label>Channel<select id="exChannel" class="full"><option ${x.channel==='Email'?'selected':''}>Email</option><option ${x.channel==='LinkedIn'?'selected':''}>LinkedIn</option></select></label><label>Subject<input id="exSubject" class="full" value="${esc(x.subject||'')}"></label><label>Message<textarea id="exBody" style="min-height:220px">${esc(x.body)}</textarea></label><label>Schedule<input id="exSchedule" class="full" type="datetime-local" value="${esc((x.scheduled_at||'').slice(0,16))}"></label>${x.error?`<div class="callout" style="border-color:#f2556c66">${esc(x.error)}</div>`:''}<div class="contact-tools"><button class="btn" onclick="saveExecutionDraft()">Save edits</button><button class="btn" onclick="approveExecutionDraft()">Approve${x.scheduled_at?' schedule':''}</button><button class="btn primary" onclick="launchExecutionDraft()">Launch</button>${x.status==='Prepared'?'<button class="btn" onclick="markExecutionSent()">Mark sent</button>':''}${x.status==='Sent'?'<button class="btn" onclick="markExecutionReplied()">Mark replied</button>':''}<button class="btn" onclick="discardExecutionDraft()">Discard</button></div><p class="contact-note">Launch sends only when SMTP is configured. Otherwise BrokerBeacon opens a prepared message and keeps the status as Prepared until you confirm it was sent.</p><h4>Audit trail</h4>${(x.events||[]).map(e=>`<div class="timeline-item"><b>${esc(e.event_type)}</b><div class="muted">${esc(e.detail||'')}</div><small>${esc(e.created_at.replace('T',' '))}</small></div>`).join('')||'<div class="empty">No execution events yet.</div>'}`;$('#exSubject').style.display=x.channel==='Email'?'block':'none'}
+function executionPayload(){return {destination:$('#exDestination').value,channel:$('#exChannel').value,subject:$('#exSubject').value,body:$('#exBody').value,scheduled_at:$('#exSchedule').value}}
+async function saveExecutionDraft(){await api(`/api/outreach/${selectedExecutionId}`,{method:'PUT',body:JSON.stringify(executionPayload())});msg('Draft updated');await outreach();openExecutionDraft(selectedExecutionId)}
+async function approveExecutionDraft(){const d=await api(`/api/outreach/${selectedExecutionId}/approve`,{method:'POST',body:JSON.stringify(executionPayload())});msg(d.status==='Scheduled'?'Follow-up scheduled':'Follow-up approved');await outreach();openExecutionDraft(selectedExecutionId)}
+async function launchExecutionDraft(){const d=await api(`/api/outreach/${selectedExecutionId}/launch`,{method:'POST'});if(d.fallback_url)window.location.href=d.fallback_url;msg(d.status==='Sent'?'Delivery confirmed':'Prepared message opened · confirm after sending');await outreach();openExecutionDraft(selectedExecutionId)}
+async function markExecutionSent(){await api(`/api/outreach/${selectedExecutionId}/mark-sent`,{method:'POST'});msg('External send confirmed');await Promise.all([outreach(),followups()]);openExecutionDraft(selectedExecutionId)}
+async function markExecutionReplied(){await api(`/api/outreach/${selectedExecutionId}/replied`,{method:'POST'});msg('Reply recorded and pipeline updated');await Promise.all([outreach(),load(),dash()]);openExecutionDraft(selectedExecutionId)}
+async function discardExecutionDraft(){await api(`/api/outreach/${selectedExecutionId}/discard`,{method:'POST'});msg('Draft discarded');selectedExecutionId=0;$('#executionEditor').innerHTML='<h3>Select a follow-up</h3><p class="muted">Open a queue item to verify its recipient, edit the message, approve it, or launch it.</p>';outreach()}
+async function outreach(){let [d,intel]=await Promise.all([api('/api/outreach-execution'),api('/api/follow-up-intelligence')]);executionItems=d.items;$('#executionProvider').textContent=d.live_email?'SMTP delivery ready':'Prepared-email fallback';$('#exDrafts').textContent=d.metrics.Draft||0;$('#exApproved').textContent=d.metrics.Approved||0;$('#exScheduled').textContent=d.metrics.Scheduled||0;$('#exSent').textContent=(d.metrics.Sent||0)+(d.metrics.Replied||0);renderExecutionQueue();$('#fuThemes').innerHTML=intel.themes.length?intel.themes.map(x=>`<div class="cp-item"><b>${esc(x.theme)}</b><br><span class="muted">${x.count} recorded</span></div>`).join(''):'<div class="empty">No objection themes recorded yet.</div>'}
 $('#contactSearch').oninput=()=>current&&renderContacts(current.contacts||[]);$('#refreshRoster').onclick=async()=>{if(!current)return;$('#refreshRoster').disabled=true;$('#refreshRoster').textContent='Checking website…';try{let r=await api('/api/prospects/'+current.id+'/refresh-contacts',{method:'POST'});renderCandidates(r.candidates||[]);msg(r.message)}finally{$('#refreshRoster').disabled=false;$('#refreshRoster').textContent='Review company website'}};$('#clearContact').onclick=clearContactForm;$('#saveContact').onclick=async e=>{e.preventDefault();if(!current)return;let d={id:+($('#contactId').value||0),name:$('#contactName').value,role:$('#contactRole').value,email:$('#contactEmail').value,phone:$('#contactPhone').value,mobile:$('#contactMobile').value,nmls:$('#contactNmls').value,office_location:$('#contactOffice').value,specialties:$('#contactSpecialties').value,languages:$('#contactLanguages').value,preferred_method:$('#contactPreferred').value,roster_status:$('#contactRoster').value,linkedin_url:$('#contactLinkedin').value,source_url:$('#contactSource').value,verified_at:$('#contactVerified').value,notes:$('#contactNotes').value,is_primary:$('#contactPrimary').checked,is_decision_maker:$('#contactDecision').checked,sms_consent:$('#contactSmsConsent').checked};let r=await api('/api/prospects/'+current.id+'/contacts',{method:'POST',body:JSON.stringify(d)});current.contacts=r;renderContacts(r);clearContactForm();msg('Contact saved');load()};
 $('#search').oninput=load;$('#state').onchange=load;$('#signal').onchange=load;$('#pstatus').onchange=load;$('#minscore').onchange=load;$('#add').onclick=()=>$('#dlg').showModal();$('#form').onsubmit=async e=>{e.preventDefault();let d=Object.fromEntries(new FormData(e.target));await api('/api/prospects',{method:'POST',body:JSON.stringify(d)});$('#dlg').close();e.target.reset();msg('Prospect added and scored');load();dash()}
 $('#import').onclick=()=>$('#importDlg').showModal();
@@ -1711,6 +1721,163 @@ def queue(i):
         if not r:return jsonify(error="Draft not found"),404
         c.execute("update outreach set status='Queued' where id=?",(i,)); c.execute("update prospects set status='Contacted',updated_at=? where id=?",(NOW(),r["prospect_id"]))
     log("Outreach queued",str(i)); return jsonify(ok=True)
+
+def _outreach_event(c,outreach_id,event_type,detail=''):
+    c.execute("insert into outreach_events(outreach_id,event_type,detail,created_at) values(?,?,?,?)",
+        (outreach_id,event_type,str(detail or '')[:500],NOW()))
+
+def _valid_execution_destination(channel,destination):
+    if channel=='Email':
+        return bool(re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+",destination or ''))
+    return bool(re.fullmatch(r"https?://\S+",destination or ''))
+
+def _complete_outreach_follow_up(c,row):
+    if not int(row['source_action_id'] or 0):return
+    action=c.execute("select prospect_id,follow_up_date from sales_actions where id=?",(row['source_action_id'],)).fetchone()
+    if not action or not action['follow_up_date']:return
+    memory=c.execute("""select id,note_type from memories where prospect_id=? and follow_up_date=?
+        and note_type not like 'Completed:%' order by id desc limit 1""",(action['prospect_id'],action['follow_up_date'])).fetchone()
+    if memory:c.execute("update memories set note_type=?,follow_up_date='' where id=?",
+        ('Completed: '+memory['note_type'],memory['id']))
+
+@app.get("/api/outreach-execution")
+def outreach_execution():
+    with db() as c:
+        rows=[dict(x) for x in c.execute("""select o.*,p.company,p.email prospect_email,p.owner,
+            (select email from contacts where prospect_id=p.id and email<>'' order by is_decision_maker desc,is_primary desc,id limit 1) contact_email,
+            (select linkedin_url from contacts where prospect_id=p.id and linkedin_url<>'' order by is_decision_maker desc,is_primary desc,id limit 1) contact_linkedin
+            from outreach o join prospects p on p.id=o.prospect_id order by
+            case o.status when 'Draft' then 0 when 'Approved' then 1 when 'Scheduled' then 2 when 'Prepared' then 3 when 'Failed' then 4 else 5 end,
+            coalesce(o.scheduled_at,''),o.id desc limit 100""")]
+        for x in rows:
+            x['suggested_destination']=x.get('contact_email') or x.get('prospect_email') or '' if x['channel']=='Email' else x.get('contact_linkedin') or ''
+            x['events']=[dict(e) for e in c.execute("select * from outreach_events where outreach_id=? order by id desc limit 12",(x['id'],))]
+        metrics={r['status']:r['n'] for r in c.execute("select status,count(*) n from outreach group by status")}
+    return jsonify(items=rows,metrics=metrics,live_email=bool(os.getenv('SMTP_HOST') and os.getenv('SMTP_USERNAME') and os.getenv('SMTP_PASSWORD')))
+
+@app.put("/api/outreach/<int:outreach_id>")
+def update_outreach_execution(outreach_id):
+    blocked=reject_demo_write()
+    if blocked:return blocked
+    d=request.json or {};channel=(d.get('channel') or 'Email').strip()
+    if channel not in ('Email','LinkedIn'):return jsonify(error='Invalid outreach channel'),400
+    body=(d.get('body') or '').strip();subject=(d.get('subject') or '').strip()
+    if not body:return jsonify(error='Message body is required'),400
+    if channel=='Email' and not subject:return jsonify(error='Email subject is required'),400
+    with db() as c:
+        row=c.execute("select * from outreach where id=?",(outreach_id,)).fetchone()
+        if not row:return jsonify(error='Outreach draft not found'),404
+        if row['status'] in ('Sent','Replied','Discarded'):return jsonify(error='Completed outreach cannot be edited'),409
+        c.execute("""update outreach set channel=?,destination=?,subject=?,body=?,scheduled_at=?,updated_at=? where id=?""",
+            (channel,(d.get('destination') or '').strip(),subject if channel=='Email' else '',body,
+             (d.get('scheduled_at') or '').strip(),NOW(),outreach_id))
+        _outreach_event(c,outreach_id,'Edited','Recipient and message reviewed')
+    return jsonify(ok=True)
+
+@app.post("/api/outreach/<int:outreach_id>/approve")
+def approve_outreach_execution(outreach_id):
+    blocked=reject_demo_write()
+    if blocked:return blocked
+    d=request.json or {};channel=(d.get('channel') or 'Email').strip();destination=(d.get('destination') or '').strip()
+    if channel not in ('Email','LinkedIn') or not _valid_execution_destination(channel,destination):
+        return jsonify(error='Verify a valid recipient before approval'),400
+    body=(d.get('body') or '').strip();subject=(d.get('subject') or '').strip()
+    if not body or (channel=='Email' and not subject):return jsonify(error='Subject and message are required'),400
+    scheduled=(d.get('scheduled_at') or '').strip()
+    if scheduled:
+        try:scheduled_dt=datetime.fromisoformat(scheduled)
+        except ValueError:return jsonify(error='Invalid schedule date'),400
+    else:scheduled_dt=None
+    status='Scheduled' if scheduled_dt and scheduled_dt>datetime.now() else 'Approved'
+    with db() as c:
+        row=c.execute("select * from outreach where id=?",(outreach_id,)).fetchone()
+        if not row:return jsonify(error='Outreach draft not found'),404
+        if row['status'] in ('Sent','Replied','Discarded'):return jsonify(error='Completed outreach cannot be approved'),409
+        if channel=='Email' and c.execute("select 1 from suppressions where channel='EMAIL' and lower(destination)=lower(?)",(destination,)).fetchone():
+            return jsonify(error='Recipient is suppressed from email outreach'),409
+        c.execute("""update outreach set channel=?,destination=?,subject=?,body=?,scheduled_at=?,status=?,
+            approved_at=?,error='',updated_at=? where id=?""",(channel,destination,subject if channel=='Email' else '',
+            body,scheduled,status,NOW(),NOW(),outreach_id))
+        _outreach_event(c,outreach_id,status,'Recipient verified and content approved')
+    return jsonify(ok=True,status=status)
+
+@app.post("/api/outreach/<int:outreach_id>/launch")
+def launch_outreach_execution(outreach_id):
+    blocked=reject_demo_write()
+    if blocked:return blocked
+    with db() as c:
+        row=c.execute("select o.*,p.company from outreach o join prospects p on p.id=o.prospect_id where o.id=?",(outreach_id,)).fetchone()
+        if not row:return jsonify(error='Outreach item not found'),404
+        if row['status']=='Scheduled' and row['scheduled_at']:
+            try:
+                if datetime.fromisoformat(row['scheduled_at'])>datetime.now():return jsonify(error='This follow-up is scheduled for later'),409
+            except ValueError:return jsonify(error='Schedule date needs review'),400
+        if row['status'] not in ('Approved','Scheduled','Failed','Prepared'):
+            return jsonify(error='Approve and verify the follow-up before launching'),409
+        if not _valid_execution_destination(row['channel'],row['destination']):
+            return jsonify(error='Recipient verification is required'),400
+        if row['channel']=='Email' and c.execute("select 1 from suppressions where channel='EMAIL' and lower(destination)=lower(?)",(row['destination'],)).fetchone():
+            return jsonify(error='Recipient is suppressed from email outreach'),409
+    if row['channel']=='Email' and all([os.getenv('SMTP_HOST'),os.getenv('SMTP_USERNAME'),os.getenv('SMTP_PASSWORD')]):
+        ok,err,provider=_send_email(row['destination'],row['subject'],row['body'])
+        with db() as c:
+            if ok:
+                c.execute("update outreach set status='Sent',sent_at=?,error='',delivery_method=?,updated_at=? where id=?",
+                    (NOW(),provider or 'smtp',NOW(),outreach_id));_outreach_event(c,outreach_id,'Sent','SMTP provider accepted the message')
+                _complete_outreach_follow_up(c,row)
+                status='Sent'
+            else:
+                c.execute("update outreach set status='Failed',error=?,delivery_method='smtp',updated_at=? where id=?",
+                    (err,NOW(),outreach_id));_outreach_event(c,outreach_id,'Failed',err);status='Failed'
+        if not ok:return jsonify(error='Email delivery failed: '+err,status=status),502
+        return jsonify(ok=True,status=status,delivery_method='smtp')
+    if row['channel']=='Email':
+        fallback='mailto:'+urllib.parse.quote(row['destination'],safe='@')+'?'+urllib.parse.urlencode({'subject':row['subject'],'body':row['body']})
+        method='prepared_email'
+    else:
+        fallback=row['destination'];method='prepared_linkedin'
+    with db() as c:
+        c.execute("update outreach set status='Prepared',delivery_method=?,error='',updated_at=? where id=?",(method,NOW(),outreach_id))
+        _outreach_event(c,outreach_id,'Prepared','Opened for external sending; delivery not yet confirmed')
+    return jsonify(ok=True,status='Prepared',delivery_method=method,fallback_url=fallback)
+
+@app.post("/api/outreach/<int:outreach_id>/mark-sent")
+def mark_outreach_sent(outreach_id):
+    blocked=reject_demo_write()
+    if blocked:return blocked
+    with db() as c:
+        row=c.execute("select * from outreach where id=?",(outreach_id,)).fetchone()
+        if not row:return jsonify(error='Outreach item not found'),404
+        if row['status']!='Prepared':return jsonify(error='Only externally prepared messages can be confirmed'),409
+        c.execute("update outreach set status='Sent',sent_at=?,updated_at=? where id=?",(NOW(),NOW(),outreach_id))
+        _outreach_event(c,outreach_id,'Sent','External send confirmed by user')
+        _complete_outreach_follow_up(c,row)
+    return jsonify(ok=True,status='Sent')
+
+@app.post("/api/outreach/<int:outreach_id>/replied")
+def mark_outreach_replied(outreach_id):
+    blocked=reject_demo_write()
+    if blocked:return blocked
+    with db() as c:
+        row=c.execute("select * from outreach where id=?",(outreach_id,)).fetchone()
+        if not row:return jsonify(error='Outreach item not found'),404
+        if row['status']!='Sent':return jsonify(error='Only sent outreach can be marked replied'),409
+        c.execute("update outreach set status='Replied',updated_at=? where id=?",(NOW(),outreach_id))
+        c.execute("update prospects set status='Replied',updated_at=? where id=?",(NOW(),row['prospect_id']))
+        _outreach_event(c,outreach_id,'Replied','Reply recorded by user')
+    return jsonify(ok=True,status='Replied')
+
+@app.post("/api/outreach/<int:outreach_id>/discard")
+def discard_outreach_execution(outreach_id):
+    blocked=reject_demo_write()
+    if blocked:return blocked
+    with db() as c:
+        row=c.execute("select status from outreach where id=?",(outreach_id,)).fetchone()
+        if not row:return jsonify(error='Outreach item not found'),404
+        if row['status'] in ('Sent','Replied'):return jsonify(error='Sent outreach cannot be discarded'),409
+        c.execute("update outreach set status='Discarded',updated_at=? where id=?",(NOW(),outreach_id))
+        _outreach_event(c,outreach_id,'Discarded','Draft removed from the active execution queue')
+    return jsonify(ok=True,status='Discarded')
 
 @app.get("/api/outreach")
 def out():
