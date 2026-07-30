@@ -13,8 +13,8 @@ from voice_agent import configured as voice_configured, create_twilio_call, huma
 from guideline_index import seed_index, index_fha_pdf, search as search_guideline_index, stats as guideline_index_stats
 
 app = Flask(__name__)
-BUILD_VERSION = "13.0"
-BUILD_NAME = "ASH AGENT COMMAND CENTER"
+BUILD_VERSION = "13.1"
+BUILD_NAME = "SCOUT WEB DISCOVERY"
 DB = Path(__file__).with_name("brokerbeacon.db")
 NOW = lambda: datetime.now().isoformat(timespec="seconds")
 
@@ -321,6 +321,9 @@ body.dark-mode .production-kpi,body.dark-mode .production-company{background:#10
 
 /* v12.3 Opportunity Engine */
 .oe-toolbar{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin:15px 0}.oe-filters{display:flex;gap:8px;flex-wrap:wrap}.oe-filters select{min-width:145px}.oe-list{display:grid;gap:12px}.oe-card{display:grid;grid-template-columns:76px minmax(0,1fr) auto;gap:15px;align-items:center;border:1px solid var(--line);border-radius:15px;background:#fff;padding:16px;box-shadow:0 5px 17px rgba(13,35,71,.05)}.oe-card:hover{border-color:#9db7d6;box-shadow:0 11px 27px rgba(13,35,71,.09)}.oe-score{width:65px;height:65px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(#174ea6 calc(var(--oe)*1%),#e5ebf3 0);position:relative}.oe-score:after{content:"";position:absolute;inset:8px;border-radius:50%;background:#fff}.oe-score strong{position:relative;z-index:1;color:#0d2347;font-size:20px}.oe-title{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.oe-title h4{margin:0;color:#0d2347}.oe-tier{display:inline-flex;padding:4px 8px;border-radius:999px;font-size:10px;font-weight:900}.oe-hot{background:#fdecef;color:#a51e33}.oe-warm{background:#fff3d2;color:#7c5700}.oe-watch{background:#e8f0fe;color:#174b91}.oe-research{background:#edf1f5;color:#526176}.oe-money{display:inline-flex;padding:5px 8px;border-radius:999px;background:#e5f6eb;color:#17653a;font-size:10px;font-weight:900}.oe-confidence{font-size:10px;color:#60708a}.oe-components{display:grid;grid-template-columns:repeat(5,minmax(90px,1fr));gap:7px;margin:9px 0}.oe-component{padding:8px;border-radius:9px;background:#f4f7fb;border:1px solid #e0e7f0}.oe-component small{display:block;color:#6b7b92;font-size:9px;text-transform:uppercase}.oe-component b{display:block;color:#173c70;margin-top:3px}.oe-explain{font-size:11px;color:#50637f;line-height:1.5}.oe-next{margin-top:7px;padding:9px 11px;border-left:3px solid #174ea6;background:#f2f7fe;border-radius:0 9px 9px 0;color:#304966;font-size:12px}.oe-actions{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}.dark-mode .oe-card,.dark-mode .oe-score:after{background:#101d34!important;border-color:#2b405f!important}.dark-mode .oe-title h4,.dark-mode .oe-score strong,.dark-mode .oe-component b{color:#edf4ff!important}.dark-mode .oe-component{background:#14223a;border-color:#2b405f}.dark-mode .oe-explain,.dark-mode .oe-confidence{color:#aebed4}.dark-mode .oe-next{background:#162946;color:#c3d3e7}.dark-mode .oe-score{background:conic-gradient(#4d91ea calc(var(--oe)*1%),#263750 0)}@media(max-width:900px){.oe-card{grid-template-columns:65px 1fr}.oe-actions{grid-column:1/-1;justify-content:flex-start}.oe-components{grid-template-columns:repeat(3,1fr)}}@media(max-width:580px){.oe-components{grid-template-columns:repeat(2,1fr)}.oe-filters{width:100%}.oe-filters select{flex:1;min-width:120px}}
+
+/* Sprint 22 · Scout Web Discovery */
+.scout-discovery{margin-bottom:14px;padding:0!important;overflow:hidden}.scout-head{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:17px 19px;background:linear-gradient(125deg,#0d2347,#164b82 74%,#1a6c75);color:#fff}.scout-head h3{color:#fff!important;margin:4px 0}.scout-head p{margin:0;color:#dce9f7}.scout-head .kicker{color:#8be7f2!important}.scout-controls{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.scout-controls select,.scout-controls input{min-width:145px;background:#fff!important}.scout-body{padding:15px 18px}.scout-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}.scout-metric{padding:11px;border:1px solid #dce5f0;border-radius:11px;background:#f8fbff}.scout-metric small{display:block;color:#718097;font-size:9px;text-transform:uppercase;font-weight:850}.scout-metric b{display:block;color:#0d2347;font-size:20px;margin-top:4px}.scout-candidates{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.scout-candidate{border:1px solid #d8e3ef;border-radius:13px;padding:13px;background:#fff}.scout-candidate-top{display:flex;justify-content:space-between;gap:10px}.scout-candidate h4{margin:0 0 4px;color:#0d2347}.scout-fields{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px}.scout-fields input{width:100%;padding:8px;font-size:11px}.scout-evidence{margin-top:8px;padding:9px;border-left:3px solid #174ea6;background:#f3f7fc;border-radius:0 9px 9px 0;font-size:11px;line-height:1.4;color:#52647c}.scout-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}.scout-sources{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 12px}.scout-source{font-size:10px;padding:5px 8px;border:1px solid #cbd9ea;border-radius:999px;background:#f7faff;color:#174b91;text-decoration:none}.scout-safety{font-size:11px;color:#65758c;margin-top:10px}.dark-mode .scout-head{background:linear-gradient(125deg,#081a36,#163b68 74%,#164b52)}.dark-mode .scout-metric,.dark-mode .scout-candidate{background:#101d34!important;border-color:#2b405f!important}.dark-mode .scout-metric b,.dark-mode .scout-candidate h4{color:#edf4ff}.dark-mode .scout-evidence{background:#14243e;color:#b8c9df}.dark-mode .scout-source{background:#142642;color:#c9ddfa;border-color:#345375}@media(max-width:900px){.scout-candidates{grid-template-columns:1fr}.scout-metrics{grid-template-columns:repeat(2,1fr)}}@media(max-width:600px){.scout-head{align-items:flex-start;flex-direction:column}.scout-controls{width:100%}.scout-controls>*{flex:1}.scout-fields{grid-template-columns:1fr}}
 
 /* Sprint 21 · Ash Agent Command Center */
 .agent-center{margin:14px 0;padding:0!important;overflow:hidden}.agent-center-head{display:flex;justify-content:space-between;gap:18px;align-items:center;padding:18px 20px;background:linear-gradient(125deg,#0d2347,#17467d 72%,#5c2748 140%);color:#fff}.agent-center-head h3{margin:4px 0;color:#fff!important}.agent-center-head p{margin:0;color:#dce9f7}.agent-center-head .kicker{color:#ff9eaa!important}.agent-center-body{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(300px,.8fr);gap:14px;padding:16px}.agent-roster{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}.agent-card{border:1px solid #d9e4f1;border-radius:12px;background:#f8fbff;padding:11px}.agent-card-top{display:flex;align-items:center;gap:7px}.agent-avatar{width:27px;height:27px;border-radius:9px;display:grid;place-items:center;background:#e8f0fe;color:#174b91;font-weight:950}.agent-card b{display:block;color:#0d2347;font-size:11px}.agent-card small{display:block;margin-top:6px;line-height:1.35}.agent-run-status{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:13px 0 8px}.agent-step{display:grid;grid-template-columns:35px minmax(0,1fr) auto;gap:9px;align-items:start;padding:10px 0;border-bottom:1px solid #e2eaf3}.agent-step:last-child{border-bottom:0}.agent-step-order{width:29px;height:29px;border-radius:50%;display:grid;place-items:center;background:#174ea6;color:#fff;font-weight:900;font-size:11px}.agent-step b{color:#0d2347}.agent-step-result{font-size:11px;color:#5d6f88;margin-top:4px;line-height:1.4}.agent-confidence{font-size:10px;font-weight:850;color:#174b91;white-space:nowrap}.agent-warning{color:#9a6210!important}.agent-plan-account{display:grid;grid-template-columns:30px minmax(0,1fr) auto;gap:9px;padding:10px;border:1px solid #dce5f0;border-radius:11px;margin:7px 0;background:#fff}.agent-plan-rank{font-weight:950;color:#174ea6}.agent-plan-account b{color:#0d2347}.agent-plan-account p{margin:4px 0;font-size:11px;line-height:1.4;color:#53647c}.agent-plan-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}.agent-principle{padding:10px 12px;border-left:4px solid #c6283d;background:#fdeff1;border-radius:0 10px 10px 0;font-size:11px;color:#65333b}.agent-empty{padding:22px;text-align:center;color:#718097;border:1px dashed #c7d4e3;border-radius:12px}.dark-mode .agent-center-head{background:linear-gradient(125deg,#081a36,#173d6b 72%,#4a203a)}.dark-mode .agent-card,.dark-mode .agent-plan-account{background:#101d34!important;border-color:#2b405f!important}.dark-mode .agent-card b,.dark-mode .agent-step b,.dark-mode .agent-plan-account b{color:#edf4ff}.dark-mode .agent-step{border-color:#2b405f}.dark-mode .agent-step-result,.dark-mode .agent-plan-account p{color:#aebed4}.dark-mode .agent-principle{background:#351d25;color:#f1c9d0}@media(max-width:1050px){.agent-center-body{grid-template-columns:1fr}.agent-roster{grid-template-columns:repeat(3,1fr)}}@media(max-width:650px){.agent-center-head{align-items:flex-start;flex-direction:column}.agent-roster{grid-template-columns:1fr 1fr}.agent-step{grid-template-columns:32px 1fr}.agent-confidence{grid-column:2}.agent-plan-account{grid-template-columns:28px 1fr}.agent-plan-account>button{grid-column:2}}
@@ -760,7 +763,7 @@ $('#pemail').textContent=p.email||'Not publicly listed';
 $('#pcontactactions').innerHTML=contactButtons(p)||'<span class="contact-missing">Open the source or company website to locate current contact information.</span>';
 $('#pcontactbadge').textContent=(p.phone||p.email)?'Direct contact ready':'Website contact available';
 $('#scores').innerHTML=[['Opportunity',p.score],['Growth',p.growth_score],['Government fit',p.gov_fit],['HELOC/Jumbo',p.niche_fit]].map(x=>`<div class=scorebox><span class=muted>${x[0]}</span><strong>${x[1]}</strong></div>`).join('');$('#psum').textContent=p.ai_summary;$('#preasons').innerHTML=p.score_reasons.map(x=>`<li>${esc(x)}</li>`).join('');$('#psource').innerHTML=[p.source_name?'<b>Source:</b> '+esc(p.source_name):'',p.source_url?'<a class="btn smallbtn" target="_blank" rel="noopener" href="'+esc(p.source_url)+'">Open source</a>':'',p.nmls?'<a class="btn smallbtn" target="_blank" rel="noopener" href="https://www.nmlsconsumeraccess.org/">Verify in NMLS Consumer Access</a>':'',p.verification_notes?'<div style="margin-top:8px">'+esc(p.verification_notes)+'</div>':''].filter(Boolean).join(' ');$('#pproducts').innerHTML=p.product_fit.split(',').filter(Boolean).map(x=>`<span class=tag>${esc(x.trim())}</span>`).join('');$('#pnext').textContent=p.next_best_action;$('#pcall').value=p.call_opener;$('#pobj').textContent=p.likely_objection;$('#presp').textContent=p.objection_response;$('#profileOut').onclick=()=>{show('outreach');$('#op').value=p.id;$('#profile').close()};renderMemory(p.memories);$('#profile').showModal()}
-$('#appVersion').textContent='VERSION 13.0 · ASH AGENT COMMAND CENTER';
+$('#appVersion').textContent='VERSION 13.1 · SCOUT WEB DISCOVERY';
 document.querySelector('nav [data-v="opportunityengine"]')?.insertAdjacentHTML('afterend','<button data-v="callprep">☎ Call Prep</button>');
 document.querySelector('nav [data-v="callprep"]')?.addEventListener('click',()=>show('callprep'));
 const WORKFLOW_NAV=[
@@ -852,6 +855,36 @@ $('#import').onclick=()=>$('#importDlg').showModal();
 async function previewImport(){let file=$('#importFile').files[0];if(!file){msg('Choose a CSV file first');return}let f=new FormData();f.append('file',file);let r=await fetch('/api/import/preview',{method:'POST',body:f}),d=await r.json();if(!r.ok){msg(d.error||'Preview failed');return}let box=$('#importPreview');box.style.display='block';box.innerHTML='<h4>Preview</h4><p class=muted>'+d.total_rows+' rows · '+d.valid_rows+' valid · '+d.invalid_rows+' need attention</p><p><b>Detected mapping:</b> '+Object.entries(d.mapping).filter(x=>x[1]).map(x=>x[0]+' ← '+x[1]).join(' · ')+'</p><table><thead><tr><th>Row</th><th>Company</th><th>State</th><th>NMLS</th><th>Result</th></tr></thead><tbody>'+d.sample.map(x=>'<tr><td>'+x.row+'</td><td>'+esc(x.company||'')+'</td><td>'+esc(x.state||'')+'</td><td>'+esc(x.nmls||'')+'</td><td>'+(x.errors.length?'<span style="color:var(--r)">'+esc(x.errors.join('; '))+'</span>':'<span style="color:var(--g)">Ready</span>')+'</td></tr>').join('')+'</tbody></table>'}
 $('#previewImport').onclick=previewImport;
 $('#importForm').onsubmit=async e=>{e.preventDefault();if(!$('#importAuthorized').checked){msg('Authorization confirmation is required');return}let file=$('#importFile').files[0];if(!file){msg('Choose a CSV file first');return}let f=new FormData();f.append('file',file);f.append('authorized_use','yes');f.append('default_source_name',$('#defaultSource').value);f.append('default_source_url',$('#defaultSourceUrl').value);f.append('default_verification_status',$('#defaultVerify').value);f.append('default_license_type',$('#defaultLicense').value);let r=await fetch('/api/import',{method:'POST',body:f}),d=await r.json();if(!r.ok){msg(d.error||'Import failed');return}msg(d.imported+' new · '+d.updated+' updated · '+d.skipped+' skipped');let box=$('#importPreview');box.style.display='block';box.innerHTML='<h4>Import complete</h4><p>'+d.imported+' new prospects, '+d.updated+' updated, '+d.skipped+' skipped.</p>'+(d.report_url?'<a class="btn" href="'+d.report_url+'">Download import report</a>':'');load();dash()};
+
+let scoutStatesLoaded=false;
+function ensureScoutDiscovery(){
+  const page=$('#prospects');if(!page||$('#scoutDiscovery'))return;
+  const shell=document.createElement('div');shell.id='scoutDiscovery';shell.className='panel scout-discovery';
+  shell.innerHTML=`<div class="scout-head"><div><div class="kicker">SPRINT 22 · SCOUT WEB DISCOVERY</div><h3>Find newly established and newly licensed brokers</h3><p>Scout searches ordinary public web results, deduplicates discoveries, and stages every candidate for Clay’s review.</p></div><div class="scout-controls"><select id="scoutState" aria-label="Discovery state"><option value="NC">North Carolina</option><option value="SC">South Carolina</option></select><input id="scoutMetro" placeholder="Optional metro or city"><button class="btn start-day" id="runScoutBtn" type="button">⌖ Discover new brokers</button></div></div><div class="scout-body"><div class="scout-metrics"><div class="scout-metric"><small>Pending review</small><b id="scoutPending">0</b></div><div class="scout-metric"><small>Approved</small><b id="scoutApproved">0</b></div><div class="scout-metric"><small>Duplicates</small><b id="scoutDuplicates">0</b></div><div class="scout-metric"><small>Last run</small><b id="scoutLastRun" style="font-size:13px">Not run</b></div></div><div class="profile-head"><div><h3>Discovery Inbox</h3><p class="muted">Edit the guessed fields, inspect the evidence, verify licensing, then approve or reject.</p></div><select id="scoutStatus" onchange="scoutDiscovery()"><option>Pending review</option><option>Approved</option><option>Rejected</option><option>Duplicate</option><option>All</option></select></div><div id="scoutSources" class="scout-sources"></div><div id="scoutCandidates" class="scout-candidates"><div class="agent-empty">Scout has not searched this territory yet.</div></div><div class="scout-safety">Scout does not scrape NMLS or regulator portals. Official sources are provided for human verification, and no candidate enters Prospects or Outreach without approval.</div></div>`;
+  page.prepend(shell);$('#runScoutBtn').onclick=runScoutDiscovery;$('#scoutState').onchange=()=>scoutDiscovery();
+}
+function scoutField(id,name){return $(`#scout-${id}-${name}`)?.value.trim()||''}
+function renderScoutCandidates(items){
+  const box=$('#scoutCandidates');if(!box)return;
+  box.innerHTML=items.length?items.map(x=>`<div class="scout-candidate"><div class="scout-candidate-top"><div><h4>${esc(x.company||x.result_title)}</h4><small class="muted">${esc(x.metro||x.state)} · ${esc(x.signal)}</small></div><span class="pill">${esc(x.status)}</span></div><div class="scout-fields"><input id="scout-${x.id}-company" value="${esc(x.company)}" placeholder="Company name"><input id="scout-${x.id}-nmls" value="${esc(x.nmls)}" placeholder="NMLS ID"><input id="scout-${x.id}-owner" value="${esc(x.owner)}" placeholder="Owner / decision-maker"><input id="scout-${x.id}-email" value="${esc(x.email)}" placeholder="Public business email"><input id="scout-${x.id}-phone" value="${esc(x.phone)}" placeholder="Public business phone"><input id="scout-${x.id}-website" value="${esc(x.website)}" placeholder="Company website"></div><div class="scout-evidence">${esc(x.evidence||x.result_title)}<br><small>Scout confidence ${x.confidence}% · Licensing remains unverified until Clay checks an official source.</small></div><div class="scout-actions"><a class="btn smallbtn" target="_blank" rel="noopener" href="${esc(safeUrl(x.source_url))}">Open discovery source</a>${x.status==='Pending review'?`<button class="btn primary smallbtn" onclick="approveScoutCandidate(${x.id})">Verify & approve</button><button class="btn smallbtn" onclick="rejectScoutCandidate(${x.id})">Reject</button>`:''}${x.approved_prospect_id?`<button class="btn smallbtn" onclick="profile(${x.approved_prospect_id})">Open prospect</button>`:''}</div></div>`).join(''):'<div class="agent-empty">No discoveries match this review stage.</div>';
+}
+async function scoutDiscovery(){
+  ensureScoutDiscovery();const state=$('#scoutState')?.value||'NC',status=$('#scoutStatus')?.value||'Pending review';
+  try{const d=await api('/api/scout-discovery?'+new URLSearchParams({state,status}));if(!scoutStatesLoaded){$('#scoutState').innerHTML=d.states.map(x=>`<option value="${x.code}" ${x.code===state?'selected':''}>${esc(x.name)}</option>`).join('');scoutStatesLoaded=true}$('#scoutPending').textContent=d.metrics.pending||0;$('#scoutApproved').textContent=d.metrics.approved||0;$('#scoutDuplicates').textContent=d.metrics.duplicates||0;$('#scoutLastRun').textContent=d.last_run?esc((d.last_run.finished_at||d.last_run.started_at).replace('T',' ')):'Not run';$('#scoutSources').innerHTML=d.sources.map(x=>`<a class="scout-source" target="_blank" rel="noopener" href="${esc(safeUrl(x.verify_url))}">Verify with ${esc(x.label)}</a>`).join('');renderScoutCandidates(d.candidates)}
+  catch(e){$('#scoutCandidates').innerHTML=`<div class="agent-empty">${esc(e.message||'Unable to load Scout discoveries.')}</div>`}
+}
+async function runScoutDiscovery(){
+  const b=$('#runScoutBtn'),state=$('#scoutState').value,metro=$('#scoutMetro').value.trim();b.disabled=true;b.textContent='Scout is searching…';
+  try{const d=await api('/api/scout-discovery/run',{method:'POST',body:JSON.stringify({state,metro})});msg(`Scout reviewed ${d.results} public results · ${d.new_candidates} new candidates · ${d.duplicates} duplicates`);$('#scoutStatus').value='Pending review';await scoutDiscovery()}
+  catch(e){msg(e.message||'Scout could not complete the public-web search')}
+  finally{b.disabled=false;b.textContent='⌖ Discover new brokers'}
+}
+async function approveScoutCandidate(id){
+  if(!confirm('Confirm that you reviewed the public source and will verify licensing through NMLS or the state regulator before relying on this lead.'))return;
+  const payload={confirmed_source:true,company:scoutField(id,'company'),nmls:scoutField(id,'nmls'),owner:scoutField(id,'owner'),email:scoutField(id,'email'),phone:scoutField(id,'phone'),website:scoutField(id,'website')};
+  const d=await api(`/api/scout-candidates/${id}/approve`,{method:'POST',body:JSON.stringify(payload)});msg('Candidate approved and added to Prospects · licensing still marked Needs verification');await Promise.all([scoutDiscovery(),load(),dash()]);if(d.prospect_id)profile(d.prospect_id)
+}
+async function rejectScoutCandidate(id){await api(`/api/scout-candidates/${id}/reject`,{method:'POST',body:JSON.stringify({note:'Rejected during Clay review'})});msg('Discovery rejected');scoutDiscovery()}
 
 async function dailyPlan(){let d=await api('/api/daily-plan');$('#dcalls').textContent=d.metrics.calls_today;$('#demails').textContent=d.metrics.emails_today;$('#dconvos').textContent=d.metrics.conversations_week;$('#dmeetings').textContent=d.metrics.meetings_week;$('#dapps').textContent=d.metrics.applications_week;$('#dfunded').textContent=d.metrics.funded_week;$('#goalPct').textContent=d.goal.percent+'%';$('#goalring').style.setProperty('--goal',d.goal.percent);$('#goalText').textContent=d.goal.completed+' of '+d.goal.target+' actions completed today';$('#dailyQueue').innerHTML=d.actions.length?d.actions.map((x,i)=>`<div class="action-row"><div class="rank">#${i+1}</div><div><b>${esc(x.company)}</b> <span class="activity-chip">${esc(x.recommended_channel)}</span><div class="reason">${esc(x.reason)}</div><small class="muted">${esc(x.city||'')}, ${esc(x.state||'')} · Score ${x.score} · ${esc(x.status)}</small>${x.stale_days>=7?`<div class="stale">No logged activity in ${x.stale_days} days</div>`:''}</div><div>${x.phone?`<a class="btn smallbtn" href="${telHref(x.phone)}">Call</a>`:''}${x.email?` <a class="btn smallbtn" href="${mailHref(x.email)}">Email</a>`:''} <button class="btn smallbtn" onclick="openAction(${x.id},'${esc(x.company).replace(/'/g,"&#39;")}','${x.recommended_channel}','daily')">Log outcome</button> <button class="btn smallbtn" onclick="profile(${x.id})">Open</button></div></div>`).join(''):'<div class=empty>No unfinished actions. Great work.</div>';$('#salesTimeline').innerHTML=d.recent.length?d.recent.map(x=>`<div class="timeline-item"><b>${esc(x.action_type)} · ${esc(x.company)}</b><div>${esc(x.outcome||'')}</div>${x.next_step?`<div class="muted">Next: ${esc(x.next_step)}</div>`:''}<small class="muted">${esc(x.created_at.replace('T',' '))}</small></div>`).join(''):'<div class=empty>No sales activity logged yet.</div>'}
 function suggestedFollowup(outcome){const days={'No answer':2,'Left voicemail':2,'Connected':3,'Interested':2,'Positive response':2,'Meeting scheduled':1,'Application started':1};return days[outcome]??null}
@@ -1083,7 +1116,7 @@ function renderIntelligence(){if(!OI)return;let tier=$('#oiTier').value;let xs=O
 async function saveIntelligenceSettings(){let weights={};$$('[data-weight]').forEach(x=>weights[x.dataset.weight]=+x.value);await api('/api/intelligence/settings',{method:'POST',body:JSON.stringify({weights})});msg('Scoring weights saved');await rescoreIntelligence()}
 async function rescoreIntelligence(){let d=await api('/api/intelligence/rescore',{method:'POST'});msg(`${d.updated} prospects rescored`);await loadIntelligence();missionControl();load()}
 
-load();dash();outreach();followups();dailyPlan();ints();missionControl();agentCommandCenter();
+load();dash();outreach();followups();dailyPlan();ints();missionControl();agentCommandCenter();scoutDiscovery();
 </script></body></html>'''
 
 def db():
@@ -2367,7 +2400,19 @@ FIELD_ALIASES = {
     "status": ["status","pipeline status"],
     "verification_notes": ["verification notes","notes","license notes"]
 }
-SUPPORTED_STATES={"NC","SC","VA","GA","TN","MI"}
+US_STATES={
+    "AL":"Alabama","AK":"Alaska","AZ":"Arizona","AR":"Arkansas","CA":"California","CO":"Colorado",
+    "CT":"Connecticut","DE":"Delaware","FL":"Florida","GA":"Georgia","HI":"Hawaii","ID":"Idaho",
+    "IL":"Illinois","IN":"Indiana","IA":"Iowa","KS":"Kansas","KY":"Kentucky","LA":"Louisiana",
+    "ME":"Maine","MD":"Maryland","MA":"Massachusetts","MI":"Michigan","MN":"Minnesota",
+    "MS":"Mississippi","MO":"Missouri","MT":"Montana","NE":"Nebraska","NV":"Nevada",
+    "NH":"New Hampshire","NJ":"New Jersey","NM":"New Mexico","NY":"New York",
+    "NC":"North Carolina","ND":"North Dakota","OH":"Ohio","OK":"Oklahoma","OR":"Oregon",
+    "PA":"Pennsylvania","RI":"Rhode Island","SC":"South Carolina","SD":"South Dakota",
+    "TN":"Tennessee","TX":"Texas","UT":"Utah","VT":"Vermont","VA":"Virginia",
+    "WA":"Washington","WV":"West Virginia","WI":"Wisconsin","WY":"Wyoming"
+}
+SUPPORTED_STATES=set(US_STATES)
 
 def clean_header(v):
     return re.sub(r"[^a-z0-9]+"," ",(v or "").strip().lower()).strip()
@@ -2714,6 +2759,172 @@ def mission_control():
     recommendations=[]
     for x in top[:3]: recommendations.append({'title':f"{x['company']} · {x['health']}",'detail':f"{x['reason']} Modeled 12-month volume: ${x['modeled_annual_volume']:,.0f}."})
     return jsonify(metrics={'priority_calls':len(top),'new_alerts':len(alerts),'at_risk':len(at_risk),'meetings_week':meetings,'meeting_opportunities':min(4,max(0,len([x for x in top if x['score']>=75]))),'application_opportunities':projected_apps,'projected_pipeline_potential':projected_pipeline,'projected_revenue_potential':projected_revenue,'replies_attention':replies_attention},priorities=top,new_alerts=alerts,at_risk=at_risk[:6],products=products,health=health,recommendations=recommendations,goals={'completed':actions_week,'target':50,'percent':min(100,round(actions_week/50*100))},campaigns={'active':active,'queued':camps.get('Queued',0),'sent':camps.get('Sent',0),'failed':camps.get('Failed',0)},brief=brief,methodology='Modeled opportunity uses stored account score, relationship health, status, configured conversion assumptions, average loan amount, and revenue basis points. It is not recorded production or guaranteed revenue.')
+
+SCOUT_DEFAULT_METROS={
+    'NC':['Charlotte','Raleigh','Greensboro','Wilmington'],
+    'SC':['Charleston','Columbia','Greenville','Myrtle Beach','Spartanburg'],
+}
+
+def _scout_text(value):
+    return re.sub(r'\s+',' ',html.unescape(re.sub(r'<[^>]+>',' ',value or ''))).strip()
+
+def _scout_company_guess(title):
+    value=_scout_text(title)
+    for separator in (' | ',' — ',' – ',' - '):
+        if separator in value:
+            parts=[x.strip() for x in value.split(separator) if x.strip()]
+            likely=next((x for x in parts if re.search(r'\b(mortgage|home loans?|lending|financial)\b',x,re.I)),parts[0] if parts else value)
+            value=likely;break
+    value=re.sub(r'^(new|meet|welcome to|introducing)\s+','',value,flags=re.I)
+    return value[:180]
+
+def _scout_bing_search(query,limit=8):
+    url='https://www.bing.com/search?'+urllib.parse.urlencode({'q':query,'format':'rss'})
+    req=urllib.request.Request(url,headers={
+        'User-Agent':'Mozilla/5.0 BrokerBeaconScout/1.0',
+        'Accept':'application/rss+xml, application/xml, text/xml;q=0.9, */*;q=0.8',
+        'Accept-Language':'en-US,en;q=0.9',
+    })
+    with urllib.request.urlopen(req,timeout=12) as response:
+        raw=response.read(1000000).decode('utf-8','ignore')
+    results=[];seen=set()
+    for item in re.findall(r'(?is)<item>(.*?)</item>',raw):
+        def tag(name):
+            match=re.search(rf'(?is)<{name}>(.*?)</{name}>',item)
+            return html.unescape(re.sub(r'^<!\[CDATA\[|\]\]>$','',match.group(1).strip())) if match else ''
+        result_url=tag('link').strip();title=_scout_text(tag('title'));snippet=_scout_text(tag('description'))
+        parsed=urllib.parse.urlparse(result_url)
+        if parsed.scheme not in {'http','https'} or not parsed.netloc or result_url in seen:continue
+        haystack=(title+' '+snippet).lower()
+        if 'mortgage' not in haystack or not any(term in haystack for term in ('broker','brokerage','home loan','lending')):continue
+        seen.add(result_url);results.append({'title':title,'snippet':snippet,'url':result_url})
+        if len(results)>=limit:break
+    return results
+
+def _scout_candidate_from_result(result,state,metro):
+    title=result['title'];snippet=result['snippet'];source_url=result['url'];text=title+' '+snippet
+    nmls_match=re.search(r'\bNMLS(?:\s*(?:ID|#|number))?[\s:#-]*(\d{4,})\b',text,re.I)
+    email_match=re.search(r'\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b',text,re.I)
+    phone_match=re.search(r'(?:\+?1[\s.-]?)?\(?\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}',text)
+    host=urllib.parse.urlparse(source_url).netloc.lower()
+    linkedin=source_url if 'linkedin.com' in host else ''
+    non_company=('bing.com','google.com','yahoo.com','facebook.com','linkedin.com','youtube.com','nmlsconsumeraccess.org')
+    website='' if any(x in host for x in non_company) else source_url
+    signal='Newly licensed / opened signal' if re.search(r'\b(newly licensed|new license|opened|launch|new brokerage|new branch)\b',text,re.I) else 'Public web broker signal'
+    confidence=42+(18 if nmls_match else 0)+(8 if website else 0)+(8 if email_match or phone_match else 0)+(8 if re.search(r'\b(new|newly|opened|launch|hiring|growing)\b',text,re.I) else 0)
+    return {
+        'company':_scout_company_guess(title),'result_title':title,'state':state,'metro':metro,
+        'nmls':nmls_match.group(1) if nmls_match else '','owner':'',
+        'email':email_match.group(0) if email_match else '','phone':phone_match.group(0) if phone_match else '',
+        'website':website,'linkedin_url':linkedin,'signal':signal,'evidence':snippet[:900],
+        'source_name':'Bing public web RSS','source_url':source_url,'confidence':min(90,confidence)
+    }
+
+@app.get('/api/scout-discovery')
+def scout_discovery():
+    state=(request.args.get('state') or 'NC').upper()
+    if state not in US_STATES:return jsonify(error='Choose a valid U.S. state.'),400
+    status=request.args.get('status') or 'Pending review'
+    with db() as c:
+        clause='state=?';params=[state]
+        if status!='All':clause+=' and status=?';params.append(status)
+        candidates=[dict(x) for x in c.execute(f"select * from scout_candidates where {clause} order by id desc limit 60",params)]
+        counts={r['status']:r['n'] for r in c.execute("select status,count(*) n from scout_candidates where state=? group by status",(state,))}
+        last=c.execute("select * from scout_runs where state=? order by id desc limit 1",(state,)).fetchone()
+        sources=[dict(x) for x in c.execute("select * from scout_sources where active=1 and state in ('*',?) order by state,label",(state,))]
+    return jsonify(
+        states=[{'code':code,'name':name} for code,name in sorted(US_STATES.items(),key=lambda x:x[1])],
+        active_territories=['NC','SC'],candidates=candidates,sources=sources,last_run=dict(last) if last else None,
+        metrics={'pending':counts.get('Pending review',0),'approved':counts.get('Approved',0),'duplicates':counts.get('Duplicate',0),'rejected':counts.get('Rejected',0)}
+    )
+
+@app.post('/api/scout-discovery/run')
+def run_scout_discovery():
+    blocked=reject_demo_write()
+    if blocked:return blocked
+    d=request.get_json(silent=True) or {};state=(d.get('state') or 'NC').upper();metro=(d.get('metro') or '').strip()[:100]
+    if state not in US_STATES:return jsonify(error='Choose a valid U.S. state.'),400
+    state_name=US_STATES[state]
+    metros=[metro] if metro else SCOUT_DEFAULT_METROS.get(state,[])[:3]
+    query_places=metros or [state_name]
+    queries=[
+        f'"mortgage broker" ("newly licensed" OR opened OR launched) "{state_name}"',
+        f'"independent mortgage broker" (hiring OR growing OR "new branch") "{state_name}"',
+    ]
+    queries.extend(f'"mortgage broker" (opened OR launched OR hiring) "{place}" {state}' for place in query_places)
+    queries=list(dict.fromkeys(queries))[:5];started=NOW()
+    with db() as c:
+        run_id=c.execute("insert into scout_runs(state,metro,status,query_count,started_at) values(?,?,?,?,?)",(state,metro,'Running',len(queries),started)).lastrowid
+    raw_results=[];errors=[]
+    with ThreadPoolExecutor(max_workers=min(3,len(queries))) as pool:
+        futures={pool.submit(_scout_bing_search,q,8):q for q in queries}
+        for future in as_completed(futures):
+            try:raw_results.extend(future.result())
+            except Exception as exc:errors.append(f"{type(exc).__name__}: {str(exc)[:120]}")
+    unique={x['url']:x for x in raw_results};new_count=duplicate_count=0
+    with db() as c:
+        for result in unique.values():
+            candidate=_scout_candidate_from_result(result,state,metro)
+            existing=c.execute("select id from scout_candidates where source_url=? and state=?",(candidate['source_url'],state)).fetchone()
+            if existing:duplicate_count+=1;continue
+            duplicate_pid=0
+            if candidate['nmls']:
+                row=c.execute("select id from prospects where nmls=? limit 1",(candidate['nmls'],)).fetchone();duplicate_pid=row['id'] if row else 0
+            if not duplicate_pid and candidate['company']:
+                row=c.execute("select id from prospects where lower(trim(company))=lower(trim(?)) and state=? limit 1",(candidate['company'],state)).fetchone();duplicate_pid=row['id'] if row else 0
+            candidate_status='Duplicate' if duplicate_pid else 'Pending review'
+            c.execute("""insert into scout_candidates(run_id,company,result_title,state,metro,nmls,owner,email,phone,website,linkedin_url,signal,evidence,source_name,source_url,status,confidence,duplicate_prospect_id,discovered_at)
+                         values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                      (run_id,candidate['company'],candidate['result_title'],state,metro,candidate['nmls'],candidate['owner'],candidate['email'],candidate['phone'],candidate['website'],candidate['linkedin_url'],candidate['signal'],candidate['evidence'],candidate['source_name'],candidate['source_url'],candidate_status,candidate['confidence'],duplicate_pid,NOW()))
+            if duplicate_pid:duplicate_count+=1
+            else:new_count+=1
+        final_status='Completed' if unique or not errors else 'Failed'
+        error='; '.join(errors)[:1000]
+        c.execute("update scout_runs set status=?,result_count=?,new_count=?,duplicate_count=?,error=?,finished_at=? where id=?",(final_status,len(unique),new_count,duplicate_count,error,NOW(),run_id))
+        c.execute("insert into activity(action,detail,created_at) values(?,?,?)",('Scout web discovery',f'{state} · {len(unique)} results · {new_count} candidates · human review required',NOW()))
+    if not unique and errors:return jsonify(error='Public web search was unavailable. Scout recorded the failed run; try again later.',detail=errors[:3]),502
+    return jsonify(ok=True,run_id=run_id,state=state,queries=len(queries),results=len(unique),new_candidates=new_count,duplicates=duplicate_count,errors=errors)
+
+@app.post('/api/scout-candidates/<int:candidate_id>/approve')
+def approve_scout_candidate(candidate_id):
+    blocked=reject_demo_write()
+    if blocked:return blocked
+    d=request.get_json(silent=True) or {}
+    if not d.get('confirmed_source'):return jsonify(error='Confirm source review before approval.'),400
+    company=(d.get('company') or '').strip()
+    if not company:return jsonify(error='Company name is required.'),400
+    with db() as c:
+        candidate=c.execute("select * from scout_candidates where id=?",(candidate_id,)).fetchone()
+        if not candidate:return jsonify(error='Scout candidate not found.'),404
+        if candidate['status']!='Pending review':return jsonify(error=f"Candidate is already {candidate['status']}."),409
+        nmls=(d.get('nmls') or candidate['nmls'] or '').strip();state=candidate['state']
+        duplicate=None
+        if nmls:duplicate=c.execute("select id from prospects where nmls=? limit 1",(nmls,)).fetchone()
+        if not duplicate:duplicate=c.execute("select id from prospects where lower(trim(company))=lower(trim(?)) and state=? limit 1",(company,state)).fetchone()
+        if duplicate:
+            c.execute("update scout_candidates set status='Duplicate',duplicate_prospect_id=?,reviewed_at=?,review_notes=? where id=?",(duplicate['id'],NOW(),'Matched an existing prospect during approval.',candidate_id))
+            return jsonify(error='This discovery matches an existing prospect.',prospect_id=duplicate['id']),409
+        owner=(d.get('owner') or candidate['owner'] or '').strip();email=(d.get('email') or candidate['email'] or '').strip();phone=(d.get('phone') or candidate['phone'] or '').strip();website=(d.get('website') or candidate['website'] or '').strip()
+        cur=c.execute("""insert into prospects(company,owner,city,state,signal,team,email,phone,status,source,website,nmls,specialties,hiring,source_name,source_url,verification_status,verified_at,license_type,verification_notes,authorized_use,created_at,updated_at)
+                         values(?,?,?,?,?,0,?,?,'New','Scout',?,?, '',0,?,?, 'Needs verification','', 'Mortgage broker candidate',?,1,?,?)""",
+                      (company,owner,candidate['metro'],state,candidate['signal'],email,phone,website,nmls,candidate['source_name'],candidate['source_url'],'Scout found this public-web signal. Verify licensing in NMLS Consumer Access and the applicable state regulator before relying on it.',NOW(),NOW()))
+        pid=cur.lastrowid
+        c.execute("update scout_candidates set company=?,nmls=?,owner=?,email=?,phone=?,website=?,status='Approved',approved_prospect_id=?,reviewed_at=?,review_notes=? where id=?",(company,nmls,owner,email,phone,website,pid,NOW(),'Source reviewed by Clay; licensing remains Needs verification.',candidate_id))
+        c.execute("insert into activity(action,detail,created_at) values(?,?,?)",('Scout candidate approved',f'{company} · licensing verification still required',NOW()))
+    rescore(pid)
+    return jsonify(ok=True,prospect_id=pid,verification_status='Needs verification')
+
+@app.post('/api/scout-candidates/<int:candidate_id>/reject')
+def reject_scout_candidate(candidate_id):
+    blocked=reject_demo_write()
+    if blocked:return blocked
+    note=((request.get_json(silent=True) or {}).get('note') or 'Rejected during review').strip()[:500]
+    with db() as c:
+        candidate=c.execute("select status from scout_candidates where id=?",(candidate_id,)).fetchone()
+        if not candidate:return jsonify(error='Scout candidate not found.'),404
+        if candidate['status']!='Pending review':return jsonify(error=f"Candidate is already {candidate['status']}."),409
+        c.execute("update scout_candidates set status='Rejected',reviewed_at=?,review_notes=? where id=?",(NOW(),note,candidate_id))
+    return jsonify(ok=True)
 
 AGENT_REGISTRY = [
     {'key':'scout','name':'Scout','assignment':'Select the accounts most worth pursuing from stored opportunity signals.'},
