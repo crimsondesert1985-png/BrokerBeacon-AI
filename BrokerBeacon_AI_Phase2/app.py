@@ -13,8 +13,8 @@ from voice_agent import configured as voice_configured, create_twilio_call, huma
 from guideline_index import seed_index, index_fha_pdf, search as search_guideline_index, stats as guideline_index_stats
 
 app = Flask(__name__)
-BUILD_VERSION = "12.8"
-BUILD_NAME = "RECIPIENT INTELLIGENCE"
+BUILD_VERSION = "12.9"
+BUILD_NAME = "NAVIGATION ARCHITECTURE"
 DB = Path(__file__).with_name("brokerbeacon.db")
 NOW = lambda: datetime.now().isoformat(timespec="seconds")
 
@@ -269,6 +269,25 @@ body.dark-mode input,body.dark-mode select,body.dark-mode textarea{background:#0
 body.dark-mode .ux-page-hero{background:linear-gradient(125deg,#0a1d3b,#173d6b 72%,#4a203a 140%)}body.dark-mode .ux-insight-main,body.dark-mode .ux-insight-cell,body.dark-mode .filters,body.dark-mode .metric{background:#101d34!important;border-color:#2b405f!important}body.dark-mode .ux-insight-main strong,body.dark-mode .ux-insight-cell b,body.dark-mode .metric strong,body.dark-mode .view>.panel>h3,body.dark-mode .view .panel>.profile-head h3{color:#edf4ff!important}body.dark-mode .ux-insight-main p,body.dark-mode .ux-insight-cell p,body.dark-mode .ux-insight-cell span{color:#aebed4!important}
 @media(max-width:1100px){.ux-insight{grid-template-columns:1fr 1fr}.ux-insight-main{grid-column:1/-1}}@media(max-width:700px){.ux-page-hero{align-items:flex-start;flex-direction:column}.ux-insight{grid-template-columns:1fr}.ux-insight-main{grid-column:auto}}
 
+
+/* Sprint 20 · Navigation Architecture */
+.app>aside{overflow-y:auto;scrollbar-width:thin;scrollbar-color:#ffffff38 transparent}
+.workflow-nav{display:grid;gap:7px;padding-bottom:22px}
+.nav-group{border:1px solid transparent;border-radius:12px;transition:.18s ease}
+.nav-group.active-group{background:#ffffff08;border-color:#ffffff12}
+.nav-group-toggle{display:flex!important;align-items:center;justify-content:space-between;width:100%;margin:0!important;padding:8px 10px!important;border:0!important;background:transparent!important;color:#a9bdd9!important;font-size:9px!important;font-weight:900!important;letter-spacing:.12em;text-transform:uppercase}
+.nav-group-toggle:hover{background:#ffffff0b!important;border-left:0!important}
+.nav-group-toggle .nav-chevron{font-size:12px;transition:transform .18s ease}
+.nav-group.collapsed .nav-chevron{transform:rotate(-90deg)}
+.nav-group-items{display:grid;grid-template-rows:1fr;opacity:1;transition:grid-template-rows .2s ease,opacity .18s ease}
+.nav-group-items-inner{min-height:0;overflow:hidden;padding:0 4px 4px}
+.nav-group.collapsed .nav-group-items{grid-template-rows:0fr;opacity:.35}
+.nav-group .nav-group-items button{padding:9px 10px!important;margin:2px 0!important;font-size:12px}
+.nav-group.active-group>.nav-group-toggle{color:#fff!important}
+.nav-flow{display:flex;align-items:center;gap:7px}
+.nav-flow-step{display:inline-grid;place-items:center;width:17px;height:17px;border-radius:50%;background:#ffffff12;color:#d8e7fb;font-size:9px;letter-spacing:0}
+body.dark-mode .nav-group.active-group{background:#ffffff0a;border-color:#ffffff16}
+@media(max-width:900px){.workflow-nav{padding-bottom:0}}
 
 /* v11.1 Global Ash Workplace */
 .ash-global-trigger{background:linear-gradient(135deg,#d43149,#a9182e)!important;color:#fff!important;border:0!important;font-weight:850!important;box-shadow:0 8px 20px rgba(198,40,61,.2)!important}
@@ -687,7 +706,7 @@ async function sendGlobalAsh(){
    ashAddMessage('assistant',html);ashHistory.push({question,answer:d.answer||'',view:context.view});
  }catch(e){loading.remove();ashAddMessage('assistant',`<strong>I couldn't complete that request.</strong><div>${esc(e.message)}</div>`)}
 }
-function show(v){$$('.view').forEach(x=>x.classList.toggle('active',x.id===v));$$('nav button').forEach(x=>x.classList.toggle('active',x.dataset.v===v));const titles={dashboard:'Ash Workplace',salescoach:'Ash Sales Coach',voiceagent:'AI Voice Agent',marketing:'Marketing Center',boss:'Executive View',followups:'Follow-ups',intelligence:'Opportunity Intelligence',opportunityengine:'Opportunity Engine',callprep:'Call Prep Workspace',templates:'Templates & Sequences',guidelines:'Loan Guidelines Library',production:'Production Intelligence',brokerdna:'Broker DNA'};$('#title').textContent=titles[v]||v[0].toUpperCase()+v.slice(1);if(v==='brokerdna')brokerDna();if(v==='opportunityengine')opportunityEngine();if(v==='salescoach')salesCoach();if(v==='voiceagent')voiceAgent();if(v==='copilot'){copilotBrief()}if(v==='daily')dailyPlan();if(v==='pipeline')pipe();if(v==='followups')followups();if(v==='outreach')outreach();if(v==='marketing')marketingCenter();if(v==='campaigns')campaigns();if(v==='inbox')replyInbox();if(v==='intelligence')loadIntelligence();if(v==='templates')templateStudio();if(v==='territory')territory();if(v==='production')productionIntelligence();if(v==='boss')boss();applyExecutiveUX(v);updateAshContext()}
+function show(v){$$('.view').forEach(x=>x.classList.toggle('active',x.id===v));$$('nav [data-v]').forEach(x=>x.classList.toggle('active',x.dataset.v===v));const titles={dashboard:'Ash Workplace',salescoach:'Ash Sales Coach',voiceagent:'AI Voice Agent',marketing:'Marketing Center',boss:'Executive View',followups:'Follow-ups',intelligence:'Opportunity Intelligence',opportunityengine:'Opportunity Engine',callprep:'Call Prep Workspace',templates:'Templates & Sequences',guidelines:'Loan Guidelines Library',production:'Production Intelligence',brokerdna:'Broker DNA'};$('#title').textContent=titles[v]||v[0].toUpperCase()+v.slice(1);if(v==='brokerdna')brokerDna();if(v==='opportunityengine')opportunityEngine();if(v==='salescoach')salesCoach();if(v==='voiceagent')voiceAgent();if(v==='copilot'){copilotBrief()}if(v==='daily')dailyPlan();if(v==='pipeline')pipe();if(v==='followups')followups();if(v==='outreach')outreach();if(v==='marketing')marketingCenter();if(v==='campaigns')campaigns();if(v==='inbox')replyInbox();if(v==='intelligence')loadIntelligence();if(v==='templates')templateStudio();if(v==='territory')territory();if(v==='production')productionIntelligence();if(v==='boss')boss();applyExecutiveUX(v);updateAshContext();syncWorkflowNav(v)}
 $$('nav button').forEach(b=>b.onclick=()=>show(b.dataset.v));
 $('#globalAshBtn').onclick=()=>openGlobalAsh();$('#ashClose').onclick=closeGlobalAsh;$('#ashBackdrop').onclick=closeGlobalAsh;$('#ashSend').onclick=sendGlobalAsh;$('#ashInput').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendGlobalAsh()}});document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();openGlobalAsh()}if(e.key==='Escape'&&$('#ashDrawer').classList.contains('open'))closeGlobalAsh()});
 fetch('/api/version?ts='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(v=>{const el=$('#appVersion');if(el)el.textContent=`VERSION ${v.version} · ${v.build}`}).catch(()=>{});
@@ -731,9 +750,51 @@ $('#pemail').textContent=p.email||'Not publicly listed';
 $('#pcontactactions').innerHTML=contactButtons(p)||'<span class="contact-missing">Open the source or company website to locate current contact information.</span>';
 $('#pcontactbadge').textContent=(p.phone||p.email)?'Direct contact ready':'Website contact available';
 $('#scores').innerHTML=[['Opportunity',p.score],['Growth',p.growth_score],['Government fit',p.gov_fit],['HELOC/Jumbo',p.niche_fit]].map(x=>`<div class=scorebox><span class=muted>${x[0]}</span><strong>${x[1]}</strong></div>`).join('');$('#psum').textContent=p.ai_summary;$('#preasons').innerHTML=p.score_reasons.map(x=>`<li>${esc(x)}</li>`).join('');$('#psource').innerHTML=[p.source_name?'<b>Source:</b> '+esc(p.source_name):'',p.source_url?'<a class="btn smallbtn" target="_blank" rel="noopener" href="'+esc(p.source_url)+'">Open source</a>':'',p.nmls?'<a class="btn smallbtn" target="_blank" rel="noopener" href="https://www.nmlsconsumeraccess.org/">Verify in NMLS Consumer Access</a>':'',p.verification_notes?'<div style="margin-top:8px">'+esc(p.verification_notes)+'</div>':''].filter(Boolean).join(' ');$('#pproducts').innerHTML=p.product_fit.split(',').filter(Boolean).map(x=>`<span class=tag>${esc(x.trim())}</span>`).join('');$('#pnext').textContent=p.next_best_action;$('#pcall').value=p.call_opener;$('#pobj').textContent=p.likely_objection;$('#presp').textContent=p.objection_response;$('#profileOut').onclick=()=>{show('outreach');$('#op').value=p.id;$('#profile').close()};renderMemory(p.memories);$('#profile').showModal()}
-$('#appVersion').textContent='VERSION 12.8 · RECIPIENT INTELLIGENCE';
+$('#appVersion').textContent='VERSION 12.9 · NAVIGATION ARCHITECTURE';
 document.querySelector('nav [data-v="opportunityengine"]')?.insertAdjacentHTML('afterend','<button data-v="callprep">☎ Call Prep</button>');
 document.querySelector('nav [data-v="callprep"]')?.addEventListener('click',()=>show('callprep'));
+const WORKFLOW_NAV=[
+  {id:'today',label:'Today',step:'1',items:['dashboard','daily']},
+  {id:'find',label:'Find & Prioritize',step:'2',items:['prospects','brokerdna','opportunityengine','territory']},
+  {id:'engage',label:'Engage',step:'3',items:['callprep','outreach','inbox','followups']},
+  {id:'convert',label:'Convert & Measure',step:'4',items:['pipeline','production','intelligence','boss']},
+  {id:'marketing',label:'Marketing',step:'5',items:['marketing','campaigns','templates']},
+  {id:'tools',label:'Tools',step:'•',items:['salescoach','voiceagent','copilot','guidelines','integrations']}
+];
+function navState(){
+  try{return JSON.parse(localStorage.getItem('bb.workflowNav')||'{}')}catch(e){return {}}
+}
+function saveNavState(){
+  const state={};$$('.nav-group').forEach(g=>state[g.dataset.navGroup]=!g.classList.contains('collapsed'));
+  try{localStorage.setItem('bb.workflowNav',JSON.stringify(state))}catch(e){}
+}
+function setNavGroup(group,open,persist=true){
+  if(!group)return;group.classList.toggle('collapsed',!open);
+  group.querySelector('.nav-group-toggle')?.setAttribute('aria-expanded',open?'true':'false');
+  if(persist)saveNavState();
+}
+function syncWorkflowNav(v){
+  const item=document.querySelector(`.workflow-nav [data-v="${v}"]`);
+  const active=item?.closest('.nav-group');
+  $$('.nav-group').forEach(g=>g.classList.toggle('active-group',g===active));
+  if(active&&active.classList.contains('collapsed'))setNavGroup(active,true);
+}
+function buildWorkflowNav(){
+  const nav=document.querySelector('nav');if(!nav||nav.classList.contains('workflow-nav'))return;
+  const buttons={};nav.querySelectorAll('[data-v]').forEach(b=>buttons[b.dataset.v]=b);
+  const saved=navState(),fragment=document.createDocumentFragment();
+  WORKFLOW_NAV.forEach((group,index)=>{
+    const section=document.createElement('section');section.className='nav-group';section.dataset.navGroup=group.id;
+    const open=saved[group.id]??(index<2);if(!open)section.classList.add('collapsed');
+    const toggle=document.createElement('button');toggle.type='button';toggle.className='nav-group-toggle';toggle.setAttribute('aria-expanded',open?'true':'false');
+    toggle.innerHTML=`<span class="nav-flow"><span class="nav-flow-step">${group.step}</span>${group.label}</span><span class="nav-chevron">⌄</span>`;
+    const items=document.createElement('div');items.className='nav-group-items';const inner=document.createElement('div');inner.className='nav-group-items-inner';
+    group.items.forEach(id=>{if(buttons[id])inner.appendChild(buttons[id])});items.appendChild(inner);section.append(toggle,items);
+    toggle.onclick=()=>setNavGroup(section,section.classList.contains('collapsed'));fragment.appendChild(section);
+  });
+  nav.replaceChildren(fragment);nav.classList.add('workflow-nav');syncWorkflowNav(document.querySelector('.view.active')?.id||'dashboard');
+}
+buildWorkflowNav();
 let callPrepProspectId=null;
 async function openCallPrep(id){
   const d=await api('/api/call-prep/'+id);callPrepProspectId=id;current=d.prospect;updateAshContext();
