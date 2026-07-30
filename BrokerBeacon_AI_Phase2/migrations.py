@@ -52,6 +52,13 @@ create table if not exists broker_dna(
 create index if not exists idx_broker_dna_score on broker_dna(dna_score desc);
 create index if not exists idx_broker_dna_tier on broker_dna(tier);
 create index if not exists idx_broker_dna_relationship on broker_dna(relationship_health desc);
+"""),
+(7, "call_outcome_loop", """
+alter table sales_actions add column objections text default '';
+alter table sales_actions add column next_step text default '';
+alter table sales_actions add column source_view text default '';
+create index if not exists idx_sales_actions_prospect_created on sales_actions(prospect_id,created_at desc);
+create index if not exists idx_sales_actions_follow_up on sales_actions(follow_up_date);
 """)
 ]
 
