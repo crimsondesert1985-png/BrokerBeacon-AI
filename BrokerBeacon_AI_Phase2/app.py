@@ -3046,3 +3046,8 @@ def si():
 if __name__=="__main__":
     init()
     app.run(host=os.getenv("HOST","127.0.0.1"), port=int(os.getenv("PORT","5000")), debug=False)
+
+
+# --- Broker DNA implementation placeholder ---
+def calculate_broker_dna(*args, **kwargs):
+    raise NotImplementedError("Broker DNA implementation pending")

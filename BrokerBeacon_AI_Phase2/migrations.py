@@ -90,3 +90,20 @@ def run_migrations(conn):
         conn.execute('alter table campaign_recipients add column attempts integer default 0')
     if 'last_attempt_at' not in recipient_cols:
         conn.execute("alter table campaign_recipients add column last_attempt_at text default ''")
+
+
+# --- Broker DNA migration placeholder ---
+# TODO: Add Migration 6:
+# create table broker_dna(
+#   prospect_id integer primary key,
+#   dna_score integer not null,
+#   tier text not null,
+#   relationship_health integer not null,
+#   opportunity_strength integer not null,
+#   engagement_score integer not null,
+#   product_fit_score integer not null,
+#   next_best_action text not null,
+#   reasons_json text not null,
+#   calculated_at text not null,
+#   updated_at text not null
+# )
