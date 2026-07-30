@@ -10,8 +10,8 @@ from voice_agent import configured as voice_configured, create_twilio_call, huma
 from guideline_index import seed_index, index_fha_pdf, search as search_guideline_index, stats as guideline_index_stats
 
 app = Flask(__name__)
-BUILD_VERSION = "12.0"
-BUILD_NAME = "BROKER DNA"
+BUILD_VERSION = "12.1"
+BUILD_NAME = "LIVE BROKER INTELLIGENCE"
 DB = Path(__file__).with_name("brokerbeacon.db")
 NOW = lambda: datetime.now().isoformat(timespec="seconds")
 
@@ -293,7 +293,8 @@ body.dark-mode .production-kpi,body.dark-mode .production-company{background:#10
 
 /* v12.0 Broker DNA */
 .dna-toolbar{display:flex;gap:9px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:14px 0}.dna-toolbar select{min-width:170px}.dna-roster{display:grid;gap:11px}.dna-card{display:grid;grid-template-columns:74px minmax(0,1fr) auto;gap:16px;align-items:center;padding:16px;border:1px solid var(--line);border-radius:14px;background:#fff;box-shadow:0 5px 16px rgba(13,35,71,.05)}.dna-card:hover{border-color:#a9bfdb;box-shadow:0 10px 25px rgba(13,35,71,.09)}.dna-orb{width:64px;height:64px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(#174ea6 calc(var(--dna)*1%),#e5ebf3 0);position:relative}.dna-orb:after{content:"";position:absolute;inset:8px;border-radius:50%;background:#fff}.dna-orb strong{position:relative;z-index:1;color:#0d2347;font-size:20px}.dna-main h4{margin:0 0 5px;color:#0d2347}.dna-meta{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}.dna-components{display:grid;grid-template-columns:repeat(4,minmax(110px,1fr));gap:7px}.dna-component{padding:8px 9px;border-radius:9px;background:#f4f7fb;border:1px solid #e0e7f0}.dna-component small{display:block;color:#6b7b92;font-size:9px;text-transform:uppercase;letter-spacing:.05em}.dna-component b{display:block;color:#173c70;margin-top:3px}.dna-next{margin-top:9px;color:#3c4f6b;font-size:12px;line-height:1.45}.dna-actions{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}.dna-tier{display:inline-flex;align-items:center;padding:4px 8px;border-radius:999px;font-size:10px;font-weight:900}.dna-tier-a{background:#e5f6eb;color:#17653a}.dna-tier-b{background:#e8f0fe;color:#174b91}.dna-tier-c{background:#fff5da;color:#865d00}.dna-tier-d{background:#fdecef;color:#a51e33}.dna-method{font-size:12px;line-height:1.55;color:#60708a}.dna-method b{color:#0d2347}.dark-mode .dna-card,.dark-mode .dna-orb:after{background:#101d34!important;border-color:#2b405f!important}.dark-mode .dna-main h4,.dark-mode .dna-orb strong,.dark-mode .dna-component b,.dark-mode .dna-method b{color:#edf4ff!important}.dark-mode .dna-component{background:#14223a;border-color:#2b405f}.dark-mode .dna-next,.dark-mode .dna-method{color:#aebed4}.dark-mode .dna-orb{background:conic-gradient(#4d91ea calc(var(--dna)*1%),#263750 0)}@media(max-width:850px){.dna-card{grid-template-columns:64px 1fr}.dna-actions{grid-column:1/-1;justify-content:flex-start}.dna-components{grid-template-columns:repeat(2,1fr)}}@media(max-width:520px){.dna-components{grid-template-columns:1fr}}
-</style></head><body><div class="app"><aside><div class="brand">Broker<span>Beacon</span> AI</div><div class="version" id="appVersion">VERSION 12.0 · BROKER DNA</div><nav><button class="active" data-v="dashboard">✦ Ash Workplace</button><button data-v="salescoach">◈ Ash Sales Coach</button><button data-v="voiceagent">☎ AI Voice Agent</button><button data-v="copilot">✦ AI Copilot</button><button data-v="daily">⚡ Daily Plan</button><button data-v="prospects">◉ Prospects</button><button data-v="brokerdna">🧬 Broker DNA</button><button data-v="outreach">✎ Outreach</button><button data-v="marketing">✦ Marketing Center</button><button data-v="campaigns">✉ Campaigns</button><button data-v="inbox">↩ Reply Inbox</button><button data-v="intelligence">◆ Opportunity Intelligence</button><button data-v="templates">▤ Templates & Sequences</button><button data-v="pipeline">▦ Pipeline</button><button data-v="followups">✓ Follow-ups</button><button data-v="territory">⌖ Territory</button><button data-v="guidelines">▣ Loan Guidelines</button><button data-v="production">▤ Production Intelligence</button><button data-v="boss">◆ Executive View</button><button data-v="integrations">⚙ Integrations</button></nav></aside><main><div class="top"><div><small>AI OPERATING SYSTEM FOR WHOLESALE AES</small><h1 id="title">Ash Workplace</h1></div><div class="actions"><span class="today-chip" id="todayChip"></span><button class="btn ash-global-trigger" id="globalAshBtn" type="button" aria-label="Open global Ash assistant">✦ Ask Ash</button><button class="btn theme-toggle" id="themeToggle" type="button" aria-label="Toggle dark mode">◐ Theme</button><button class="btn" id="import">Compliant Import</button><a class="btn" href="/api/export">Export CSV</a><button class="btn primary" id="add">+ Add Prospect</button></div></div>
+.dna-trend{display:inline-flex;align-items:center;gap:4px;padding:4px 8px;border-radius:999px;font-size:10px;font-weight:900}.dna-trend-up{background:#e5f6eb;color:#17653a}.dna-trend-down{background:#fdecef;color:#a51e33}.dna-trend-flat{background:#eef2f7;color:#60708a}.dark-mode .dna-trend-up{background:#123b2a;color:#8ce7b2}.dark-mode .dna-trend-down{background:#481c28;color:#ffadbd}.dark-mode .dna-trend-flat{background:#25344a;color:#b8c7db}
+</style></head><body><div class="app"><aside><div class="brand">Broker<span>Beacon</span> AI</div><div class="version" id="appVersion">VERSION 12.1 · LIVE BROKER INTELLIGENCE</div><nav><button class="active" data-v="dashboard">✦ Ash Workplace</button><button data-v="salescoach">◈ Ash Sales Coach</button><button data-v="voiceagent">☎ AI Voice Agent</button><button data-v="copilot">✦ AI Copilot</button><button data-v="daily">⚡ Daily Plan</button><button data-v="prospects">◉ Prospects</button><button data-v="brokerdna">🧬 Broker DNA</button><button data-v="outreach">✎ Outreach</button><button data-v="marketing">✦ Marketing Center</button><button data-v="campaigns">✉ Campaigns</button><button data-v="inbox">↩ Reply Inbox</button><button data-v="intelligence">◆ Opportunity Intelligence</button><button data-v="templates">▤ Templates & Sequences</button><button data-v="pipeline">▦ Pipeline</button><button data-v="followups">✓ Follow-ups</button><button data-v="territory">⌖ Territory</button><button data-v="guidelines">▣ Loan Guidelines</button><button data-v="production">▤ Production Intelligence</button><button data-v="boss">◆ Executive View</button><button data-v="integrations">⚙ Integrations</button></nav></aside><main><div class="top"><div><small>AI OPERATING SYSTEM FOR WHOLESALE AES</small><h1 id="title">Ash Workplace</h1></div><div class="actions"><span class="today-chip" id="todayChip"></span><button class="btn ash-global-trigger" id="globalAshBtn" type="button" aria-label="Open global Ash assistant">✦ Ask Ash</button><button class="btn theme-toggle" id="themeToggle" type="button" aria-label="Toggle dark mode">◐ Theme</button><button class="btn" id="import">Compliant Import</button><a class="btn" href="/api/export">Export CSV</a><button class="btn primary" id="add">+ Add Prospect</button></div></div>
 <section id="dashboard" class="view active">
 <div class="command-hero">
   <div class="command-copy"><div class="kicker">ASH · DAILY REVENUE COMMAND</div><h2>Good morning, Clay. Here is the fastest path to more business today.</h2><p>BrokerBeacon ranks the accounts, explains the opportunity, prepares the outreach, and converts the plan into action.</p></div>
@@ -825,14 +826,14 @@ async function brokerDna(){
   try{
     brokerDnaState=await api('/api/broker-dna');const s=brokerDnaState.summary||{};
     $('#bdTotal').textContent=s.total||0;$('#bdAverage').textContent=s.average_score||0;$('#bdTierA').textContent=s.tier_a||0;$('#bdRisk').textContent=s.at_risk||0;
-    const m=brokerDnaState.methodology||{};$('#bdMethod').innerHTML=`<p><b>Opportunity strength:</b> ${m.opportunity_strength||0}%</p><p><b>Relationship health:</b> ${m.relationship_health||0}%</p><p><b>Engagement:</b> ${m.engagement_score||0}%</p><p><b>Product fit:</b> ${m.product_fit_score||0}%</p><p>${esc(m.note||'')}</p>`;renderBrokerDna();
+    const m=brokerDnaState.methodology||{};$('#bdMethod').innerHTML=`<p><b>Opportunity strength:</b> ${m.opportunity_strength||0}%</p><p><b>Relationship health:</b> ${m.relationship_health||0}%</p><p><b>Engagement:</b> ${m.engagement_score||0}%</p><p><b>Product fit:</b> ${m.product_fit_score||0}%</p><p>${esc(m.note||'')}</p><p><b>Live movement:</b> ${s.trending_up||0} improving · ${s.trending_down||0} declining. Scores refresh whenever this workspace is opened and every five minutes while active.</p>`;renderBrokerDna();
   }catch(e){if(box)box.innerHTML=`<div class="empty">Unable to load Broker DNA: ${esc(e.message)}</div>`}
 }
 function renderBrokerDna(){
   const filter=$('#bdTierFilter')?.value||'All';let items=brokerDnaState.brokers||[];
   if(filter==='Risk')items=items.filter(x=>Number(x.relationship_health)<45);else if(filter!=='All')items=items.filter(x=>x.tier===filter);
   const box=$('#bdRoster');if(!box)return;
-  box.innerHTML=items.length?items.map(x=>`<article class="dna-card"><div class="dna-orb" style="--dna:${x.dna_score}"><strong>${x.dna_score}</strong></div><div class="dna-main"><h4>${esc(x.company)}</h4><div class="dna-meta"><span class="dna-tier dna-tier-${String(x.tier).toLowerCase()}">Tier ${esc(x.tier)}</span><span class="pill">${esc(x.city||'')}${x.state?', '+esc(x.state):''}</span><span class="pill">${esc(x.status||'New')}</span></div><div class="dna-components"><div class="dna-component"><small>Opportunity</small><b>${x.opportunity_strength}</b></div><div class="dna-component"><small>Relationship</small><b>${x.relationship_health}</b></div><div class="dna-component"><small>Engagement</small><b>${x.engagement_score}</b></div><div class="dna-component"><small>Product fit</small><b>${x.product_fit_score}</b></div></div><div class="dna-next"><b>Next:</b> ${esc(x.next_best_action)}</div></div><div class="dna-actions"><button class="btn smallbtn" onclick="profile(${x.prospect_id})">Open account</button><button class="btn primary smallbtn" onclick="quickDraft(${x.prospect_id})">Draft outreach</button></div></article>`).join(''):'<div class="empty">No broker profiles match this filter.</div>';
+  box.innerHTML=items.length?items.map(x=>`<article class="dna-card"><div class="dna-orb" style="--dna:${x.dna_score}"><strong>${x.dna_score}</strong></div><div class="dna-main"><h4>${esc(x.company)}</h4><div class="dna-meta"><span class="dna-tier dna-tier-${String(x.tier).toLowerCase()}">Tier ${esc(x.tier)}</span><span class="dna-trend dna-trend-${x.trend_direction||'flat'}">${x.trend_direction==='up'?'▲':x.trend_direction==='down'?'▼':'—'} ${x.trend_delta?Math.abs(x.trend_delta)+' pts':'Stable'}</span><span class="pill">${esc(x.city||'')}${x.state?', '+esc(x.state):''}</span><span class="pill">${esc(x.status||'New')}</span></div><div class="dna-components"><div class="dna-component"><small>Opportunity</small><b>${x.opportunity_strength}</b></div><div class="dna-component"><small>Relationship</small><b>${x.relationship_health}</b></div><div class="dna-component"><small>Engagement</small><b>${x.engagement_score}</b></div><div class="dna-component"><small>Product fit</small><b>${x.product_fit_score}</b></div></div><div class="dna-next"><b>Next:</b> ${esc(x.next_best_action)}</div></div><div class="dna-actions"><button class="btn smallbtn" onclick="profile(${x.prospect_id})">Open account</button><button class="btn primary smallbtn" onclick="quickDraft(${x.prospect_id})">Draft outreach</button></div></article>`).join(''):'<div class="empty">No broker profiles match this filter.</div>';
 }
 
 let OI=null;
@@ -868,6 +869,7 @@ function renderIntelligence(){if(!OI)return;let tier=$('#oiTier').value;let xs=O
 async function saveIntelligenceSettings(){let weights={};$$('[data-weight]').forEach(x=>weights[x.dataset.weight]=+x.value);await api('/api/intelligence/settings',{method:'POST',body:JSON.stringify({weights})});msg('Scoring weights saved');await rescoreIntelligence()}
 async function rescoreIntelligence(){let d=await api('/api/intelligence/rescore',{method:'POST'});msg(`${d.updated} prospects rescored`);await loadIntelligence();missionControl();load()}
 
+setInterval(()=>{if($('#brokerdna')?.classList.contains('active'))brokerDna()},300000);
 load();dash();outreach();followups();dailyPlan();ints();missionControl();
 </script></body></html>'''
 
@@ -1335,6 +1337,17 @@ def broker_dna_api():
     with db() as c:
         rows = c.execute("select * from prospects order by score desc, company").fetchall()
         results = [calculate_broker_dna(c, row) for row in rows]
+        for result in results:
+            pid = result['prospect_id']
+            latest = c.execute("select * from broker_dna_snapshots where prospect_id=? order by captured_at desc,id desc limit 1", (pid,)).fetchone()
+            changed = (not latest or int(latest['dna_score']) != int(result['dna_score']) or int(latest['relationship_health']) != int(result['relationship_health']) or int(latest['engagement_score']) != int(result['engagement_score']) or int(latest['product_fit_score']) != int(result['product_fit_score']))
+            if changed:
+                c.execute("insert into broker_dna_snapshots(prospect_id,dna_score,tier,relationship_health,opportunity_strength,engagement_score,product_fit_score,captured_at) values(?,?,?,?,?,?,?,?)", (pid,result['dna_score'],result['tier'],result['relationship_health'],result['opportunity_strength'],result['engagement_score'],result['product_fit_score'],NOW()))
+            history = c.execute("select dna_score,captured_at from broker_dna_snapshots where prospect_id=? order by captured_at desc,id desc limit 2", (pid,)).fetchall()
+            delta = int(history[0]['dna_score']) - int(history[1]['dna_score']) if len(history) > 1 else 0
+            result['trend_delta'] = delta
+            result['trend_direction'] = 'up' if delta > 0 else 'down' if delta < 0 else 'flat'
+            result['previous_score'] = int(history[1]['dna_score']) if len(history) > 1 else None
     results.sort(key=lambda x: (-x['dna_score'], x['company'].lower()))
     summary = {
         'total': len(results),
@@ -1342,6 +1355,8 @@ def broker_dna_api():
         'tier_b': sum(1 for x in results if x['tier'] == 'B'),
         'at_risk': sum(1 for x in results if x['relationship_health'] < 45),
         'average_score': round(sum(x['dna_score'] for x in results) / len(results)) if results else 0,
+        'trending_up': sum(1 for x in results if x.get('trend_direction') == 'up'),
+        'trending_down': sum(1 for x in results if x.get('trend_direction') == 'down'),
     }
     return jsonify(summary=summary, brokers=results, methodology={
         'opportunity_strength': 40,
@@ -1350,6 +1365,20 @@ def broker_dna_api():
         'product_fit_score': 15,
         'note': 'Scores use only data stored in BrokerBeacon and are model-based, not recorded revenue.'
     })
+
+@app.get("/api/broker-dna/<int:pid>/history")
+def broker_dna_history_api(pid):
+    try:
+        days = max(1, min(365, int(request.args.get('days', 90))))
+    except (TypeError, ValueError):
+        days = 90
+    cutoff = (datetime.now() - timedelta(days=days)).isoformat(timespec='seconds')
+    with db() as c:
+        prospect = c.execute("select id,company from prospects where id=?", (pid,)).fetchone()
+        if not prospect:
+            return jsonify(error="Prospect not found"), 404
+        rows = [dict(x) for x in c.execute("select dna_score,tier,relationship_health,opportunity_strength,engagement_score,product_fit_score,captured_at from broker_dna_snapshots where prospect_id=? and captured_at>=? order by captured_at,id", (pid, cutoff)).fetchall()]
+    return jsonify(prospect_id=pid, company=prospect['company'], days=days, history=rows)
 
 @app.get("/api/broker-dna/<int:pid>")
 def broker_dna_detail_api(pid):

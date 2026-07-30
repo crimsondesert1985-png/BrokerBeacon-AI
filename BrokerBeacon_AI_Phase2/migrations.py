@@ -52,6 +52,22 @@ create table if not exists broker_dna(
 create index if not exists idx_broker_dna_score on broker_dna(dna_score desc);
 create index if not exists idx_broker_dna_tier on broker_dna(tier);
 create index if not exists idx_broker_dna_relationship on broker_dna(relationship_health desc);
+"""),
+(7, "broker_dna_history", """
+create table if not exists broker_dna_snapshots(
+    id integer primary key,
+    prospect_id integer not null,
+    dna_score integer not null,
+    tier text not null,
+    relationship_health integer not null,
+    opportunity_strength integer not null,
+    engagement_score integer not null,
+    product_fit_score integer not null,
+    captured_at text not null,
+    foreign key(prospect_id) references prospects(id) on delete cascade
+);
+create index if not exists idx_broker_dna_snapshots_prospect on broker_dna_snapshots(prospect_id, captured_at desc);
+create index if not exists idx_broker_dna_snapshots_date on broker_dna_snapshots(captured_at desc);
 """)
 ]
 
