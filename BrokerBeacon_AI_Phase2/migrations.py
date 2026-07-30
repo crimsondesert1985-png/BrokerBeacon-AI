@@ -135,6 +135,63 @@ create index if not exists idx_agent_runs_created on agent_runs(id desc);
 create index if not exists idx_agent_steps_run on agent_steps(run_id,step_order);
 create index if not exists idx_agent_accounts_run on agent_run_accounts(run_id,rank);
 create index if not exists idx_agent_accounts_prospect on agent_run_accounts(prospect_id);
+"""),
+(12, "scout_web_discovery", """
+create table if not exists scout_runs(
+    id integer primary key,
+    state text not null,
+    metro text default '',
+    status text not null default 'Running',
+    query_count integer not null default 0,
+    result_count integer not null default 0,
+    new_count integer not null default 0,
+    duplicate_count integer not null default 0,
+    error text default '',
+    started_at text not null,
+    finished_at text default ''
+);
+create table if not exists scout_candidates(
+    id integer primary key,
+    run_id integer not null,
+    company text not null default '',
+    result_title text not null default '',
+    state text not null,
+    metro text default '',
+    nmls text default '',
+    owner text default '',
+    email text default '',
+    phone text default '',
+    website text default '',
+    linkedin_url text default '',
+    signal text not null default 'Public web discovery',
+    evidence text not null default '',
+    source_name text not null default 'Public web search',
+    source_url text not null,
+    status text not null default 'Pending review',
+    confidence integer not null default 0,
+    duplicate_prospect_id integer default 0,
+    approved_prospect_id integer default 0,
+    discovered_at text not null,
+    reviewed_at text default '',
+    review_notes text default '',
+    unique(source_url,state)
+);
+create table if not exists scout_sources(
+    id integer primary key,
+    state text not null,
+    label text not null,
+    source_type text not null,
+    verify_url text not null,
+    active integer not null default 1,
+    unique(state,label)
+);
+create index if not exists idx_scout_runs_state on scout_runs(state,id desc);
+create index if not exists idx_scout_candidates_status on scout_candidates(status,state,id desc);
+create index if not exists idx_scout_candidates_company on scout_candidates(company,state);
+insert or ignore into scout_sources(state,label,source_type,verify_url,active) values
+('*','NMLS Consumer Access','National license verification','https://www.nmlsconsumeraccess.org/',1),
+('NC','NC Commissioner of Banks','State license verification','https://www.nccob.gov/online/NMLS/licensesearch.aspx',1),
+('SC','SC Consumer Finance Licensee Lookup','State license verification','https://consumerfinance.sc.gov/look-licensee',1);
 """)
 ]
 
