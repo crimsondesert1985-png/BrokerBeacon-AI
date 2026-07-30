@@ -13,8 +13,8 @@ from voice_agent import configured as voice_configured, create_twilio_call, huma
 from guideline_index import seed_index, index_fha_pdf, search as search_guideline_index, stats as guideline_index_stats
 
 app = Flask(__name__)
-BUILD_VERSION = "13.2"
-BUILD_NAME = "SCOUT MULTI-SOURCE DISCOVERY"
+BUILD_VERSION = "13.3"
+BUILD_NAME = "SCOUT GENERAL WEB DISCOVERY"
 DB = Path(__file__).with_name("brokerbeacon.db")
 NOW = lambda: datetime.now().isoformat(timespec="seconds")
 
@@ -763,7 +763,7 @@ $('#pemail').textContent=p.email||'Not publicly listed';
 $('#pcontactactions').innerHTML=contactButtons(p)||'<span class="contact-missing">Open the source or company website to locate current contact information.</span>';
 $('#pcontactbadge').textContent=(p.phone||p.email)?'Direct contact ready':'Website contact available';
 $('#scores').innerHTML=[['Opportunity',p.score],['Growth',p.growth_score],['Government fit',p.gov_fit],['HELOC/Jumbo',p.niche_fit]].map(x=>`<div class=scorebox><span class=muted>${x[0]}</span><strong>${x[1]}</strong></div>`).join('');$('#psum').textContent=p.ai_summary;$('#preasons').innerHTML=p.score_reasons.map(x=>`<li>${esc(x)}</li>`).join('');$('#psource').innerHTML=[p.source_name?'<b>Source:</b> '+esc(p.source_name):'',p.source_url?'<a class="btn smallbtn" target="_blank" rel="noopener" href="'+esc(p.source_url)+'">Open source</a>':'',p.nmls?'<a class="btn smallbtn" target="_blank" rel="noopener" href="https://www.nmlsconsumeraccess.org/">Verify in NMLS Consumer Access</a>':'',p.verification_notes?'<div style="margin-top:8px">'+esc(p.verification_notes)+'</div>':''].filter(Boolean).join(' ');$('#pproducts').innerHTML=p.product_fit.split(',').filter(Boolean).map(x=>`<span class=tag>${esc(x.trim())}</span>`).join('');$('#pnext').textContent=p.next_best_action;$('#pcall').value=p.call_opener;$('#pobj').textContent=p.likely_objection;$('#presp').textContent=p.objection_response;$('#profileOut').onclick=()=>{show('outreach');$('#op').value=p.id;$('#profile').close()};renderMemory(p.memories);$('#profile').showModal()}
-$('#appVersion').textContent='VERSION 13.2 · SCOUT MULTI-SOURCE DISCOVERY';
+$('#appVersion').textContent='VERSION 13.3 · SCOUT GENERAL WEB DISCOVERY';
 document.querySelector('nav [data-v="opportunityengine"]')?.insertAdjacentHTML('afterend','<button data-v="callprep">☎ Call Prep</button>');
 document.querySelector('nav [data-v="callprep"]')?.addEventListener('click',()=>show('callprep'));
 const WORKFLOW_NAV=[
@@ -2829,6 +2829,74 @@ def _scout_google_news_search(query,limit=10):
         if len(results)>=limit:break
     return results
 
+def _scout_brave_search(query,limit=12):
+    url='https://search.brave.com/search?'+urllib.parse.urlencode({'q':query,'source':'web'})
+    req=urllib.request.Request(url,headers={
+        'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36',
+        'Accept':'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language':'en-US,en;q=0.9',
+    })
+    with urllib.request.urlopen(req,timeout=15) as response:
+        raw=response.read(1500000).decode('utf-8','ignore')
+    blocks=re.split(r'(?=<div class="snippet [^"]*"[^>]*data-type="web")',raw,re.I)
+    results=[];seen=set()
+    blocked_titles=('license guide','how to become','school','training','course','requirements','reviews','directory')
+    for block in blocks:
+        if 'data-type="web"' not in block[:300]:continue
+        link=re.search(r'<a\s+href="([^"]+)"[^>]*class="[^"]*\bl1\b[^"]*"',block,re.I)
+        title_match=re.search(r'<div class="title [^"]*"[^>]*title="([^"]+)"',block,re.I)
+        snippet_match=re.search(r'<div class="generic-snippet[^"]*"[^>]*>.*?<div class="content[^"]*"[^>]*>(.*?)</div>',block,re.I|re.S)
+        if not link or not title_match:continue
+        result_url=html.unescape(link.group(1)).strip()
+        title=_scout_text(html.unescape(title_match.group(1)))
+        snippet=_scout_text(snippet_match.group(1) if snippet_match else '')
+        parsed=urllib.parse.urlparse(result_url)
+        if parsed.scheme not in {'http','https'} or not parsed.netloc or result_url in seen:continue
+        haystack=(title+' '+snippet).lower()
+        if 'mortgage' not in haystack or not any(term in haystack for term in ('broker','brokerage','home loan','lending')):continue
+        if any(term in title.lower() for term in blocked_titles):continue
+        seen.add(result_url);results.append({
+            'title':title,'snippet':snippet,'url':result_url,'source_name':'Brave general web search'
+        })
+        if len(results)>=limit:break
+    return results
+
+def _scout_google_places_search(query,limit=20):
+    api_key=(os.getenv('GOOGLE_PLACES_API_KEY') or '').strip()
+    if not api_key:raise RuntimeError('Google Places is not configured in Render.')
+    url='https://places.googleapis.com/v1/places:searchText'
+    payload=json.dumps({
+        'textQuery':query,
+        'maxResultCount':max(1,min(20,int(limit))),
+        'languageCode':'en',
+        'regionCode':'US',
+    }).encode('utf-8')
+    req=urllib.request.Request(url,data=payload,method='POST',headers={
+        'Content-Type':'application/json',
+        'X-Goog-Api-Key':api_key,
+        'X-Goog-FieldMask':'places.id,places.displayName,places.formattedAddress,places.websiteUri,places.nationalPhoneNumber,places.googleMapsUri,places.businessStatus',
+    })
+    with urllib.request.urlopen(req,timeout=15) as response:
+        data=json.loads(response.read(1500000).decode('utf-8','ignore'))
+    results=[]
+    for place in data.get('places') or []:
+        if place.get('businessStatus')=='CLOSED_PERMANENTLY':continue
+        name=((place.get('displayName') or {}).get('text') or '').strip()
+        address=(place.get('formattedAddress') or '').strip()
+        maps_url=(place.get('googleMapsUri') or '').strip()
+        if not name or not maps_url:continue
+        results.append({
+            'title':name,
+            'snippet':address,
+            'url':maps_url,
+            'website':(place.get('websiteUri') or '').strip(),
+            'phone':(place.get('nationalPhoneNumber') or '').strip(),
+            'source_name':'Google Places general business search',
+            'place_id':place.get('id') or '',
+            'territory_match':True,
+        })
+    return results
+
 def _scout_candidate_from_result(result,state,metro):
     title=result['title'];snippet=result['snippet'];source_url=result['url'];text=title+' '+snippet
     nmls_match=re.search(r'\bNMLS(?:\s*(?:ID|#|number))?[\s:#-]*(\d{4,})\b',text,re.I)
@@ -2837,13 +2905,16 @@ def _scout_candidate_from_result(result,state,metro):
     host=urllib.parse.urlparse(source_url).netloc.lower()
     linkedin=source_url if 'linkedin.com' in host else ''
     non_company=('bing.com','google.com','yahoo.com','facebook.com','linkedin.com','youtube.com','nmlsconsumeraccess.org')
-    website='' if any(x in host for x in non_company) else source_url
-    signal='Newly licensed / opened signal' if re.search(r'\b(newly licensed|new license|opened|launch|new brokerage|new branch)\b',text,re.I) else 'Public web broker signal'
+    website=(result.get('website') or '').strip()
+    if not website:website='' if any(x in host for x in non_company) else source_url
+    phone=(result.get('phone') or (phone_match.group(0) if phone_match else '')).strip()
+    signal='Newly licensed / opened signal' if re.search(r'\b(newly licensed|new license|opened|launch|new brokerage|new branch)\b',text,re.I) else 'Google Places broker match'
     confidence=42+(18 if nmls_match else 0)+(8 if website else 0)+(8 if email_match or phone_match else 0)+(8 if re.search(r'\b(new|newly|opened|launch|hiring|growing)\b',text,re.I) else 0)
+    if result.get('source_name','').startswith('Google Places'):confidence=max(confidence,62)+(6 if phone else 0)+(6 if website else 0)
     return {
         'company':_scout_company_guess(title),'result_title':title,'state':state,'metro':metro,
         'nmls':nmls_match.group(1) if nmls_match else '','owner':'',
-        'email':email_match.group(0) if email_match else '','phone':phone_match.group(0) if phone_match else '',
+        'email':email_match.group(0) if email_match else '','phone':phone,
         'website':website,'linkedin_url':linkedin,'signal':signal,'evidence':snippet[:900],
         'source_name':result.get('source_name') or 'Public web search','source_url':source_url,'confidence':min(90,confidence)
     }
@@ -2873,21 +2944,12 @@ def run_scout_discovery():
     d=request.get_json(silent=True) or {};state=(d.get('state') or 'NC').upper();metro=(d.get('metro') or '').strip()[:100]
     if state not in US_STATES:return jsonify(error='Choose a valid U.S. state.'),400
     state_name=US_STATES[state]
-    metros=[metro] if metro else SCOUT_DEFAULT_METROS.get(state,[])[:3]
-    query_places=metros or [state_name]
+    place_name=f'{metro}, {state_name}' if metro else state_name
     web_queries=[
-        f'"mortgage broker" ("newly licensed" OR opened OR launched) "{state_name}"',
-        f'"independent mortgage broker" (hiring OR growing OR "new branch") "{state_name}"',
+        f'mortgage broker in {place_name}',
+        f'independent mortgage broker in {place_name}',
     ]
-    web_queries.extend(f'"mortgage broker" (opened OR launched OR hiring) "{place}" {state}' for place in query_places)
-    web_queries=list(dict.fromkeys(web_queries))[:5]
-    news_queries=[
-        f'"mortgage broker" (launches OR opens OR expands OR licensed) "{state_name}"',
-        f'"mortgage brokerage" (launch OR new OR opens OR expansion) "{state_name}"',
-        f'"home loans" (launches OR opens OR expands OR founded) "{state_name}"',
-    ]
-    if metro:news_queries.append(f'"mortgage broker" (launches OR opens OR expands) "{metro}"')
-    search_jobs=[(_scout_bing_search,q,8) for q in web_queries]+[(_scout_google_news_search,q,10) for q in news_queries]
+    search_jobs=[(_scout_google_places_search,q,20) for q in web_queries]
     query_count=len(search_jobs);started=NOW()
     with db() as c:
         run_id=c.execute("insert into scout_runs(state,metro,status,query_count,started_at) values(?,?,?,?,?)",(state,metro,'Running',query_count,started)).lastrowid
@@ -2900,7 +2962,7 @@ def run_scout_discovery():
     territory_terms=[state_name.lower()]+([metro.lower()] if metro else [])
     unique={
         x['url']:x for x in raw_results
-        if any(term in (x.get('title','')+' '+x.get('snippet','')).lower() for term in territory_terms)
+        if x.get('territory_match') or any(term in (x.get('title','')+' '+x.get('snippet','')).lower() for term in territory_terms)
     };new_count=duplicate_count=0
     with db() as c:
         for result in unique.values():
