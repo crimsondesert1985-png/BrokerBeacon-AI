@@ -2,7 +2,7 @@
 # Copyright © 2026 Clay Carr. All rights reserved.
 # BrokerBeacon AI™ is a trademark of Clay Carr.
 from flask import Flask, request, jsonify, render_template_string, Response, send_file, make_response, redirect
-import sqlite3, io, csv, os, json, re, uuid, smtplib, ssl, urllib.parse, urllib.request, base64, html
+import sqlite3, io, csv, os, json, re, uuid, smtplib, ssl, urllib.parse, urllib.request, base64, html, threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta, time as dt_time
 from pathlib import Path
@@ -13,9 +13,9 @@ from voice_agent import configured as voice_configured, create_twilio_call, huma
 from guideline_index import seed_index, index_fha_pdf, search as search_guideline_index, stats as guideline_index_stats
 
 app = Flask(__name__)
-BUILD_VERSION = "14.0"
-BUILD_NAME = "SIGNAL GLASS"
-DB = Path(__file__).with_name("brokerbeacon.db")
+BUILD_VERSION = "15.0"
+BUILD_NAME = "SCOUT AUTOPILOT"
+DB = Path(os.getenv("BROKERBEACON_DB_PATH") or Path(__file__).with_name("brokerbeacon.db"))
 NOW = lambda: datetime.now().isoformat(timespec="seconds")
 
 HTML = r'''<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BrokerBeacon AI</title>
@@ -324,6 +324,8 @@ body.dark-mode .production-kpi,body.dark-mode .production-company{background:#10
 
 /* Sprint 22 · Scout Web Discovery */
 .scout-discovery{margin-bottom:14px;padding:0!important;overflow:hidden}.scout-head{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:17px 19px;background:linear-gradient(125deg,#0d2347,#164b82 74%,#1a6c75);color:#fff}.scout-head h3{color:#fff!important;margin:4px 0}.scout-head p{margin:0;color:#dce9f7}.scout-head .kicker{color:#8be7f2!important}.scout-controls{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.scout-controls select,.scout-controls input{min-width:145px;background:#fff!important}.scout-body{padding:15px 18px}.scout-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}.scout-metric{padding:11px;border:1px solid #dce5f0;border-radius:11px;background:#f8fbff}.scout-metric small{display:block;color:#718097;font-size:9px;text-transform:uppercase;font-weight:850}.scout-metric b{display:block;color:#0d2347;font-size:20px;margin-top:4px}.scout-candidates{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.scout-candidate{border:1px solid #d8e3ef;border-radius:13px;padding:13px;background:#fff}.scout-candidate-top{display:flex;justify-content:space-between;gap:10px}.scout-candidate h4{margin:0 0 4px;color:#0d2347}.scout-fields{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px}.scout-fields input{width:100%;padding:8px;font-size:11px}.scout-evidence{margin-top:8px;padding:9px;border-left:3px solid #174ea6;background:#f3f7fc;border-radius:0 9px 9px 0;font-size:11px;line-height:1.4;color:#52647c}.scout-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}.scout-sources{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 12px}.scout-source{font-size:10px;padding:5px 8px;border:1px solid #cbd9ea;border-radius:999px;background:#f7faff;color:#174b91;text-decoration:none}.scout-safety{font-size:11px;color:#65758c;margin-top:10px}.dark-mode .scout-head{background:linear-gradient(125deg,#081a36,#163b68 74%,#164b52)}.dark-mode .scout-metric,.dark-mode .scout-candidate{background:#101d34!important;border-color:#2b405f!important}.dark-mode .scout-metric b,.dark-mode .scout-candidate h4{color:#edf4ff}.dark-mode .scout-evidence{background:#14243e;color:#b8c9df}.dark-mode .scout-source{background:#142642;color:#c9ddfa;border-color:#345375}@media(max-width:900px){.scout-candidates{grid-template-columns:1fr}.scout-metrics{grid-template-columns:repeat(2,1fr)}}@media(max-width:600px){.scout-head{align-items:flex-start;flex-direction:column}.scout-controls{width:100%}.scout-controls>*{flex:1}.scout-fields{grid-template-columns:1fr}}
+/* Sprint 23 · Scout Autopilot */
+.autopilot-shell{margin:14px 18px 0;border:1px solid #cfdced;border-radius:15px;background:linear-gradient(135deg,#f8fbff,#f2f0ff);overflow:hidden}.autopilot-top{display:flex;justify-content:space-between;gap:14px;align-items:center;padding:14px 15px;border-bottom:1px solid #dce5f0}.autopilot-title{display:flex;align-items:center;gap:10px}.autopilot-orb{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,#2563eb,#7657ff);box-shadow:0 8px 18px rgba(37,99,235,.22)}.autopilot-title h4{margin:0}.autopilot-title small{display:block;margin-top:3px}.autopilot-switch{display:flex;align-items:center;gap:8px;font-weight:800;color:#344865}.autopilot-body{padding:14px 15px}.autopilot-grid{display:grid;grid-template-columns:1.3fr repeat(4,minmax(100px,.55fr));gap:8px;align-items:end}.autopilot-states{min-height:72px;max-height:120px;overflow:auto;display:flex;gap:5px;flex-wrap:wrap;padding:8px;border:1px solid #ccd9ea;border-radius:10px;background:#fff}.autopilot-state{display:inline-flex;gap:4px;align-items:center;padding:4px 7px;border:1px solid #d5e0ed;border-radius:999px;font-size:10px}.autopilot-state input{min-height:0}.autopilot-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:11px}.autopilot-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:11px}.autopilot-stat{padding:9px;border:1px solid #dce5f0;border-radius:10px;background:#fff}.autopilot-stat small{display:block;font-size:8px;text-transform:uppercase;color:#75849a;font-weight:900}.autopilot-stat b{display:block;margin-top:4px;color:#102a51}.research-queue{margin-top:13px}.research-card{display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:11px;align-items:center;padding:11px;border:1px solid #dce5f0;border-radius:12px;background:#fff;margin-top:7px}.research-score{width:45px;height:45px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,#e8f0ff,#efeaff);color:#174ea6;font-weight:950}.research-flags{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}.research-flag{padding:3px 6px;border-radius:999px;background:#fff3db;color:#7e5b13;font-size:9px}.coverage-strip{display:flex;gap:6px;overflow:auto;padding-bottom:4px;margin-top:10px}.coverage-state{min-width:92px;padding:8px;border-radius:9px;background:#edf4fc;border:1px solid #d5e1ef;font-size:9px}.coverage-state b{display:block;color:#173c70;margin-bottom:3px}.dark-mode .autopilot-shell{background:linear-gradient(135deg,#0e2039,#1a1d3e);border-color:#2c4260}.dark-mode .autopilot-top{border-color:#2c4260}.dark-mode .autopilot-states,.dark-mode .autopilot-stat,.dark-mode .research-card{background:#10233e;border-color:#2d4462}.dark-mode .autopilot-title h4,.dark-mode .autopilot-stat b{color:#edf4ff!important}.dark-mode .coverage-state{background:#142946;border-color:#304966}.dark-mode .coverage-state b{color:#d8e7fb}@media(max-width:1050px){.autopilot-grid{grid-template-columns:1fr 1fr 1fr}.autopilot-grid>div:first-child{grid-column:1/-1}}@media(max-width:700px){.autopilot-shell{margin:12px 10px 0}.autopilot-top{align-items:flex-start;flex-direction:column}.autopilot-grid,.autopilot-summary{grid-template-columns:1fr 1fr}.research-card{grid-template-columns:45px 1fr}.research-card>button{grid-column:1/-1}}
 
 /* Sprint 21 · Ash Agent Command Center */
 .agent-center{margin:14px 0;padding:0!important;overflow:hidden}.agent-center-head{display:flex;justify-content:space-between;gap:18px;align-items:center;padding:18px 20px;background:linear-gradient(125deg,#0d2347,#17467d 72%,#5c2748 140%);color:#fff}.agent-center-head h3{margin:4px 0;color:#fff!important}.agent-center-head p{margin:0;color:#dce9f7}.agent-center-head .kicker{color:#ff9eaa!important}.agent-center-body{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(300px,.8fr);gap:14px;padding:16px}.agent-roster{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}.agent-card{border:1px solid #d9e4f1;border-radius:12px;background:#f8fbff;padding:11px}.agent-card-top{display:flex;align-items:center;gap:7px}.agent-avatar{width:27px;height:27px;border-radius:9px;display:grid;place-items:center;background:#e8f0fe;color:#174b91;font-weight:950}.agent-card b{display:block;color:#0d2347;font-size:11px}.agent-card small{display:block;margin-top:6px;line-height:1.35}.agent-run-status{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:13px 0 8px}.agent-step{display:grid;grid-template-columns:35px minmax(0,1fr) auto;gap:9px;align-items:start;padding:10px 0;border-bottom:1px solid #e2eaf3}.agent-step:last-child{border-bottom:0}.agent-step-order{width:29px;height:29px;border-radius:50%;display:grid;place-items:center;background:#174ea6;color:#fff;font-weight:900;font-size:11px}.agent-step b{color:#0d2347}.agent-step-result{font-size:11px;color:#5d6f88;margin-top:4px;line-height:1.4}.agent-confidence{font-size:10px;font-weight:850;color:#174b91;white-space:nowrap}.agent-warning{color:#9a6210!important}.agent-plan-account{display:grid;grid-template-columns:30px minmax(0,1fr) auto;gap:9px;padding:10px;border:1px solid #dce5f0;border-radius:11px;margin:7px 0;background:#fff}.agent-plan-rank{font-weight:950;color:#174ea6}.agent-plan-account b{color:#0d2347}.agent-plan-account p{margin:4px 0;font-size:11px;line-height:1.4;color:#53647c}.agent-plan-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}.agent-principle{padding:10px 12px;border-left:4px solid #c6283d;background:#fdeff1;border-radius:0 10px 10px 0;font-size:11px;color:#65333b}.agent-empty{padding:22px;text-align:center;color:#718097;border:1px dashed #c7d4e3;border-radius:12px}.dark-mode .agent-center-head{background:linear-gradient(125deg,#081a36,#173d6b 72%,#4a203a)}.dark-mode .agent-card,.dark-mode .agent-plan-account{background:#101d34!important;border-color:#2b405f!important}.dark-mode .agent-card b,.dark-mode .agent-step b,.dark-mode .agent-plan-account b{color:#edf4ff}.dark-mode .agent-step{border-color:#2b405f}.dark-mode .agent-step-result,.dark-mode .agent-plan-account p{color:#aebed4}.dark-mode .agent-principle{background:#351d25;color:#f1c9d0}@media(max-width:1050px){.agent-center-body{grid-template-columns:1fr}.agent-roster{grid-template-columns:repeat(3,1fr)}}@media(max-width:650px){.agent-center-head{align-items:flex-start;flex-direction:column}.agent-roster{grid-template-columns:1fr 1fr}.agent-step{grid-template-columns:32px 1fr}.agent-confidence{grid-column:2}.agent-plan-account{grid-template-columns:28px 1fr}.agent-plan-account>button{grid-column:2}}
@@ -795,7 +797,7 @@ $('#pemail').textContent=p.email||'Not publicly listed';
 $('#pcontactactions').innerHTML=contactButtons(p)||'<span class="contact-missing">Open the source or company website to locate current contact information.</span>';
 $('#pcontactbadge').textContent=(p.phone||p.email)?'Direct contact ready':'Website contact available';
 $('#scores').innerHTML=[['Opportunity',p.score],['Growth',p.growth_score],['Government fit',p.gov_fit],['HELOC/Jumbo',p.niche_fit]].map(x=>`<div class=scorebox><span class=muted>${x[0]}</span><strong>${x[1]}</strong></div>`).join('');$('#psum').textContent=p.ai_summary;$('#preasons').innerHTML=p.score_reasons.map(x=>`<li>${esc(x)}</li>`).join('');$('#psource').innerHTML=[p.source_name?'<b>Source:</b> '+esc(p.source_name):'',p.source_url?'<a class="btn smallbtn" target="_blank" rel="noopener" href="'+esc(p.source_url)+'">Open source</a>':'',p.nmls?'<a class="btn smallbtn" target="_blank" rel="noopener" href="https://www.nmlsconsumeraccess.org/">Verify in NMLS Consumer Access</a>':'',p.verification_notes?'<div style="margin-top:8px">'+esc(p.verification_notes)+'</div>':''].filter(Boolean).join(' ');$('#pproducts').innerHTML=p.product_fit.split(',').filter(Boolean).map(x=>`<span class=tag>${esc(x.trim())}</span>`).join('');$('#pnext').textContent=p.next_best_action;$('#pcall').value=p.call_opener;$('#pobj').textContent=p.likely_objection;$('#presp').textContent=p.objection_response;$('#profileOut').onclick=()=>{show('outreach');$('#op').value=p.id;$('#profile').close()};renderMemory(p.memories);$('#profile').showModal()}
-$('#appVersion').textContent='VERSION 14.0 · SIGNAL GLASS';
+$('#appVersion').textContent='VERSION 15.0 · SCOUT AUTOPILOT';
 document.querySelector('nav [data-v="opportunityengine"]')?.insertAdjacentHTML('afterend','<button data-v="callprep">☎ Call Prep</button>');
 document.querySelector('nav [data-v="callprep"]')?.addEventListener('click',()=>show('callprep'));
 const WORKFLOW_NAV=[
@@ -893,8 +895,38 @@ function ensureScoutDiscovery(){
   const page=$('#prospects');if(!page||$('#scoutDiscovery'))return;
   const shell=document.createElement('div');shell.id='scoutDiscovery';shell.className='panel scout-discovery';
   shell.innerHTML=`<div class="scout-head"><div><div class="kicker">SPRINT 22 · SCOUT WEB DISCOVERY</div><h3>Find newly established and newly licensed brokers</h3><p>Scout searches ordinary public web results, deduplicates discoveries, and stages every candidate for Clay’s review.</p></div><div class="scout-controls"><select id="scoutState" aria-label="Discovery state"><option value="NC">North Carolina</option><option value="SC">South Carolina</option></select><input id="scoutMetro" placeholder="Optional metro or city"><button class="btn start-day" id="runScoutBtn" type="button">⌖ Discover new brokers</button></div></div><div class="scout-body"><div class="scout-metrics"><div class="scout-metric"><small>Pending review</small><b id="scoutPending">0</b></div><div class="scout-metric"><small>Approved</small><b id="scoutApproved">0</b></div><div class="scout-metric"><small>Duplicates</small><b id="scoutDuplicates">0</b></div><div class="scout-metric"><small>Last run</small><b id="scoutLastRun" style="font-size:13px">Not run</b></div></div><div class="profile-head"><div><h3>Discovery Inbox</h3><p class="muted">Edit the guessed fields, inspect the evidence, verify licensing, then approve or reject.</p></div><select id="scoutStatus" onchange="scoutDiscovery()"><option>Pending review</option><option>Approved</option><option>Rejected</option><option>Duplicate</option><option>All</option></select></div><div id="scoutSources" class="scout-sources"></div><div id="scoutCandidates" class="scout-candidates"><div class="agent-empty">Scout has not searched this territory yet.</div></div><div class="scout-safety">Scout does not scrape NMLS or regulator portals. Official sources are provided for human verification, and no candidate enters Prospects or Outreach without approval.</div></div>`;
-  page.prepend(shell);$('#runScoutBtn').onclick=runScoutDiscovery;$('#scoutState').onchange=()=>scoutDiscovery();
+  shell.querySelector('.scout-body').insertAdjacentHTML('beforebegin',`<section class="autopilot-shell" id="scoutAutopilot"><div class="autopilot-top"><div class="autopilot-title"><span class="autopilot-orb">✦</span><div><div class="kicker">SPRINT 23 · AGENT HANDOFF</div><h4>Scout Autopilot & Research Queue</h4><small class="muted">Scout discovers → Researcher enriches → Compliance flags → Ash ranks → Clay approves.</small></div></div><label class="autopilot-switch"><input id="autopilotEnabled" type="checkbox"> Autopilot</label></div><div class="autopilot-body"><div class="autopilot-grid"><div><label>Territory rotation</label><div class="autopilot-states" id="autopilotStates"></div></div><div><label>Cadence<select id="autopilotCadence" class="full"><option value="12">Every 12 hours</option><option value="24">Daily</option><option value="48">Every 2 days</option><option value="168">Weekly</option></select></label></div><div><label>States per run<input id="autopilotStatesPerRun" class="full" type="number" min="1" max="5" value="1"></label></div><div><label>Daily query budget<input id="autopilotBudget" class="full" type="number" min="2" max="100" value="12"></label></div><div><label>Research limit<input id="autopilotResearchLimit" class="full" type="number" min="1" max="40" value="12"></label></div></div><div class="autopilot-actions"><button class="btn" id="saveAutopilot">Save Autopilot</button><button class="btn primary" id="runAutopilotNow">Run agent pipeline now</button><span class="muted" id="autopilotNext"></span></div><div class="autopilot-summary"><div class="autopilot-stat"><small>Queries today</small><b id="autopilotQueries">0 / 0</b></div><div class="autopilot-stat"><small>States covered</small><b id="autopilotCovered">0</b></div><div class="autopilot-stat"><small>Research ready</small><b id="autopilotReady">0</b></div><div class="autopilot-stat"><small>Last agent run</small><b id="autopilotLast">Never</b></div></div><div class="coverage-strip" id="autopilotCoverage"></div><div class="research-queue"><div class="profile-head"><div><h4>Ash-ranked research queue</h4><small class="muted">Nothing enters Prospects or Outreach until you approve the underlying Scout candidate.</small></div><span class="pill" id="researchQueueCount">0 ready</span></div><div id="researchQueue"></div></div></div></section>`);
+  page.prepend(shell);$('#runScoutBtn').onclick=runScoutDiscovery;$('#scoutState').onchange=()=>scoutDiscovery();$('#saveAutopilot').onclick=saveScoutAutopilot;$('#runAutopilotNow').onclick=runScoutAutopilot;
 }
+let autopilotStateLoaded=false;
+function autopilotSelectedStates(){return $$('#autopilotStates input:checked').map(x=>x.value)}
+function renderResearchQueue(items){
+  $('#researchQueueCount').textContent=`${items.length} ready`;
+  $('#researchQueue').innerHTML=items.length?items.slice(0,12).map(x=>`<div class="research-card"><div class="research-score">${x.ash_score}</div><div><b>${esc(x.company||x.result_title)}</b> <span class="pill">${esc(x.research_stage||'Ash review')}</span><div class="reason">${esc(x.ash_reason||'Research completed.')}</div><div class="research-flags">${(x.compliance_flags||[]).slice(0,3).map(f=>`<span class="research-flag">${esc(f)}</span>`).join('')}${x.growth_signals?`<span class="tag">${esc(x.growth_signals)}</span>`:''}</div><small class="muted">${esc(x.state)} · ${x.decision_maker?esc(x.decision_maker):'Decision-maker unconfirmed'} · ${x.public_email||x.public_phone?'Public contact found':'No direct contact'}</small></div><button class="btn smallbtn" onclick="openAutopilotCandidate(${x.id},'${esc(x.state)}')">Review</button></div>`).join(''):'<div class="agent-empty">The agent pipeline has not prepared any candidates yet.</div>';
+}
+async function scoutAutopilot(){
+  ensureScoutDiscovery();
+  try{
+    const d=await api('/api/scout-autopilot'),s=d.settings;
+    $('#autopilotEnabled').checked=!!s.enabled;$('#autopilotCadence').value=String(s.cadence_hours);$('#autopilotStatesPerRun').value=s.states_per_run;$('#autopilotBudget').value=s.daily_query_budget;$('#autopilotResearchLimit').value=s.research_limit;
+    if(!autopilotStateLoaded){$('#autopilotStates').innerHTML=d.states.map(x=>`<label class="autopilot-state"><input type="checkbox" value="${x.code}" ${s.states.includes(x.code)?'checked':''}> ${esc(x.code)}</label>`).join('');autopilotStateLoaded=true}
+    $('#autopilotQueries').textContent=`${s.queries_used_today} / ${s.daily_query_budget}`;$('#autopilotCovered').textContent=d.coverage.length;$('#autopilotReady').textContent=d.queue.length;$('#autopilotNext').textContent=s.enabled?(s.next_run_at?`Next run ${s.next_run_at.replace('T',' ')}`:'Ready to schedule'):'Paused';
+    $('#autopilotLast').textContent=s.last_run_at?s.last_run_at.replace('T',' '):'Never';
+    $('#autopilotCoverage').innerHTML=d.coverage.length?d.coverage.map(x=>`<div class="coverage-state"><b>${esc(x.state)}</b>${x.run_count} run${x.run_count===1?'':'s'}<br>${x.discovery_count} found<br>${x.last_searched_at?esc(x.last_searched_at.slice(0,10)):'Not searched'}</div>`).join(''):'<div class="muted">Coverage appears after the first Autopilot run.</div>';
+    renderResearchQueue(d.queue);
+  }catch(e){$('#researchQueue').innerHTML=`<div class="agent-empty">${esc(e.message||'Unable to load Scout Autopilot.')}</div>`}
+}
+async function saveScoutAutopilot(){
+  const payload={enabled:$('#autopilotEnabled').checked,states:autopilotSelectedStates(),cadence_hours:+$('#autopilotCadence').value,states_per_run:+$('#autopilotStatesPerRun').value,daily_query_budget:+$('#autopilotBudget').value,research_limit:+$('#autopilotResearchLimit').value};
+  await api('/api/scout-autopilot',{method:'PUT',body:JSON.stringify(payload)});msg(payload.enabled?'Scout Autopilot enabled':'Scout Autopilot paused');scoutAutopilot();
+}
+async function runScoutAutopilot(){
+  const b=$('#runAutopilotNow');b.disabled=true;b.textContent='Agents are working…';
+  try{const d=await api('/api/scout-autopilot/run',{method:'POST',body:'{}'});msg(`Agent pipeline searched ${d.states.length} state(s) · ${d.discoveries} discoveries · ${d.researched} researched`);await Promise.all([scoutAutopilot(),scoutDiscovery()])}
+  catch(e){msg(e.message||'Autopilot could not complete this run')}
+  finally{b.disabled=false;b.textContent='Run agent pipeline now'}
+}
+async function openAutopilotCandidate(id,state){$('#scoutState').value=state;$('#scoutStatus').value='Pending review';await scoutDiscovery();document.querySelector(`#scout-${id}-company`)?.scrollIntoView({behavior:'smooth',block:'center'})}
 function scoutField(id,name){return $(`#scout-${id}-${name}`)?.value.trim()||''}
 function renderScoutCandidates(items){
   const box=$('#scoutCandidates');if(!box)return;
@@ -1148,7 +1180,7 @@ function renderIntelligence(){if(!OI)return;let tier=$('#oiTier').value;let xs=O
 async function saveIntelligenceSettings(){let weights={};$$('[data-weight]').forEach(x=>weights[x.dataset.weight]=+x.value);await api('/api/intelligence/settings',{method:'POST',body:JSON.stringify({weights})});msg('Scoring weights saved');await rescoreIntelligence()}
 async function rescoreIntelligence(){let d=await api('/api/intelligence/rescore',{method:'POST'});msg(`${d.updated} prospects rescored`);await loadIntelligence();missionControl();load()}
 
-load();dash();outreach();followups();dailyPlan();ints();missionControl();agentCommandCenter();scoutDiscovery();
+load();dash();outreach();followups();dailyPlan();ints();missionControl();agentCommandCenter();scoutDiscovery();scoutAutopilot();
 </script></body></html>'''
 
 def db():
@@ -2969,12 +3001,9 @@ def scout_discovery():
         metrics={'pending':counts.get('Pending review',0),'approved':counts.get('Approved',0),'duplicates':counts.get('Duplicate',0),'rejected':counts.get('Rejected',0)}
     )
 
-@app.post('/api/scout-discovery/run')
-def run_scout_discovery():
-    blocked=reject_demo_write()
-    if blocked:return blocked
-    d=request.get_json(silent=True) or {};state=(d.get('state') or 'NC').upper();metro=(d.get('metro') or '').strip()[:100]
-    if state not in US_STATES:return jsonify(error='Choose a valid U.S. state.'),400
+def _run_scout_territory(state,metro='',run_source='Manual'):
+    state=(state or 'NC').upper();metro=(metro or '').strip()[:100]
+    if state not in US_STATES:raise ValueError('Choose a valid U.S. state.')
     state_name=US_STATES[state]
     place_name=f'{metro}, {state_name}' if metro else state_name
     web_queries=[
@@ -2996,6 +3025,7 @@ def run_scout_discovery():
         x['url']:x for x in raw_results
         if x.get('territory_match') or any(term in (x.get('title','')+' '+x.get('snippet','')).lower() for term in territory_terms)
     };new_count=duplicate_count=0
+    discovered_ids=[]
     with db() as c:
         for result in unique.values():
             candidate=_scout_candidate_from_result(result,state,metro)
@@ -3007,17 +3037,181 @@ def run_scout_discovery():
             if not duplicate_pid and candidate['company']:
                 row=c.execute("select id from prospects where lower(trim(company))=lower(trim(?)) and state=? limit 1",(candidate['company'],state)).fetchone();duplicate_pid=row['id'] if row else 0
             candidate_status='Duplicate' if duplicate_pid else 'Pending review'
-            c.execute("""insert into scout_candidates(run_id,company,result_title,state,metro,nmls,owner,email,phone,website,linkedin_url,signal,evidence,source_name,source_url,status,confidence,duplicate_prospect_id,discovered_at)
+            cur=c.execute("""insert into scout_candidates(run_id,company,result_title,state,metro,nmls,owner,email,phone,website,linkedin_url,signal,evidence,source_name,source_url,status,confidence,duplicate_prospect_id,discovered_at)
                          values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                       (run_id,candidate['company'],candidate['result_title'],state,metro,candidate['nmls'],candidate['owner'],candidate['email'],candidate['phone'],candidate['website'],candidate['linkedin_url'],candidate['signal'],candidate['evidence'],candidate['source_name'],candidate['source_url'],candidate_status,candidate['confidence'],duplicate_pid,NOW()))
             if duplicate_pid:duplicate_count+=1
-            else:new_count+=1
+            else:new_count+=1;discovered_ids.append(cur.lastrowid)
         final_status='Completed' if unique or not errors else 'Failed'
         error='; '.join(errors)[:1000]
         c.execute("update scout_runs set status=?,result_count=?,new_count=?,duplicate_count=?,error=?,finished_at=? where id=?",(final_status,len(unique),new_count,duplicate_count,error,NOW(),run_id))
-        c.execute("insert into activity(action,detail,created_at) values(?,?,?)",('Scout web discovery',f'{state} · {len(unique)} results · {new_count} candidates · human review required',NOW()))
-    if not unique and errors:return jsonify(error='Public web search was unavailable. Scout recorded the failed run; try again later.',detail=errors[:3]),502
-    return jsonify(ok=True,run_id=run_id,state=state,queries=query_count,results=len(unique),new_candidates=new_count,duplicates=duplicate_count,errors=errors)
+        c.execute("insert into activity(action,detail,created_at) values(?,?,?)",(f'Scout {run_source.lower()} discovery',f'{state} · {len(unique)} results · {new_count} candidates · human review required',NOW()))
+        c.execute("""insert into scout_coverage(state,last_searched_at,run_count,query_count,discovery_count,duplicate_count,updated_at)
+                     values(?,?,1,?,?,?,?) on conflict(state) do update set
+                     last_searched_at=excluded.last_searched_at,run_count=run_count+1,query_count=query_count+excluded.query_count,
+                     discovery_count=discovery_count+excluded.discovery_count,duplicate_count=duplicate_count+excluded.duplicate_count,updated_at=excluded.updated_at""",
+                  (state,NOW(),query_count,new_count,duplicate_count,NOW()))
+    if not unique and errors:raise RuntimeError('; '.join(errors[:3]))
+    return {'ok':True,'run_id':run_id,'state':state,'queries':query_count,'results':len(unique),'new_candidates':new_count,'duplicates':duplicate_count,'errors':errors,'candidate_ids':discovered_ids}
+
+@app.post('/api/scout-discovery/run')
+def run_scout_discovery():
+    blocked=reject_demo_write()
+    if blocked:return blocked
+    d=request.get_json(silent=True) or {}
+    try:result=_run_scout_territory(d.get('state') or 'NC',d.get('metro') or '','Manual')
+    except ValueError as exc:return jsonify(error=str(exc)),400
+    except Exception as exc:return jsonify(error='Public web search was unavailable. Scout recorded the failed run; try again later.',detail=str(exc)[:180]),502
+    return jsonify(result)
+
+def _scout_public_page(url):
+    parsed=urllib.parse.urlparse(url or '')
+    host=(parsed.hostname or '').lower()
+    if parsed.scheme not in {'http','https'} or not host:return '', 'No public website'
+    if host in {'localhost','127.0.0.1','0.0.0.0','::1'} or host.endswith('.local'):return '', 'Blocked private address'
+    req=urllib.request.Request(url,headers={'User-Agent':'Mozilla/5.0 BrokerBeaconResearcher/1.0','Accept':'text/html,application/xhtml+xml'})
+    with urllib.request.urlopen(req,timeout=10) as response:
+        ctype=(response.headers.get('Content-Type') or '').lower()
+        if 'html' not in ctype:return '', 'Website did not return HTML'
+        return response.read(750000).decode('utf-8','ignore'),f'Public website responded {getattr(response,"status",200)}'
+
+def _research_scout_candidate(candidate_id):
+    with db() as c:
+        row=c.execute("select * from scout_candidates where id=?",(candidate_id,)).fetchone()
+        if not row:return None
+        candidate=dict(row)
+    evidence=[f"Scout source: {candidate.get('source_name') or 'Public web'}"]
+    flags=[];website_status='No website supplied';page=''
+    if candidate.get('website'):
+        try:page,website_status=_scout_public_page(candidate['website']);evidence.append(website_status)
+        except Exception as exc:website_status=f'Website review failed: {type(exc).__name__}';flags.append('Website could not be reviewed automatically.')
+    text=_scout_text(page)[:120000] if page else ''
+    emails=list(dict.fromkeys(re.findall(r'\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b',text,re.I)))
+    phones=list(dict.fromkeys(re.findall(r'(?:\+?1[\s.-]?)?\(?\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}',text)))
+    nmls_matches=list(dict.fromkeys(re.findall(r'\bNMLS(?:\s*(?:ID|#|number))?[\s:#-]*(\d{4,})\b',text,re.I)))
+    decision=''
+    person=re.search(r'\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,2})\s*(?:,|-|\|)?\s*(?:owner|president|principal broker|broker owner|managing broker)\b',text)
+    if person:decision=person.group(1)
+    growth_terms=[label for label,pattern in [
+        ('Hiring',r'\b(hiring|join our team|careers)\b'),('Multiple locations',r'\b(our locations|branch offices|locations)\b'),
+        ('Government lending',r'\b(VA|FHA|USDA|down payment assistance)\b'),('Broker growth language',r'\b(growing|expanding|new branch|recently opened)\b')
+    ] if re.search(pattern,text,re.I)]
+    public_email=candidate.get('email') or (emails[0] if emails else '')
+    public_phone=candidate.get('phone') or (phones[0] if phones else '')
+    nmls_clue=candidate.get('nmls') or (nmls_matches[0] if nmls_matches else '')
+    if not nmls_clue:flags.append('NMLS identifier not found; official verification required.')
+    if not decision:flags.append('Decision-maker not confirmed.')
+    if not public_email and not public_phone:flags.append('No direct public business contact found.')
+    if candidate.get('duplicate_prospect_id'):flags.append('Matches an existing BrokerBeacon prospect.')
+    score=min(98,max(25,int(candidate.get('confidence') or 0)+(8 if page else 0)+(8 if decision else 0)+(7 if public_email else 0)+(5 if public_phone else 0)+(8 if nmls_clue else 0)+min(8,len(growth_terms)*2)-len(flags)*3))
+    reason=('Strong public evidence and contact readiness.' if score>=78 else 'Promising discovery; verify the remaining evidence gaps.' if score>=58 else 'Research gaps require review before promotion.')
+    stage='Duplicate' if candidate.get('duplicate_prospect_id') else 'Ash review'
+    with db() as c:
+        c.execute("""insert into scout_research(candidate_id,stage,website_status,decision_maker,public_email,public_phone,nmls_clue,growth_signals,evidence_json,compliance_flags_json,ash_score,ash_reason,researched_at,updated_at)
+                     values(?,?,?,?,?,?,?,?,?,?,?,?,?,?) on conflict(candidate_id) do update set
+                     stage=excluded.stage,website_status=excluded.website_status,decision_maker=excluded.decision_maker,public_email=excluded.public_email,
+                     public_phone=excluded.public_phone,nmls_clue=excluded.nmls_clue,growth_signals=excluded.growth_signals,evidence_json=excluded.evidence_json,
+                     compliance_flags_json=excluded.compliance_flags_json,ash_score=excluded.ash_score,ash_reason=excluded.ash_reason,
+                     researched_at=excluded.researched_at,updated_at=excluded.updated_at""",
+                  (candidate_id,stage,website_status,decision,public_email,public_phone,nmls_clue,', '.join(growth_terms),json.dumps(evidence),json.dumps(flags),score,reason,NOW(),NOW()))
+        c.execute("""update scout_candidates set owner=coalesce(nullif(owner,''),?),email=coalesce(nullif(email,''),?),
+                     phone=coalesce(nullif(phone,''),?),nmls=coalesce(nullif(nmls,''),?),confidence=max(confidence,?) where id=?""",
+                  (decision,public_email,public_phone,nmls_clue,score,candidate_id))
+    return {'candidate_id':candidate_id,'stage':stage,'score':score,'flags':flags}
+
+def _autopilot_payload():
+    with db() as c:
+        settings=dict(c.execute("select * from scout_autopilot where id=1").fetchone())
+        try:states=json.loads(settings.get('states_json') or '[]')
+        except Exception:states=['NC','SC']
+        coverage=[dict(x) for x in c.execute("select * from scout_coverage order by coalesce(last_searched_at,''),state")]
+        queue=[]
+        for row in c.execute("""select c.*,r.stage research_stage,r.website_status,r.decision_maker,r.public_email,r.public_phone,
+                                      r.nmls_clue,r.growth_signals,r.evidence_json,r.compliance_flags_json,r.ash_score,r.ash_reason,r.researched_at
+                               from scout_candidates c join scout_research r on r.candidate_id=c.id
+                               where c.status='Pending review' order by r.ash_score desc,c.id desc limit 40"""):
+            item=dict(row)
+            for key in ('evidence_json','compliance_flags_json'):
+                try:item[key[:-5] if key.endswith('_json') else key]=json.loads(item.pop(key) or '[]')
+                except Exception:item[key[:-5] if key.endswith('_json') else key]=[]
+            queue.append(item)
+        today=datetime.now().date().isoformat()
+        spent=c.execute("select coalesce(sum(query_count),0) from scout_autopilot_runs where substr(started_at,1,10)=?",(today,)).fetchone()[0]
+        last=[dict(x) for x in c.execute("select * from scout_autopilot_runs order by id desc limit 8")]
+    settings['states']=states;settings['queries_used_today']=spent;settings['queries_remaining']=max(0,int(settings['daily_query_budget'])-spent)
+    return {'settings':settings,'coverage':coverage,'queue':queue,'recent_runs':last,'states':[{'code':k,'name':v} for k,v in sorted(US_STATES.items(),key=lambda x:x[1])]}
+
+@app.get('/api/scout-autopilot')
+def scout_autopilot_status():
+    return jsonify(_autopilot_payload())
+
+@app.put('/api/scout-autopilot')
+def update_scout_autopilot():
+    blocked=reject_demo_write()
+    if blocked:return blocked
+    d=request.get_json(silent=True) or {}
+    states=[str(x).upper() for x in d.get('states',[]) if str(x).upper() in US_STATES]
+    if not states:return jsonify(error='Choose at least one U.S. state.'),400
+    cadence=max(6,min(168,int(d.get('cadence_hours') or 24)))
+    states_per=max(1,min(5,int(d.get('states_per_run') or 1)))
+    budget=max(2,min(100,int(d.get('daily_query_budget') or 12)))
+    research=max(1,min(40,int(d.get('research_limit') or 12)))
+    enabled=1 if d.get('enabled') else 0
+    next_run=(datetime.now()+timedelta(minutes=2 if enabled else cadence*60)).isoformat(timespec='seconds') if enabled else ''
+    with db() as c:
+        c.execute("""update scout_autopilot set enabled=?,states_json=?,cadence_hours=?,states_per_run=?,daily_query_budget=?,
+                     research_limit=?,next_run_at=?,updated_at=? where id=1""",
+                  (enabled,json.dumps(states),cadence,states_per,budget,research,next_run,NOW()))
+        c.execute("insert into activity(action,detail,created_at) values(?,?,?)",('Scout Autopilot updated',f"{'Enabled' if enabled else 'Paused'} · {len(states)} states · {budget} daily queries",NOW()))
+    return jsonify(_autopilot_payload())
+
+def _run_scout_autopilot(force=False):
+    with db() as c:
+        s=dict(c.execute("select * from scout_autopilot where id=1").fetchone())
+        if not s['enabled'] and not force:return {'skipped':True,'reason':'Autopilot is paused.'}
+        if not force and s.get('next_run_at') and datetime.fromisoformat(s['next_run_at'])>datetime.now():return {'skipped':True,'reason':'Next run is not due.'}
+        states=[x for x in json.loads(s['states_json'] or '[]') if x in US_STATES]
+        today=datetime.now().date().isoformat()
+        spent=c.execute("select coalesce(sum(query_count),0) from scout_autopilot_runs where substr(started_at,1,10)=?",(today,)).fetchone()[0]
+        remaining=max(0,int(s['daily_query_budget'])-spent)
+        state_limit=min(int(s['states_per_run']),remaining//2)
+        if state_limit<1:return {'skipped':True,'reason':'Daily Google query budget reached.'}
+        coverage={r['state']:r['last_searched_at'] for r in c.execute("select state,last_searched_at from scout_coverage")}
+        chosen=sorted(states,key=lambda x:(coverage.get(x,'') or '',x))[:state_limit]
+        cur=c.execute("insert into scout_autopilot_runs(status,states_json,started_at) values('Running',?,?)",(json.dumps(chosen),NOW()));autopilot_id=cur.lastrowid
+    discoveries=duplicates=queries=researched=0;errors=[];candidate_ids=[]
+    for state in chosen:
+        try:
+            result=_run_scout_territory(state,'','Autopilot');discoveries+=result['new_candidates'];duplicates+=result['duplicates'];queries+=result['queries'];candidate_ids+=result['candidate_ids']
+        except Exception as exc:errors.append(f'{state}: {type(exc).__name__}: {str(exc)[:120]}')
+    research_ids=candidate_ids[:int(s['research_limit'])]
+    for candidate_id in research_ids:
+        try:
+            if _research_scout_candidate(candidate_id):researched+=1
+        except Exception as exc:errors.append(f'Candidate {candidate_id}: {type(exc).__name__}')
+    next_run=(datetime.now()+timedelta(hours=int(s['cadence_hours']))).isoformat(timespec='seconds')
+    status='Completed' if not errors else 'Completed with warnings' if discoveries or researched else 'Failed'
+    with db() as c:
+        c.execute("update scout_autopilot_runs set status=?,query_count=?,discovery_count=?,researched_count=?,duplicate_count=?,error=?,finished_at=? where id=?",
+                  (status,queries,discoveries,researched,duplicates,'; '.join(errors)[:1000],NOW(),autopilot_id))
+        c.execute("update scout_autopilot set last_run_at=?,next_run_at=?,updated_at=? where id=1",(NOW(),next_run,NOW()))
+        c.execute("insert into activity(action,detail,created_at) values(?,?,?)",('Scout Autopilot completed',f"{', '.join(chosen)} · {discoveries} discoveries · {researched} researched · no outreach sent",NOW()))
+    return {'ok':True,'run_id':autopilot_id,'states':chosen,'queries':queries,'discoveries':discoveries,'researched':researched,'duplicates':duplicates,'errors':errors,'next_run_at':next_run}
+
+@app.post('/api/scout-autopilot/run')
+def run_scout_autopilot_now():
+    blocked=reject_demo_write()
+    if blocked:return blocked
+    result=_run_scout_autopilot(force=True)
+    return jsonify(result),200 if not result.get('skipped') else 409
+
+@app.post('/api/scout-candidates/<int:candidate_id>/research')
+def research_scout_candidate(candidate_id):
+    blocked=reject_demo_write()
+    if blocked:return blocked
+    result=_research_scout_candidate(candidate_id)
+    if not result:return jsonify(error='Scout candidate not found.'),404
+    return jsonify(ok=True,result=result)
 
 @app.post('/api/scout-candidates/<int:candidate_id>/approve')
 def approve_scout_candidate(candidate_id):
@@ -4372,6 +4566,17 @@ def si():
     d=request.json or {}
     with db() as c:c.execute("insert or replace into integrations(key,value) values(?,?)",(d.get("key"),str(bool(d.get("value"))).lower()))
     return jsonify(ok=True)
+
+def _scout_autopilot_worker():
+    """Wake periodically while the Render service is running; database timing and budgets remain authoritative."""
+    threading.Event().wait(60)
+    while True:
+        try:_run_scout_autopilot(force=False)
+        except Exception as exc:print(f'Scout Autopilot worker: {type(exc).__name__}: {str(exc)[:160]}',flush=True)
+        threading.Event().wait(900)
+
+if os.getenv('ENABLE_SCOUT_AUTOPILOT_WORKER','1')=='1':
+    threading.Thread(target=_scout_autopilot_worker,name='brokerbeacon-scout-autopilot',daemon=True).start()
 
 if __name__=="__main__":
     init()
