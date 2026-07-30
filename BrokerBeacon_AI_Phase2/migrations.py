@@ -271,6 +271,71 @@ create index if not exists idx_scout_agent_events_run on scout_agent_events(run_
 create index if not exists idx_scout_agent_events_created on scout_agent_events(id desc);
 insert or ignore into scout_control_settings(id,emergency_stop,pilot_state,estimated_query_cost_micros,daily_cost_limit_cents,updated_at)
 values(1,0,'ME',32000,100,datetime('now'));
+"""),
+(15, "national_broker_index", """
+alter table scout_candidates add column google_place_id text default '';
+create table if not exists broker_index(
+    id integer primary key,
+    canonical_key text not null unique,
+    company text not null,
+    nmls text default '',
+    website text default '',
+    website_domain text default '',
+    google_place_id text default '',
+    phone text default '',
+    email text default '',
+    city text default '',
+    state text default '',
+    specialties text default '',
+    evidence_summary text default '',
+    verification_status text not null default 'Needs verification',
+    confidence integer not null default 0,
+    source_count integer not null default 0,
+    prospect_id integer default 0,
+    scout_candidate_id integer default 0,
+    first_discovered_at text not null,
+    last_verified_at text default '',
+    refreshed_at text default '',
+    created_at text not null,
+    updated_at text not null
+);
+create table if not exists broker_index_sources(
+    id integer primary key,
+    broker_index_id integer not null,
+    field_name text not null,
+    field_value text default '',
+    source_type text not null,
+    source_url text not null,
+    independently_verified integer not null default 0,
+    captured_at text not null,
+    refresh_after text default '',
+    unique(broker_index_id,field_name,source_url)
+);
+create table if not exists broker_index_events(
+    id integer primary key,
+    broker_index_id integer,
+    event_type text not null,
+    detail text default '',
+    created_at text not null
+);
+create table if not exists broker_index_settings(
+    id integer primary key check(id=1),
+    customer_search_mode text not null default 'Shared index only',
+    customer_google_search integer not null default 0,
+    monthly_query_limit integer not null default 4000,
+    refresh_days integer not null default 30,
+    enabled_states_json text not null default '[]',
+    last_sync_at text default '',
+    updated_at text not null
+);
+create index if not exists idx_broker_index_state on broker_index(state,company);
+create index if not exists idx_broker_index_nmls on broker_index(nmls);
+create index if not exists idx_broker_index_domain on broker_index(website_domain);
+create index if not exists idx_broker_index_verified on broker_index(verification_status,last_verified_at);
+create index if not exists idx_broker_index_sources_item on broker_index_sources(broker_index_id,id);
+insert or ignore into broker_index_settings(id,customer_search_mode,customer_google_search,monthly_query_limit,refresh_days,enabled_states_json,last_sync_at,updated_at)
+values(1,'Shared index only',0,4000,30,'[]','',datetime('now'));
+update scout_autopilot set enabled=0,next_run_at='',updated_at=datetime('now') where id=1;
 """)
 ]
 
