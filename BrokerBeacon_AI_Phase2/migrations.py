@@ -88,6 +88,53 @@ create index if not exists idx_outreach_events_outreach on outreach_events(outre
 alter table outreach add column contact_id integer default 0;
 create index if not exists idx_outreach_contact on outreach(contact_id);
 create index if not exists idx_contacts_prospect_readiness on contacts(prospect_id,roster_status,is_decision_maker,is_primary);
+"""),
+(11, "agent_command_center", """
+create table if not exists agent_runs(
+    id integer primary key,
+    run_type text not null default 'Daily plan',
+    status text not null default 'Needs approval',
+    summary text not null default '',
+    confidence integer not null default 0,
+    warning_count integer not null default 0,
+    started_at text not null,
+    completed_at text not null,
+    approved_at text default '',
+    rejected_at text default '',
+    decision_note text default ''
+);
+create table if not exists agent_steps(
+    id integer primary key,
+    run_id integer not null,
+    agent_key text not null,
+    agent_name text not null,
+    step_order integer not null,
+    status text not null default 'Completed',
+    assignment text not null default '',
+    evidence_json text not null default '[]',
+    result_json text not null default '{}',
+    confidence integer not null default 0,
+    warning text default '',
+    started_at text not null,
+    completed_at text not null
+);
+create table if not exists agent_run_accounts(
+    id integer primary key,
+    run_id integer not null,
+    prospect_id integer not null,
+    rank integer not null,
+    company text not null,
+    recommendation text not null default '',
+    recommended_channel text not null default '',
+    contact_name text default '',
+    contact_readiness text not null default 'Missing contact',
+    evidence_json text not null default '[]',
+    warnings_json text not null default '[]'
+);
+create index if not exists idx_agent_runs_created on agent_runs(id desc);
+create index if not exists idx_agent_steps_run on agent_steps(run_id,step_order);
+create index if not exists idx_agent_accounts_run on agent_run_accounts(run_id,rank);
+create index if not exists idx_agent_accounts_prospect on agent_run_accounts(prospect_id);
 """)
 ]
 
