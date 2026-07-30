@@ -13,8 +13,8 @@ from voice_agent import configured as voice_configured, create_twilio_call, huma
 from guideline_index import seed_index, index_fha_pdf, search as search_guideline_index, stats as guideline_index_stats
 
 app = Flask(__name__)
-BUILD_VERSION = "16.0"
-BUILD_NAME = "AUTOPILOT CONTROL TOWER"
+BUILD_VERSION = "17.0"
+BUILD_NAME = "NATIONAL BROKER INDEX"
 DB = Path(os.getenv("BROKERBEACON_DB_PATH") or Path(__file__).with_name("brokerbeacon.db"))
 NOW = lambda: datetime.now().isoformat(timespec="seconds")
 
@@ -327,6 +327,7 @@ body.dark-mode .production-kpi,body.dark-mode .production-company{background:#10
 /* Sprint 23 · Scout Autopilot */
 .autopilot-shell{margin:14px 18px 0;border:1px solid #cfdced;border-radius:15px;background:linear-gradient(135deg,#f8fbff,#f2f0ff);overflow:hidden}.autopilot-top{display:flex;justify-content:space-between;gap:14px;align-items:center;padding:14px 15px;border-bottom:1px solid #dce5f0}.autopilot-title{display:flex;align-items:center;gap:10px}.autopilot-orb{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,#2563eb,#7657ff);box-shadow:0 8px 18px rgba(37,99,235,.22)}.autopilot-title h4{margin:0}.autopilot-title small{display:block;margin-top:3px}.autopilot-switch{display:flex;align-items:center;gap:8px;font-weight:800;color:#344865}.autopilot-body{padding:14px 15px}.autopilot-grid{display:grid;grid-template-columns:1.3fr repeat(4,minmax(100px,.55fr));gap:8px;align-items:end}.autopilot-states{min-height:72px;max-height:120px;overflow:auto;display:flex;gap:5px;flex-wrap:wrap;padding:8px;border:1px solid #ccd9ea;border-radius:10px;background:#fff}.autopilot-state{display:inline-flex;gap:4px;align-items:center;padding:4px 7px;border:1px solid #d5e0ed;border-radius:999px;font-size:10px}.autopilot-state input{min-height:0}.autopilot-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:11px}.autopilot-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:11px}.autopilot-stat{padding:9px;border:1px solid #dce5f0;border-radius:10px;background:#fff}.autopilot-stat small{display:block;font-size:8px;text-transform:uppercase;color:#75849a;font-weight:900}.autopilot-stat b{display:block;margin-top:4px;color:#102a51}.research-queue{margin-top:13px}.research-card{display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:11px;align-items:center;padding:11px;border:1px solid #dce5f0;border-radius:12px;background:#fff;margin-top:7px}.research-score{width:45px;height:45px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,#e8f0ff,#efeaff);color:#174ea6;font-weight:950}.research-flags{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}.research-flag{padding:3px 6px;border-radius:999px;background:#fff3db;color:#7e5b13;font-size:9px}.coverage-strip{display:flex;gap:6px;overflow:auto;padding-bottom:4px;margin-top:10px}.coverage-state{min-width:92px;padding:8px;border-radius:9px;background:#edf4fc;border:1px solid #d5e1ef;font-size:9px}.coverage-state b{display:block;color:#173c70;margin-bottom:3px}.dark-mode .autopilot-shell{background:linear-gradient(135deg,#0e2039,#1a1d3e);border-color:#2c4260}.dark-mode .autopilot-top{border-color:#2c4260}.dark-mode .autopilot-states,.dark-mode .autopilot-stat,.dark-mode .research-card{background:#10233e;border-color:#2d4462}.dark-mode .autopilot-title h4,.dark-mode .autopilot-stat b{color:#edf4ff!important}.dark-mode .coverage-state{background:#142946;border-color:#304966}.dark-mode .coverage-state b{color:#d8e7fb}@media(max-width:1050px){.autopilot-grid{grid-template-columns:1fr 1fr 1fr}.autopilot-grid>div:first-child{grid-column:1/-1}}@media(max-width:700px){.autopilot-shell{margin:12px 10px 0}.autopilot-top{align-items:flex-start;flex-direction:column}.autopilot-grid,.autopilot-summary{grid-template-columns:1fr 1fr}.research-card{grid-template-columns:45px 1fr}.research-card>button{grid-column:1/-1}}
 .control-tower{margin:14px 18px 0;padding:16px;border:1px solid #cbd9ec;border-radius:16px;background:radial-gradient(circle at 85% 0,#d8e7ff 0,transparent 34%),linear-gradient(145deg,#071a37,#102f5d);color:#f8fbff;box-shadow:0 18px 36px rgba(12,41,82,.2)}.tower-head{display:flex;justify-content:space-between;gap:16px;align-items:center}.tower-head h3{margin:3px 0;color:#fff}.tower-head p{margin:0;color:#b9c9df}.tower-controls{display:flex;gap:7px;align-items:end;flex-wrap:wrap}.tower-controls label{color:#c9d6e8;margin:0}.tower-controls select,.tower-controls input{background:#ffffff12;color:#fff;border-color:#ffffff2e}.tower-controls option{color:#102a51}.tower-stop{border-color:#ff7185!important;color:#ffb5c0!important}.tower-stop.active{background:#e33e58!important;color:#fff!important}.agent-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px}.control-tower .agent-card{padding:11px;border:1px solid #ffffff1f;border-radius:12px;background:#ffffff0c}.control-tower .agent-card b{color:#fff}.control-tower .agent-card-top{display:flex;justify-content:space-between;gap:8px}.control-tower .agent-card small{color:#aebfd7}.agent-status{font-size:9px;padding:4px 7px;border-radius:999px;background:#4de0aa20;color:#78f0c4}.agent-status.working{background:#60a5fa25;color:#a8ccff}.tower-metrics{display:grid;grid-template-columns:repeat(6,1fr);gap:7px;margin-top:10px}.tower-metric{padding:9px;border:1px solid #ffffff19;border-radius:10px;background:#050f2240}.tower-metric small{display:block;color:#a9bad1;font-size:8px;text-transform:uppercase}.tower-metric b{display:block;margin-top:4px;font-size:17px;color:#fff}.tower-lower{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.tower-box{padding:11px;border:1px solid #ffffff19;border-radius:11px;background:#07172d90}.tower-box h4{margin:0 0 7px;color:#fff}.tower-run{display:grid;grid-template-columns:88px 1fr auto;gap:8px;padding:7px 0;border-bottom:1px solid #ffffff14;font-size:10px}.tower-run:last-child{border:0}.tower-run .warn{color:#ffcc75}.tower-empty{padding:12px;color:#aebfd7;text-align:center}.dark-mode .control-tower{border-color:#2f4c73}@media(max-width:1050px){.agent-grid{grid-template-columns:1fr 1fr}.tower-metrics{grid-template-columns:repeat(3,1fr)}}@media(max-width:700px){.control-tower{margin:12px 10px}.tower-head{align-items:flex-start;flex-direction:column}.agent-grid,.tower-lower{grid-template-columns:1fr}.tower-metrics{grid-template-columns:1fr 1fr}}
+.national-index{margin:14px 18px 0;border:1px solid #cddbea;border-radius:16px;background:#fff;overflow:hidden}.index-head{display:flex;justify-content:space-between;gap:16px;align-items:center;padding:16px 17px;background:linear-gradient(125deg,#091c39,#174e82 72%,#0f7777);color:#fff}.index-head h3{margin:3px 0;color:#fff}.index-head p{margin:0;color:#d8e7f5}.index-mode{padding:7px 10px;border:1px solid #7be0d355;border-radius:999px;background:#3ae1c218;color:#a9fff1;font-size:10px;font-weight:850}.index-body{padding:14px 16px}.index-metrics{display:grid;grid-template-columns:repeat(6,1fr);gap:7px}.index-metric{padding:10px;border:1px solid #dce6f1;border-radius:11px;background:#f7faff}.index-metric small{display:block;color:#75859a;font-size:8px;text-transform:uppercase}.index-metric b{display:block;margin-top:4px;color:#102e57;font-size:18px}.index-tools{display:grid;grid-template-columns:1fr 170px 190px auto;gap:7px;margin:11px 0}.index-list{display:grid;gap:7px}.index-record{display:grid;grid-template-columns:minmax(190px,1.2fr) minmax(150px,.8fr) 110px 95px auto;gap:10px;align-items:center;padding:11px;border:1px solid #dde7f1;border-radius:11px;background:#fff}.index-record h4{margin:0;color:#102e57}.index-record small{color:#728299}.index-evidence{font-size:10px;color:#586b84}.index-source-count{color:#137f64;font-size:10px;font-weight:800}.index-warn{color:#9b6711}.dark-mode .national-index,.dark-mode .index-record{background:#0f1f37;border-color:#2d4562}.dark-mode .index-body{background:#0c1a2e}.dark-mode .index-metric{background:#122642;border-color:#2d4562}.dark-mode .index-metric b,.dark-mode .index-record h4{color:#edf5ff}@media(max-width:1050px){.index-metrics{grid-template-columns:repeat(3,1fr)}.index-record{grid-template-columns:1fr 1fr 90px}.index-record>*:last-child{grid-column:1/-1}}@media(max-width:700px){.national-index{margin:12px 10px}.index-head{align-items:flex-start;flex-direction:column}.index-metrics{grid-template-columns:1fr 1fr}.index-tools,.index-record{grid-template-columns:1fr}}
 
 /* Sprint 21 · Ash Agent Command Center */
 .agent-center{margin:14px 0;padding:0!important;overflow:hidden}.agent-center-head{display:flex;justify-content:space-between;gap:18px;align-items:center;padding:18px 20px;background:linear-gradient(125deg,#0d2347,#17467d 72%,#5c2748 140%);color:#fff}.agent-center-head h3{margin:4px 0;color:#fff!important}.agent-center-head p{margin:0;color:#dce9f7}.agent-center-head .kicker{color:#ff9eaa!important}.agent-center-body{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(300px,.8fr);gap:14px;padding:16px}.agent-roster{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}.agent-card{border:1px solid #d9e4f1;border-radius:12px;background:#f8fbff;padding:11px}.agent-card-top{display:flex;align-items:center;gap:7px}.agent-avatar{width:27px;height:27px;border-radius:9px;display:grid;place-items:center;background:#e8f0fe;color:#174b91;font-weight:950}.agent-card b{display:block;color:#0d2347;font-size:11px}.agent-card small{display:block;margin-top:6px;line-height:1.35}.agent-run-status{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:13px 0 8px}.agent-step{display:grid;grid-template-columns:35px minmax(0,1fr) auto;gap:9px;align-items:start;padding:10px 0;border-bottom:1px solid #e2eaf3}.agent-step:last-child{border-bottom:0}.agent-step-order{width:29px;height:29px;border-radius:50%;display:grid;place-items:center;background:#174ea6;color:#fff;font-weight:900;font-size:11px}.agent-step b{color:#0d2347}.agent-step-result{font-size:11px;color:#5d6f88;margin-top:4px;line-height:1.4}.agent-confidence{font-size:10px;font-weight:850;color:#174b91;white-space:nowrap}.agent-warning{color:#9a6210!important}.agent-plan-account{display:grid;grid-template-columns:30px minmax(0,1fr) auto;gap:9px;padding:10px;border:1px solid #dce5f0;border-radius:11px;margin:7px 0;background:#fff}.agent-plan-rank{font-weight:950;color:#174ea6}.agent-plan-account b{color:#0d2347}.agent-plan-account p{margin:4px 0;font-size:11px;line-height:1.4;color:#53647c}.agent-plan-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}.agent-principle{padding:10px 12px;border-left:4px solid #c6283d;background:#fdeff1;border-radius:0 10px 10px 0;font-size:11px;color:#65333b}.agent-empty{padding:22px;text-align:center;color:#718097;border:1px dashed #c7d4e3;border-radius:12px}.dark-mode .agent-center-head{background:linear-gradient(125deg,#081a36,#173d6b 72%,#4a203a)}.dark-mode .agent-card,.dark-mode .agent-plan-account{background:#101d34!important;border-color:#2b405f!important}.dark-mode .agent-card b,.dark-mode .agent-step b,.dark-mode .agent-plan-account b{color:#edf4ff}.dark-mode .agent-step{border-color:#2b405f}.dark-mode .agent-step-result,.dark-mode .agent-plan-account p{color:#aebed4}.dark-mode .agent-principle{background:#351d25;color:#f1c9d0}@media(max-width:1050px){.agent-center-body{grid-template-columns:1fr}.agent-roster{grid-template-columns:repeat(3,1fr)}}@media(max-width:650px){.agent-center-head{align-items:flex-start;flex-direction:column}.agent-roster{grid-template-columns:1fr 1fr}.agent-step{grid-template-columns:32px 1fr}.agent-confidence{grid-column:2}.agent-plan-account{grid-template-columns:28px 1fr}.agent-plan-account>button{grid-column:2}}
@@ -798,7 +799,7 @@ $('#pemail').textContent=p.email||'Not publicly listed';
 $('#pcontactactions').innerHTML=contactButtons(p)||'<span class="contact-missing">Open the source or company website to locate current contact information.</span>';
 $('#pcontactbadge').textContent=(p.phone||p.email)?'Direct contact ready':'Website contact available';
 $('#scores').innerHTML=[['Opportunity',p.score],['Growth',p.growth_score],['Government fit',p.gov_fit],['HELOC/Jumbo',p.niche_fit]].map(x=>`<div class=scorebox><span class=muted>${x[0]}</span><strong>${x[1]}</strong></div>`).join('');$('#psum').textContent=p.ai_summary;$('#preasons').innerHTML=p.score_reasons.map(x=>`<li>${esc(x)}</li>`).join('');$('#psource').innerHTML=[p.source_name?'<b>Source:</b> '+esc(p.source_name):'',p.source_url?'<a class="btn smallbtn" target="_blank" rel="noopener" href="'+esc(p.source_url)+'">Open source</a>':'',p.nmls?'<a class="btn smallbtn" target="_blank" rel="noopener" href="https://www.nmlsconsumeraccess.org/">Verify in NMLS Consumer Access</a>':'',p.verification_notes?'<div style="margin-top:8px">'+esc(p.verification_notes)+'</div>':''].filter(Boolean).join(' ');$('#pproducts').innerHTML=p.product_fit.split(',').filter(Boolean).map(x=>`<span class=tag>${esc(x.trim())}</span>`).join('');$('#pnext').textContent=p.next_best_action;$('#pcall').value=p.call_opener;$('#pobj').textContent=p.likely_objection;$('#presp').textContent=p.objection_response;$('#profileOut').onclick=()=>{show('outreach');$('#op').value=p.id;$('#profile').close()};renderMemory(p.memories);$('#profile').showModal()}
-$('#appVersion').textContent='VERSION 16.0 · AUTOPILOT CONTROL TOWER';
+$('#appVersion').textContent='VERSION 17.0 · NATIONAL BROKER INDEX';
 document.querySelector('nav [data-v="opportunityengine"]')?.insertAdjacentHTML('afterend','<button data-v="callprep">☎ Call Prep</button>');
 document.querySelector('nav [data-v="callprep"]')?.addEventListener('click',()=>show('callprep'));
 const WORKFLOW_NAV=[
@@ -895,10 +896,11 @@ let scoutStatesLoaded=false;
 function ensureScoutDiscovery(){
   const page=$('#prospects');if(!page||$('#scoutDiscovery'))return;
   const shell=document.createElement('div');shell.id='scoutDiscovery';shell.className='panel scout-discovery';
-  shell.innerHTML=`<div class="scout-head"><div><div class="kicker">SPRINT 22 · SCOUT WEB DISCOVERY</div><h3>Find newly established and newly licensed brokers</h3><p>Scout searches ordinary public web results, deduplicates discoveries, and stages every candidate for Clay’s review.</p></div><div class="scout-controls"><select id="scoutState" aria-label="Discovery state"><option value="NC">North Carolina</option><option value="SC">South Carolina</option></select><input id="scoutMetro" placeholder="Optional metro or city"><button class="btn start-day" id="runScoutBtn" type="button">⌖ Discover new brokers</button></div></div><div class="scout-body"><div class="scout-metrics"><div class="scout-metric"><small>Pending review</small><b id="scoutPending">0</b></div><div class="scout-metric"><small>Approved</small><b id="scoutApproved">0</b></div><div class="scout-metric"><small>Duplicates</small><b id="scoutDuplicates">0</b></div><div class="scout-metric"><small>Last run</small><b id="scoutLastRun" style="font-size:13px">Not run</b></div></div><div class="profile-head"><div><h3>Discovery Inbox</h3><p class="muted">Edit the guessed fields, inspect the evidence, verify licensing, then approve or reject.</p></div><select id="scoutStatus" onchange="scoutDiscovery()"><option>Pending review</option><option>Approved</option><option>Rejected</option><option>Duplicate</option><option>All</option></select></div><div id="scoutSources" class="scout-sources"></div><div id="scoutCandidates" class="scout-candidates"><div class="agent-empty">Scout has not searched this territory yet.</div></div><div class="scout-safety">Scout does not scrape NMLS or regulator portals. Official sources are provided for human verification, and no candidate enters Prospects or Outreach without approval.</div></div>`;
+  shell.innerHTML=`<div class="scout-head"><div><div class="kicker">CENTRAL SCOUT · PLATFORM DISCOVERY</div><h3>One national discovery system, shared by every user</h3><p>Scheduled Scout runs feed the Broker Index once. Customers search the shared index without triggering Google requests.</p></div><div class="scout-controls"><select id="scoutState" aria-label="Discovery state"><option value="NC">North Carolina</option><option value="SC">South Carolina</option></select><span class="index-mode">Customer Google search disabled</span></div></div><div class="scout-body"><div class="scout-metrics"><div class="scout-metric"><small>Pending review</small><b id="scoutPending">0</b></div><div class="scout-metric"><small>Approved</small><b id="scoutApproved">0</b></div><div class="scout-metric"><small>Duplicates</small><b id="scoutDuplicates">0</b></div><div class="scout-metric"><small>Last central run</small><b id="scoutLastRun" style="font-size:13px">Not run</b></div></div><div class="profile-head"><div><h3>Discovery Review Inbox</h3><p class="muted">Clay reviews staged discoveries before they can enter Prospects or the verified index.</p></div><select id="scoutStatus" onchange="scoutDiscovery()"><option>Pending review</option><option>Approved</option><option>Rejected</option><option>Duplicate</option><option>All</option></select></div><div id="scoutSources" class="scout-sources"></div><div id="scoutCandidates" class="scout-candidates"><div class="agent-empty">Central Scout has not searched this territory yet.</div></div><div class="scout-safety">Google content is not treated as permanent BrokerBeacon data. Company facts require an independent public source, and no candidate enters Prospects or Outreach without approval.</div></div>`;
   shell.querySelector('.scout-body').insertAdjacentHTML('beforebegin',`<section class="autopilot-shell" id="scoutAutopilot"><div class="autopilot-top"><div class="autopilot-title"><span class="autopilot-orb">✦</span><div><div class="kicker">SPRINT 23 · AGENT HANDOFF</div><h4>Scout Autopilot & Research Queue</h4><small class="muted">Scout discovers → Researcher enriches → Compliance flags → Ash ranks → Clay approves.</small></div></div><label class="autopilot-switch"><input id="autopilotEnabled" type="checkbox"> Autopilot</label></div><div class="autopilot-body"><div class="autopilot-grid"><div><label>Territory rotation</label><div class="autopilot-states" id="autopilotStates"></div></div><div><label>Cadence<select id="autopilotCadence" class="full"><option value="12">Every 12 hours</option><option value="24">Daily</option><option value="48">Every 2 days</option><option value="168">Weekly</option></select></label></div><div><label>States per run<input id="autopilotStatesPerRun" class="full" type="number" min="1" max="5" value="1"></label></div><div><label>Daily query budget<input id="autopilotBudget" class="full" type="number" min="2" max="100" value="12"></label></div><div><label>Research limit<input id="autopilotResearchLimit" class="full" type="number" min="1" max="40" value="12"></label></div></div><div class="autopilot-actions"><button class="btn" id="saveAutopilot">Save Autopilot</button><button class="btn primary" id="runAutopilotNow">Run agent pipeline now</button><span class="muted" id="autopilotNext"></span></div><div class="autopilot-summary"><div class="autopilot-stat"><small>Queries today</small><b id="autopilotQueries">0 / 0</b></div><div class="autopilot-stat"><small>States covered</small><b id="autopilotCovered">0</b></div><div class="autopilot-stat"><small>Research ready</small><b id="autopilotReady">0</b></div><div class="autopilot-stat"><small>Last agent run</small><b id="autopilotLast">Never</b></div></div><div class="coverage-strip" id="autopilotCoverage"></div><div class="research-queue"><div class="profile-head"><div><h4>Ash-ranked research queue</h4><small class="muted">Nothing enters Prospects or Outreach until you approve the underlying Scout candidate.</small></div><span class="pill" id="researchQueueCount">0 ready</span></div><div id="researchQueue"></div></div></div></section>`);
-  shell.querySelector('#scoutAutopilot').insertAdjacentHTML('beforebegin',`<section class="control-tower" id="scoutControlTower"><div class="tower-head"><div><div class="kicker">SPRINT 24 · AUTOPILOT CONTROL TOWER</div><h3>Your supervised AI workforce</h3><p>See every handoff, control spend, run a one-state pilot, and stop the pipeline instantly.</p></div><div class="tower-controls"><label>Pilot state<select id="towerPilotState"></select></label><label>Daily ceiling (cents)<input id="towerCostLimit" type="number" min="10" max="10000" step="10" value="100" style="width:95px"></label><button class="btn primary" id="runPilotNow">Run pilot now</button><button class="btn tower-stop" id="towerEmergencyStop">Emergency stop</button></div></div><div class="agent-grid" id="towerAgents"></div><div class="tower-metrics"><div class="tower-metric"><small>Queries today</small><b id="towerQueries">0</b></div><div class="tower-metric"><small>Estimated spend</small><b id="towerSpend">$0.00</b></div><div class="tower-metric"><small>Discovered</small><b id="towerDiscovered">0</b></div><div class="tower-metric"><small>Researched</small><b id="towerResearched">0</b></div><div class="tower-metric"><small>Duplicates</small><b id="towerDuplicates">0</b></div><div class="tower-metric"><small>Ready for Clay</small><b id="towerReady">0</b></div></div><div class="tower-lower"><div class="tower-box"><h4>Recent runs</h4><div id="towerRuns"></div></div><div class="tower-box"><h4>Agent activity</h4><div id="towerEvents"></div></div></div></section>`);
-  page.prepend(shell);$('#runScoutBtn').onclick=runScoutDiscovery;$('#scoutState').onchange=()=>scoutDiscovery();$('#saveAutopilot').onclick=saveScoutAutopilot;$('#runAutopilotNow').onclick=runScoutAutopilot;$('#runPilotNow').onclick=runScoutPilot;$('#towerEmergencyStop').onclick=toggleScoutEmergencyStop;$('#towerCostLimit').onchange=saveScoutControlTower;
+  shell.querySelector('#scoutAutopilot').insertAdjacentHTML('beforebegin',`<section class="control-tower" id="scoutControlTower"><div class="tower-head"><div><div class="kicker">SPRINT 24 · AUTOPILOT CONTROL TOWER</div><h3>Your supervised central AI workforce</h3><p>See every handoff, control platform spend, schedule shared discovery, and stop the pipeline instantly.</p></div><div class="tower-controls"><label>Daily ceiling (cents)<input id="towerCostLimit" type="number" min="10" max="10000" step="10" value="100" style="width:95px"></label><button class="btn tower-stop" id="towerEmergencyStop">Emergency stop</button></div></div><div class="agent-grid" id="towerAgents"></div><div class="tower-metrics"><div class="tower-metric"><small>Queries today</small><b id="towerQueries">0</b></div><div class="tower-metric"><small>Estimated spend</small><b id="towerSpend">$0.00</b></div><div class="tower-metric"><small>Discovered</small><b id="towerDiscovered">0</b></div><div class="tower-metric"><small>Researched</small><b id="towerResearched">0</b></div><div class="tower-metric"><small>Duplicates</small><b id="towerDuplicates">0</b></div><div class="tower-metric"><small>Ready for Clay</small><b id="towerReady">0</b></div></div><div class="tower-lower"><div class="tower-box"><h4>Recent runs</h4><div id="towerRuns"></div></div><div class="tower-box"><h4>Agent activity</h4><div id="towerEvents"></div></div></div></section>`);
+  shell.querySelector('#scoutControlTower').insertAdjacentHTML('beforebegin',`<section class="national-index" id="nationalBrokerIndex"><div class="index-head"><div><div class="kicker">SPRINT 25 · NATIONAL BROKER INDEX</div><h3>Discover once. Verify independently. Share nationally.</h3><p>Every user searches BrokerBeacon’s shared catalog—not Google. Each retained fact carries its own source and freshness date.</p></div><span class="index-mode">Shared index only</span></div><div class="index-body"><div class="index-metrics"><div class="index-metric"><small>Indexed brokers</small><b id="indexTotal">0</b></div><div class="index-metric"><small>States covered</small><b id="indexStates">0</b></div><div class="index-metric"><small>Source verified</small><b id="indexVerified">0</b></div><div class="index-metric"><small>Needs source</small><b id="indexNeedsSource">0</b></div><div class="index-metric"><small>Needs refresh</small><b id="indexStale">0</b></div><div class="index-metric"><small>Free queries left</small><b id="indexQueriesLeft">4,000</b></div></div><div class="index-tools"><input id="indexSearch" placeholder="Search company, NMLS, city, domain, specialty"><select id="indexState"><option value="All">All states</option></select><select id="indexVerification"><option>All</option><option>Source verified</option><option>Needs independent source</option><option>Needs verification</option></select><button class="btn" id="syncBrokerIndex">Sync stored records</button></div><div class="index-list" id="indexRecords"><div class="tower-empty">Building the shared index from stored records…</div></div></div></section>`);
+  page.prepend(shell);$('#scoutState').onchange=()=>scoutDiscovery();$('#saveAutopilot').onclick=saveScoutAutopilot;$('#runAutopilotNow').style.display='none';$('#towerEmergencyStop').onclick=toggleScoutEmergencyStop;$('#towerCostLimit').onchange=saveScoutControlTower;$('#indexSearch').oninput=brokerIndex;$('#indexState').onchange=brokerIndex;$('#indexVerification').onchange=brokerIndex;$('#syncBrokerIndex').onclick=syncBrokerIndex;
 }
 let autopilotStateLoaded=false;
 let scoutControlState=null,towerStatesLoaded=false;
@@ -918,33 +920,37 @@ async function scoutAutopilot(){
     $('#autopilotCoverage').innerHTML=d.coverage.length?d.coverage.map(x=>`<div class="coverage-state"><b>${esc(x.state)}</b>${x.run_count} run${x.run_count===1?'':'s'}<br>${x.discovery_count} found<br>${x.last_searched_at?esc(x.last_searched_at.slice(0,10)):'Not searched'}</div>`).join(''):'<div class="muted">Coverage appears after the first Autopilot run.</div>';
     renderResearchQueue(d.queue);
     await scoutControlTower(d.states);
+    await brokerIndex();
   }catch(e){$('#researchQueue').innerHTML=`<div class="agent-empty">${esc(e.message||'Unable to load Scout Autopilot.')}</div>`}
 }
 async function scoutControlTower(states=[]){
   const d=await api('/api/scout-control-tower');scoutControlState=d.control;
-  if(!towerStatesLoaded){$('#towerPilotState').innerHTML=states.map(x=>`<option value="${x.code}">${esc(x.name)}</option>`).join('');towerStatesLoaded=true}
-  $('#towerPilotState').value=d.control.pilot_state||'ME';$('#towerCostLimit').value=d.control.daily_cost_limit_cents;
+  $('#towerCostLimit').value=d.control.daily_cost_limit_cents;
   const stop=$('#towerEmergencyStop');stop.classList.toggle('active',!!d.control.emergency_stop);stop.textContent=d.control.emergency_stop?'Resume agents':'Emergency stop';
-  $('#runPilotNow').disabled=!!d.control.emergency_stop;
   $('#towerAgents').innerHTML=d.agents.map(x=>`<div class="agent-card"><div class="agent-card-top"><b>${esc(x.name)}</b><span class="agent-status ${x.status==='Working'?'working':''}">${esc(x.status)}</span></div><small>${esc(x.purpose)}</small><div class="reason">${esc(x.detail)}</div>${x.updated_at?`<small>${esc(x.updated_at.replace('T',' '))}</small>`:''}</div>`).join('');
   $('#towerQueries').textContent=d.cost.queries_today;$('#towerSpend').textContent=`$${(+d.cost.estimated_cents/100).toFixed(2)}`;$('#towerDiscovered').textContent=d.quality.discovered;$('#towerResearched').textContent=d.quality.researched;$('#towerDuplicates').textContent=d.quality.duplicates;$('#towerReady').textContent=d.quality.ready_for_review;
   $('#towerRuns').innerHTML=d.runs.length?d.runs.slice(0,6).map(x=>`<div class="tower-run"><b>#${x.id} ${esc((JSON.parse(x.states_json||'[]')).join(', '))}</b><span>${x.discovery_count} found · ${x.researched_count} researched · ${x.query_count} queries${x.error?`<br><span class="warn">${esc(x.error)}</span>`:''}</span><span>${esc(x.status)}</span></div>`).join(''):'<div class="tower-empty">No controlled runs yet.</div>';
   $('#towerEvents').innerHTML=d.events.length?d.events.slice(0,8).map(x=>`<div class="tower-run"><b>${esc(x.agent)}</b><span>${esc(x.detail)}</span><span>${esc(x.status)}</span></div>`).join(''):'<div class="tower-empty">Agent activity appears after the first pilot.</div>';
 }
+async function brokerIndex(){
+  if(!$('#nationalBrokerIndex'))return;
+  const params=new URLSearchParams({search:$('#indexSearch').value,state:$('#indexState').value,verification:$('#indexVerification').value});
+  try{
+    const d=await api('/api/broker-index?'+params);
+    if($('#indexState').options.length===1){$('#indexState').innerHTML='<option value="All">All states</option>'+d.states.map(x=>`<option value="${x.code}">${esc(x.name)}</option>`).join('')}
+    $('#indexTotal').textContent=d.metrics.total||0;$('#indexStates').textContent=d.metrics.states||0;$('#indexVerified').textContent=d.metrics.verified||0;$('#indexNeedsSource').textContent=d.metrics.needs_source||0;$('#indexStale').textContent=d.metrics.stale||0;$('#indexQueriesLeft').textContent=(d.settings.monthly_queries_remaining||0).toLocaleString();
+    $('#indexRecords').innerHTML=d.items.length?d.items.slice(0,100).map(x=>`<div class="index-record"><div><h4>${esc(x.company)}</h4><small>${esc(x.city||'Location unconfirmed')}${x.state?', '+esc(x.state):''}${x.nmls?' · NMLS '+esc(x.nmls):''}</small></div><div class="index-evidence">${esc(x.website_domain||x.evidence_summary||'Independent source needed')}<br><span class="${x.source_count?'index-source-count':'index-warn'}">${x.source_count} sourced field${x.source_count===1?'':'s'}</span></div><div><span class="pill">${esc(x.verification_status)}</span></div><div><b>${x.confidence}%</b><br><small>${x.refreshed_at?esc(x.refreshed_at.slice(0,10)):'Not refreshed'}</small></div><div>${x.prospect_id?`<button class="btn smallbtn" onclick="profile(${x.prospect_id})">Open prospect</button>`:''}${x.website?` <a class="btn smallbtn" target="_blank" rel="noopener" href="${esc(safeUrl(x.website))}">Website</a>`:''}</div></div>`).join(''):'<div class="tower-empty">No shared index records match these filters.</div>';
+  }catch(e){$('#indexRecords').innerHTML=`<div class="tower-empty">${esc(e.message||'Unable to load the National Broker Index.')}</div>`}
+}
+async function syncBrokerIndex(){const b=$('#syncBrokerIndex');b.disabled=true;b.textContent='Syncing…';try{const d=await api('/api/broker-index/sync',{method:'POST'});msg(`${d.total} shared records · ${d.new} new`);await brokerIndex()}finally{b.disabled=false;b.textContent='Sync stored records'}}
 async function saveScoutControlTower(){
-  const payload={pilot_state:$('#towerPilotState').value,daily_cost_limit_cents:+$('#towerCostLimit').value,estimated_query_cost_micros:scoutControlState?.estimated_query_cost_micros||32000,emergency_stop:!!scoutControlState?.emergency_stop};
+  const payload={pilot_state:scoutControlState?.pilot_state||'ME',daily_cost_limit_cents:+$('#towerCostLimit').value,estimated_query_cost_micros:scoutControlState?.estimated_query_cost_micros||32000,emergency_stop:!!scoutControlState?.emergency_stop};
   await api('/api/scout-control-tower',{method:'PUT',body:JSON.stringify(payload)});msg('Control Tower settings saved');await scoutControlTower();
 }
 async function toggleScoutEmergencyStop(){
   const stopping=!scoutControlState?.emergency_stop;
-  const payload={pilot_state:$('#towerPilotState').value,daily_cost_limit_cents:+$('#towerCostLimit').value,estimated_query_cost_micros:scoutControlState?.estimated_query_cost_micros||32000,emergency_stop:stopping};
+  const payload={pilot_state:scoutControlState?.pilot_state||'ME',daily_cost_limit_cents:+$('#towerCostLimit').value,estimated_query_cost_micros:scoutControlState?.estimated_query_cost_micros||32000,emergency_stop:stopping};
   await api('/api/scout-control-tower',{method:'PUT',body:JSON.stringify(payload)});msg(stopping?'All Scout agents stopped':'Scout agents ready · Autopilot remains paused until enabled');await scoutAutopilot();
-}
-async function runScoutPilot(){
-  const b=$('#runPilotNow'),state=$('#towerPilotState').value;b.disabled=true;b.textContent=`Running ${state} pilot…`;
-  try{await saveScoutControlTower();const d=await api('/api/scout-control-tower/pilot',{method:'POST',body:JSON.stringify({state})});msg(`${state} pilot complete · ${d.discoveries} discovered · ${d.researched} researched`);await Promise.all([scoutAutopilot(),scoutDiscovery()])}
-  catch(e){msg(e.message||`${state} pilot could not complete`);await scoutControlTower()}
-  finally{b.disabled=!!scoutControlState?.emergency_stop;b.textContent='Run pilot now'}
 }
 async function saveScoutAutopilot(){
   const payload={enabled:$('#autopilotEnabled').checked,states:autopilotSelectedStates(),cadence_hours:+$('#autopilotCadence').value,states_per_run:+$('#autopilotStatesPerRun').value,daily_query_budget:+$('#autopilotBudget').value,research_limit:+$('#autopilotResearchLimit').value};
@@ -1752,6 +1758,132 @@ def prospects():
     except ValueError: min_score=0
     with db() as c: rows=c.execute("select * from prospects order by score desc, company").fetchall()
     return jsonify([dict(x) for x in rows if (st=="All" or x["state"]==st) and (sg=="All" or x["signal"]==sg) and (ps=="All statuses" or x["status"]==ps) and int(x["score"] or 0)>=min_score and (not q or q in (x["company"]+" "+(x["owner"]or"")+" "+(x["city"]or"")).lower())])
+
+def _index_domain(value):
+    try:
+        host=urllib.parse.urlparse(value if '://' in (value or '') else 'https://'+(value or '')).netloc.lower()
+        return host[4:] if host.startswith('www.') else host
+    except Exception:return ''
+
+def _index_key(company,state='',nmls='',website=''):
+    if (nmls or '').strip():return 'nmls:'+re.sub(r'\D','',nmls)
+    domain=_index_domain(website)
+    if domain:return 'domain:'+domain
+    name=re.sub(r'[^a-z0-9]+',' ',(company or '').lower()).strip()
+    return 'name:'+name+'|'+(state or '').upper()
+
+def _index_independent(source_url,source_name=''):
+    value=((source_url or '')+' '+(source_name or '')).lower()
+    return bool(source_url) and not any(x in value for x in ('google.com','googleapis.com','google maps','maps.google'))
+
+def _index_upsert(c,item,source_type,source_url,source_name='',prospect_id=0,candidate_id=0):
+    company=(item.get('company') or item.get('result_title') or '').strip()
+    if not company:return 0
+    state=(item.get('state') or '').upper();nmls=(item.get('nmls') or '').strip();website=(item.get('website') or '').strip()
+    key=_index_key(company,state,nmls,website);now=NOW();independent=_index_independent(source_url,source_name)
+    existing=c.execute("""select * from broker_index where canonical_key=?
+                          or (?!='' and nmls=?)
+                          or (?!='' and website_domain=?)
+                          or (lower(trim(company))=lower(trim(?)) and state=?)
+                          order by case when canonical_key=? then 0 else 1 end limit 1""",
+                       (key,nmls,nmls,_index_domain(website),_index_domain(website),company,state,key)).fetchone()
+    verification=(item.get('verification_status') or ('Source verified' if independent and item.get('verified_at') else 'Independent source found' if independent else 'Needs independent source'))
+    confidence=max(0,min(100,int(item.get('confidence') or item.get('score') or 0)))
+    values={'company':company,'nmls':nmls,'website':website,'website_domain':_index_domain(website),
+            'google_place_id':(item.get('google_place_id') or '').strip(),
+            'phone':(item.get('phone') or '').strip(),'email':(item.get('email') or '').strip(),
+            'city':(item.get('city') or item.get('metro') or '').strip(),'state':state,
+            'specialties':(item.get('specialties') or item.get('growth_signals') or '').strip(),
+            'evidence_summary':(item.get('evidence') or item.get('verification_notes') or item.get('signal') or '')[:1200],
+            'verification_status':verification,'confidence':confidence,'prospect_id':int(prospect_id or 0),
+            'scout_candidate_id':int(candidate_id or 0),'last_verified_at':item.get('verified_at') or (now if independent else '')}
+    if existing:
+        merged=dict(existing)
+        for field,value in values.items():
+            if value and (field not in ('confidence',) or int(value)>int(merged.get(field) or 0)):merged[field]=value
+        c.execute("""update broker_index set company=?,nmls=?,website=?,website_domain=?,google_place_id=?,phone=?,email=?,city=?,state=?,specialties=?,
+                     evidence_summary=?,verification_status=?,confidence=?,prospect_id=?,scout_candidate_id=?,last_verified_at=?,
+                     refreshed_at=?,updated_at=? where id=?""",
+                  tuple(merged[x] for x in ('company','nmls','website','website_domain','google_place_id','phone','email','city','state','specialties',
+                  'evidence_summary','verification_status','confidence','prospect_id','scout_candidate_id','last_verified_at'))+(now,now,existing['id']))
+        index_id=existing['id']
+    else:
+        cur=c.execute("""insert into broker_index(canonical_key,company,nmls,website,website_domain,google_place_id,phone,email,city,state,specialties,
+                     evidence_summary,verification_status,confidence,source_count,prospect_id,scout_candidate_id,first_discovered_at,
+                     last_verified_at,refreshed_at,created_at,updated_at) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,0,?,?,?,?,?,?,?)""",
+                  (key,values['company'],values['nmls'],values['website'],values['website_domain'],values['google_place_id'],values['phone'],values['email'],
+                   values['city'],values['state'],values['specialties'],values['evidence_summary'],values['verification_status'],
+                   values['confidence'],values['prospect_id'],values['scout_candidate_id'],now,values['last_verified_at'],now,now,now))
+        index_id=cur.lastrowid
+    if source_url:
+        for field in ('company','nmls','website','phone','email','city','state','specialties'):
+            value=values.get(field)
+            if value:c.execute("""insert or ignore into broker_index_sources(broker_index_id,field_name,field_value,source_type,source_url,
+                                independently_verified,captured_at,refresh_after) values(?,?,?,?,?,?,?,?)""",
+                               (index_id,field,str(value),source_type,source_url,int(independent),now,
+                                (datetime.now()+timedelta(days=30)).isoformat(timespec='seconds')))
+    count=c.execute("select count(*) from broker_index_sources where broker_index_id=?",(index_id,)).fetchone()[0]
+    c.execute("update broker_index set source_count=? where id=?",(count,index_id))
+    return index_id
+
+def _sync_broker_index():
+    created_before=0
+    with db() as c:
+        created_before=c.execute("select count(*) from broker_index").fetchone()[0]
+        for row in c.execute("select * from prospects"):
+            p=dict(row)
+            google_origin=not _index_independent(p.get('source_url') or '',p.get('source_name') or '') and 'google' in ((p.get('source_url') or '')+' '+(p.get('source_name') or '')).lower()
+            if google_origin and not p.get('verified_at'):continue
+            _index_upsert(c,p,'Prospect source',p.get('source_url') or '',p.get('source_name') or '',prospect_id=p['id'])
+        for row in c.execute("""select c.*,r.growth_signals,r.website_status,r.researched_at,r.public_email research_email,
+                                      r.public_phone research_phone,r.nmls_clue research_nmls
+                               from scout_candidates c join scout_research r on r.candidate_id=c.id
+                               where r.website_status='Public website reached' and r.researched_at!=''"""):
+            s=dict(row)
+            independent={'company':s.get('company') or s.get('result_title'),'state':s.get('state'),'city':s.get('metro'),
+                         'website':s.get('website'),'email':s.get('research_email') or '','phone':s.get('research_phone') or '',
+                         'nmls':s.get('research_nmls') or '','specialties':s.get('growth_signals') or '',
+                         'evidence':'Independently researched from the public company website.',
+                         'confidence':s.get('confidence'),'google_place_id':s.get('google_place_id') or ''}
+            _index_upsert(c,independent,'Independent company website',s.get('website') or '','Company website',
+                          candidate_id=s['id'],prospect_id=s.get('approved_prospect_id') or 0)
+        total=c.execute("select count(*) from broker_index").fetchone()[0]
+        c.execute("update broker_index_settings set last_sync_at=?,updated_at=? where id=1",(NOW(),NOW()))
+        c.execute("insert into broker_index_events(event_type,detail,created_at) values(?,?,?)",
+                  ('Index synchronized',f'{total} shared broker records · {total-created_before} new',NOW()))
+    return {'total':total,'new':total-created_before}
+
+@app.get('/api/broker-index')
+def broker_index():
+    with db() as c:index_empty=c.execute("select count(*) from broker_index").fetchone()[0]==0
+    if index_empty:_sync_broker_index()
+    q=(request.args.get('search') or '').lower();state=(request.args.get('state') or 'All').upper()
+    verification=request.args.get('verification') or 'All'
+    with db() as c:
+        settings=dict(c.execute("select * from broker_index_settings where id=1").fetchone())
+        rows=[]
+        for row in c.execute("select * from broker_index order by confidence desc,company limit 500"):
+            item=dict(row)
+            if state!='ALL' and item['state']!=state:continue
+            if verification!='All' and item['verification_status']!=verification:continue
+            if q and q not in ' '.join(str(item.get(x) or '') for x in ('company','nmls','city','state','website_domain','specialties')).lower():continue
+            item['sources']=[dict(x) for x in c.execute("select * from broker_index_sources where broker_index_id=? order by independently_verified desc,id desc",(item['id'],))]
+            rows.append(item)
+        metrics=dict(c.execute("""select count(*) total,count(distinct case when state!='' then state end) states,
+            sum(case when verification_status='Needs independent source' then 1 else 0 end) needs_source,
+            sum(case when last_verified_at!='' then 1 else 0 end) verified from broker_index""").fetchone())
+        month=datetime.now().strftime('%Y-%m')
+        used=c.execute("select coalesce(sum(query_count),0) from scout_runs where substr(started_at,1,7)=?",(month,)).fetchone()[0]
+        stale=c.execute("select count(*) from broker_index where refreshed_at='' or refreshed_at<?",((datetime.now()-timedelta(days=int(settings['refresh_days']))).isoformat(timespec='seconds'),)).fetchone()[0]
+    settings['monthly_queries_used']=used;settings['monthly_queries_remaining']=max(0,int(settings['monthly_query_limit'])-used)
+    metrics['stale']=stale
+    return jsonify(items=rows,metrics=metrics,settings=settings,states=[{'code':k,'name':v} for k,v in sorted(US_STATES.items(),key=lambda x:x[1])])
+
+@app.post('/api/broker-index/sync')
+def sync_broker_index():
+    blocked=reject_demo_write()
+    if blocked:return blocked
+    return jsonify(ok=True,**_sync_broker_index())
 
 @app.get("/api/prospects/<int:pid>")
 def prospect(pid):
@@ -3010,7 +3142,8 @@ def _scout_candidate_from_result(result,state,metro):
         'nmls':nmls_match.group(1) if nmls_match else '','owner':'',
         'email':email_match.group(0) if email_match else '','phone':phone,
         'website':website,'linkedin_url':linkedin,'signal':signal,'evidence':snippet[:900],
-        'source_name':result.get('source_name') or 'Public web search','source_url':source_url,'confidence':min(90,confidence)
+        'source_name':result.get('source_name') or 'Public web search','source_url':source_url,
+        'google_place_id':result.get('place_id') or '','confidence':min(90,confidence)
     }
 
 @app.get('/api/scout-discovery')
@@ -3067,9 +3200,9 @@ def _run_scout_territory(state,metro='',run_source='Manual'):
             if not duplicate_pid and candidate['company']:
                 row=c.execute("select id from prospects where lower(trim(company))=lower(trim(?)) and state=? limit 1",(candidate['company'],state)).fetchone();duplicate_pid=row['id'] if row else 0
             candidate_status='Duplicate' if duplicate_pid else 'Pending review'
-            cur=c.execute("""insert into scout_candidates(run_id,company,result_title,state,metro,nmls,owner,email,phone,website,linkedin_url,signal,evidence,source_name,source_url,status,confidence,duplicate_prospect_id,discovered_at)
-                         values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
-                      (run_id,candidate['company'],candidate['result_title'],state,metro,candidate['nmls'],candidate['owner'],candidate['email'],candidate['phone'],candidate['website'],candidate['linkedin_url'],candidate['signal'],candidate['evidence'],candidate['source_name'],candidate['source_url'],candidate_status,candidate['confidence'],duplicate_pid,NOW()))
+            cur=c.execute("""insert into scout_candidates(run_id,company,result_title,state,metro,nmls,owner,email,phone,website,linkedin_url,signal,evidence,source_name,source_url,status,confidence,duplicate_prospect_id,discovered_at,google_place_id)
+                         values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                      (run_id,candidate['company'],candidate['result_title'],state,metro,candidate['nmls'],candidate['owner'],candidate['email'],candidate['phone'],candidate['website'],candidate['linkedin_url'],candidate['signal'],candidate['evidence'],candidate['source_name'],candidate['source_url'],candidate_status,candidate['confidence'],duplicate_pid,NOW(),candidate['google_place_id']))
             if duplicate_pid:duplicate_count+=1
             else:new_count+=1;discovered_ids.append(cur.lastrowid)
         final_status='Completed' if unique or not errors else 'Failed'
@@ -3088,11 +3221,7 @@ def _run_scout_territory(state,metro='',run_source='Manual'):
 def run_scout_discovery():
     blocked=reject_demo_write()
     if blocked:return blocked
-    d=request.get_json(silent=True) or {}
-    try:result=_run_scout_territory(d.get('state') or 'NC',d.get('metro') or '','Manual')
-    except ValueError as exc:return jsonify(error=str(exc)),400
-    except Exception as exc:return jsonify(error='Public web search was unavailable. Scout recorded the failed run; try again later.',detail=str(exc)[:180]),502
-    return jsonify(result)
+    return jsonify(error='Customer-triggered Google searches are disabled. National Scout searches centrally and shares one Broker Index with every user.'),403
 
 def _scout_public_page(url):
     parsed=urllib.parse.urlparse(url or '')
@@ -3263,16 +3392,20 @@ def _run_scout_autopilot(force=False,selected_states=None):
     with db() as c:
         s=dict(c.execute("select * from scout_autopilot where id=1").fetchone())
         control=dict(c.execute("select * from scout_control_settings where id=1").fetchone())
+        index_settings=dict(c.execute("select * from broker_index_settings where id=1").fetchone())
         if control['emergency_stop']:return {'skipped':True,'reason':'Emergency stop is active. Resume the Control Tower before running agents.'}
         if not s['enabled'] and not force:return {'skipped':True,'reason':'Autopilot is paused.'}
         if not force and s.get('next_run_at') and datetime.fromisoformat(s['next_run_at'])>datetime.now():return {'skipped':True,'reason':'Next run is not due.'}
         states=[x for x in json.loads(s['states_json'] or '[]') if x in US_STATES]
         today=datetime.now().date().isoformat()
         spent=c.execute("select coalesce(sum(query_count),0) from scout_autopilot_runs where substr(started_at,1,10)=?",(today,)).fetchone()[0]
+        month=datetime.now().strftime('%Y-%m')
+        month_spent=c.execute("select coalesce(sum(query_count),0) from scout_runs where substr(started_at,1,7)=?",(month,)).fetchone()[0]
+        month_remaining=max(0,int(index_settings['monthly_query_limit'])-month_spent)
         remaining=max(0,int(s['daily_query_budget'])-spent)
         remaining_cost_micros=max(0,int(control['daily_cost_limit_cents'])*10000-spent*int(control['estimated_query_cost_micros']))
         affordable_queries=remaining_cost_micros//max(1,int(control['estimated_query_cost_micros']))
-        remaining=min(remaining,affordable_queries)
+        remaining=min(remaining,affordable_queries,month_remaining)
         state_limit=min(int(s['states_per_run']),remaining//2)
         if state_limit<1:return {'skipped':True,'reason':'Daily query or estimated cost ceiling reached.'}
         coverage={r['state']:r['last_searched_at'] for r in c.execute("select state,last_searched_at from scout_coverage")}
@@ -3306,25 +3439,20 @@ def _run_scout_autopilot(force=False,selected_states=None):
                   (status,queries,discoveries,researched,duplicates,'; '.join(errors)[:1000],NOW(),autopilot_id))
         c.execute("update scout_autopilot set last_run_at=?,next_run_at=?,updated_at=? where id=1",(NOW(),next_run,NOW()))
         c.execute("insert into activity(action,detail,created_at) values(?,?,?)",('Scout Autopilot completed',f"{', '.join(chosen)} · {discoveries} discoveries · {researched} researched · no outreach sent",NOW()))
+    _sync_broker_index()
     return {'ok':True,'run_id':autopilot_id,'states':chosen,'queries':queries,'discoveries':discoveries,'researched':researched,'duplicates':duplicates,'errors':errors,'next_run_at':next_run}
 
 @app.post('/api/scout-autopilot/run')
 def run_scout_autopilot_now():
     blocked=reject_demo_write()
     if blocked:return blocked
-    result=_run_scout_autopilot(force=True)
-    return jsonify(result),200 if not result.get('skipped') else 409
+    return jsonify(error='Manual Google runs are disabled in Shared Index mode. Configure the central schedule so one Scout run refreshes the catalog for every user.'),403
 
 @app.post('/api/scout-control-tower/pilot')
 def run_scout_pilot():
     blocked=reject_demo_write()
     if blocked:return blocked
-    d=request.get_json(silent=True) or {}
-    with db() as c:control=dict(c.execute("select * from scout_control_settings where id=1").fetchone())
-    state=str(d.get('state') or control['pilot_state'] or 'ME').upper()
-    if state not in US_STATES:return jsonify(error='Choose a valid U.S. pilot state.'),400
-    result=_run_scout_autopilot(force=True,selected_states=[state])
-    return jsonify(result),200 if not result.get('skipped') else 409
+    return jsonify(error='Manual Google pilots are disabled in Shared Index mode. Users search the centrally maintained National Broker Index instead.'),403
 
 @app.post('/api/scout-candidates/<int:candidate_id>/research')
 def research_scout_candidate(candidate_id):
