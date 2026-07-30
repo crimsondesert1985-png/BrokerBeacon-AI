@@ -336,6 +336,32 @@ create index if not exists idx_broker_index_sources_item on broker_index_sources
 insert or ignore into broker_index_settings(id,customer_search_mode,customer_google_search,monthly_query_limit,refresh_days,enabled_states_json,last_sync_at,updated_at)
 values(1,'Shared index only',0,4000,30,'[]','',datetime('now'));
 update scout_autopilot set enabled=0,next_run_at='',updated_at=datetime('now') where id=1;
+"""),
+(16, "broker_index_population_engine", """
+create table if not exists index_population_queue(
+    state text primary key,
+    state_name text not null,
+    priority integer not null default 0,
+    status text not null default 'Queued',
+    reason text default '',
+    broker_count integer not null default 0,
+    run_count integer not null default 0,
+    last_searched_at text default '',
+    next_run_at text default '',
+    estimated_queries integer not null default 2,
+    updated_at text not null
+);
+create table if not exists index_population_settings(
+    id integer primary key check(id=1),
+    enabled integer not null default 0,
+    target_brokers_per_state integer not null default 25,
+    monthly_query_reserve integer not null default 1000,
+    refresh_days integer not null default 30,
+    updated_at text not null
+);
+create index if not exists idx_population_queue_priority on index_population_queue(status,priority desc,state);
+insert or ignore into index_population_settings(id,enabled,target_brokers_per_state,monthly_query_reserve,refresh_days,updated_at)
+values(1,0,25,1000,30,datetime('now'));
 """)
 ]
 
