@@ -10,8 +10,8 @@ from voice_agent import configured as voice_configured, create_twilio_call, huma
 from guideline_index import seed_index, index_fha_pdf, search as search_guideline_index, stats as guideline_index_stats
 
 app = Flask(__name__)
-BUILD_VERSION = "12.3"
-BUILD_NAME = "OPPORTUNITY ENGINE"
+BUILD_VERSION = "12.4"
+BUILD_NAME = "CALL PREP WORKSPACE"
 DB = Path(__file__).with_name("brokerbeacon.db")
 NOW = lambda: datetime.now().isoformat(timespec="seconds")
 
@@ -299,6 +299,9 @@ body.dark-mode .production-kpi,body.dark-mode .production-company{background:#10
 
 /* v12.3 Opportunity Engine */
 .oe-toolbar{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin:15px 0}.oe-filters{display:flex;gap:8px;flex-wrap:wrap}.oe-filters select{min-width:145px}.oe-list{display:grid;gap:12px}.oe-card{display:grid;grid-template-columns:76px minmax(0,1fr) auto;gap:15px;align-items:center;border:1px solid var(--line);border-radius:15px;background:#fff;padding:16px;box-shadow:0 5px 17px rgba(13,35,71,.05)}.oe-card:hover{border-color:#9db7d6;box-shadow:0 11px 27px rgba(13,35,71,.09)}.oe-score{width:65px;height:65px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(#174ea6 calc(var(--oe)*1%),#e5ebf3 0);position:relative}.oe-score:after{content:"";position:absolute;inset:8px;border-radius:50%;background:#fff}.oe-score strong{position:relative;z-index:1;color:#0d2347;font-size:20px}.oe-title{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.oe-title h4{margin:0;color:#0d2347}.oe-tier{display:inline-flex;padding:4px 8px;border-radius:999px;font-size:10px;font-weight:900}.oe-hot{background:#fdecef;color:#a51e33}.oe-warm{background:#fff3d2;color:#7c5700}.oe-watch{background:#e8f0fe;color:#174b91}.oe-research{background:#edf1f5;color:#526176}.oe-money{display:inline-flex;padding:5px 8px;border-radius:999px;background:#e5f6eb;color:#17653a;font-size:10px;font-weight:900}.oe-confidence{font-size:10px;color:#60708a}.oe-components{display:grid;grid-template-columns:repeat(5,minmax(90px,1fr));gap:7px;margin:9px 0}.oe-component{padding:8px;border-radius:9px;background:#f4f7fb;border:1px solid #e0e7f0}.oe-component small{display:block;color:#6b7b92;font-size:9px;text-transform:uppercase}.oe-component b{display:block;color:#173c70;margin-top:3px}.oe-explain{font-size:11px;color:#50637f;line-height:1.5}.oe-next{margin-top:7px;padding:9px 11px;border-left:3px solid #174ea6;background:#f2f7fe;border-radius:0 9px 9px 0;color:#304966;font-size:12px}.oe-actions{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}.dark-mode .oe-card,.dark-mode .oe-score:after{background:#101d34!important;border-color:#2b405f!important}.dark-mode .oe-title h4,.dark-mode .oe-score strong,.dark-mode .oe-component b{color:#edf4ff!important}.dark-mode .oe-component{background:#14223a;border-color:#2b405f}.dark-mode .oe-explain,.dark-mode .oe-confidence{color:#aebed4}.dark-mode .oe-next{background:#162946;color:#c3d3e7}.dark-mode .oe-score{background:conic-gradient(#4d91ea calc(var(--oe)*1%),#263750 0)}@media(max-width:900px){.oe-card{grid-template-columns:65px 1fr}.oe-actions{grid-column:1/-1;justify-content:flex-start}.oe-components{grid-template-columns:repeat(3,1fr)}}@media(max-width:580px){.oe-components{grid-template-columns:repeat(2,1fr)}.oe-filters{width:100%}.oe-filters select{flex:1;min-width:120px}}
+
+/* Sprint 15 · Call Prep Workspace */
+.cp-layout{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(300px,.75fr);gap:14px}.cp-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.cp-card{border:1px solid var(--line);border-radius:14px;background:#fff;padding:16px}.cp-card h3{margin:3px 0 10px;color:#0d2347}.cp-list{display:grid;gap:8px}.cp-item{padding:10px 12px;border:1px solid #e0e7f0;border-radius:10px;background:#f7f9fc;line-height:1.45}.cp-opener{padding:16px;border-left:4px solid #174ea6;border-radius:0 12px 12px 0;background:#f2f7fe;font-size:15px;line-height:1.55;color:#183554}.cp-score-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.cp-score{padding:11px;border-radius:10px;background:#f4f7fb;text-align:center}.cp-score small{display:block;color:#6b7b92;text-transform:uppercase;font-size:9px}.cp-score strong{display:block;margin-top:4px;color:#173c70;font-size:20px}.cp-contact{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.cp-actions{display:flex;gap:8px;flex-wrap:wrap}.dark-mode .cp-card{background:#101d34;border-color:#2b405f}.dark-mode .cp-card h3,.dark-mode .cp-score strong{color:#edf4ff}.dark-mode .cp-item,.dark-mode .cp-score{background:#14223a;border-color:#2b405f}.dark-mode .cp-opener{background:#162946;color:#d5e3f5}@media(max-width:950px){.cp-layout{grid-template-columns:1fr}.cp-grid{grid-template-columns:1fr}}@media(max-width:600px){.cp-score-row{grid-template-columns:repeat(2,1fr)}}
 </style></head><body><div class="app"><aside><div class="brand">Broker<span>Beacon</span> AI</div><div class="version" id="appVersion">VERSION 12.3 · OPPORTUNITY ENGINE</div><nav><button class="active" data-v="dashboard">✦ Ash Workplace</button><button data-v="salescoach">◈ Ash Sales Coach</button><button data-v="voiceagent">☎ AI Voice Agent</button><button data-v="copilot">✦ AI Copilot</button><button data-v="daily">⚡ Daily Plan</button><button data-v="prospects">◉ Prospects</button><button data-v="brokerdna">🧬 Broker DNA</button><button data-v="opportunityengine">◈ Opportunity Engine</button><button data-v="outreach">✎ Outreach</button><button data-v="marketing">✦ Marketing Center</button><button data-v="campaigns">✉ Campaigns</button><button data-v="inbox">↩ Reply Inbox</button><button data-v="intelligence">◆ Opportunity Intelligence</button><button data-v="templates">▤ Templates & Sequences</button><button data-v="pipeline">▦ Pipeline</button><button data-v="followups">✓ Follow-ups</button><button data-v="territory">⌖ Territory</button><button data-v="guidelines">▣ Loan Guidelines</button><button data-v="production">▤ Production Intelligence</button><button data-v="boss">◆ Executive View</button><button data-v="integrations">⚙ Integrations</button></nav></aside><main><div class="top"><div><small>AI OPERATING SYSTEM FOR WHOLESALE AES</small><h1 id="title">Ash Workplace</h1></div><div class="actions"><span class="today-chip" id="todayChip"></span><button class="btn ash-global-trigger" id="globalAshBtn" type="button" aria-label="Open global Ash assistant">✦ Ask Ash</button><button class="btn theme-toggle" id="themeToggle" type="button" aria-label="Toggle dark mode">◐ Theme</button><button class="btn" id="import">Compliant Import</button><a class="btn" href="/api/export">Export CSV</a><button class="btn primary" id="add">+ Add Prospect</button></div></div>
 <section id="dashboard" class="view active">
 <div class="command-hero">
@@ -336,6 +339,27 @@ body.dark-mode .production-kpi,body.dark-mode .production-company{background:#10
 <div class="oe-toolbar"><div><div class="kicker">PORTFOLIO OPPORTUNITY RANKING</div><h3 style="margin:4px 0">Top opportunities</h3></div><div class="oe-filters"><select id="oeTier" onchange="renderOpportunityEngine()"><option value="All">All priorities</option><option value="Hot">Hot</option><option value="Warm">Warm</option><option value="Watch">Watch</option><option value="Research">Research</option></select><select id="oeState" onchange="renderOpportunityEngine()"><option value="All">All states</option></select><select id="oeProduct" onchange="renderOpportunityEngine()"><option value="All">All products</option></select><button class="btn" onclick="opportunityEngine()">Recalculate</button></div></div>
 <div class="panel"><div id="oeList" class="oe-list"><div class="empty">Calculating portfolio opportunities…</div></div></div>
 <div class="grid" style="margin-top:14px"><div class="panel"><div class="kicker">HOW IT SCORES</div><h3>Transparent prioritization</h3><div id="oeMethod" class="dna-method">Loading methodology…</div></div><div class="panel"><div class="kicker">HOW TO USE IT</div><h3>Move from insight to execution</h3><div class="dna-method"><p><b>Hot:</b> Work today with a personalized call or email.</p><p><b>Warm:</b> Create a relevant product conversation this week.</p><p><b>Watch:</b> Improve data or schedule a deliberate follow-up.</p><p><b>Research:</b> Verify the contact and account signal before spending selling time.</p></div></div></div>
+</section>
+<section id="callprep" class="view">
+<div class="ux-page-hero"><div><div class="kicker">SPRINT 15 · CALL PREP WORKSPACE</div><h2 id="cpCompany">Choose an account to prepare the conversation.</h2><p id="cpSubtitle">Open Call Prep from Opportunity Engine or Ash Workplace to assemble the contact, opportunity, talking points, objections, and relationship history in one place.</p></div><span class="ux-page-badge" id="cpBadge">Database-grounded</span></div>
+<div id="cpEmpty" class="panel"><div class="empty">Select a ranked account and click <b>Call prep</b>.</div></div>
+<div id="cpWorkspace" style="display:none">
+  <div class="cp-score-row" style="margin:14px 0"><div class="cp-score"><small>Opportunity</small><strong id="cpOpportunity">0</strong></div><div class="cp-score"><small>Broker DNA</small><strong id="cpDna">0</strong></div><div class="cp-score"><small>Relationship</small><strong id="cpRelationship">0</strong></div><div class="cp-score"><small>Confidence</small><strong id="cpConfidence">0%</strong></div></div>
+  <div class="cp-layout">
+    <div class="cp-grid">
+      <div class="cp-card" style="grid-column:1/-1"><div class="kicker">RECOMMENDED OPENING</div><h3>Start the call naturally</h3><div id="cpOpener" class="cp-opener"></div><div class="cp-actions" style="margin-top:12px"><button class="btn primary" id="cpLogCall">Log call</button><button class="btn" id="cpDraftOutreach">Draft follow-up</button><button class="btn" id="cpOpenProfile">Open full profile</button></div></div>
+      <div class="cp-card"><div class="kicker">WHY THIS ACCOUNT</div><h3>Opportunity brief</h3><div id="cpReasons" class="cp-list"></div></div>
+      <div class="cp-card"><div class="kicker">PRODUCT ANGLE</div><h3>Lead with relevance</h3><div id="cpProducts" class="cp-list"></div><div id="cpNext" class="cp-opener" style="margin-top:10px"></div></div>
+      <div class="cp-card"><div class="kicker">OBJECTION PREP</div><h3>Likely resistance</h3><div id="cpObjection" class="cp-item"></div><h3 style="margin-top:14px">Suggested response</h3><div id="cpResponse" class="cp-item"></div></div>
+      <div class="cp-card"><div class="kicker">RELATIONSHIP MEMORY</div><h3>Know the history</h3><div id="cpMemory" class="cp-list"></div></div>
+    </div>
+    <div>
+      <div class="cp-card"><div class="kicker">BEST CONTACT</div><h3 id="cpContactName">Contact unavailable</h3><div id="cpContactMeta" class="muted"></div><div id="cpContactActions" class="cp-contact" style="margin-top:12px"></div></div>
+      <div class="cp-card" style="margin-top:14px"><div class="kicker">RECENT ACTIVITY</div><h3>Last recorded touches</h3><div id="cpActivity" class="cp-list"></div></div>
+      <div class="cp-card" style="margin-top:14px"><div class="kicker">DATA QUALITY</div><h3>Evidence and freshness</h3><div id="cpEvidence" class="cp-list"></div><p class="muted" style="margin-bottom:0">Call Prep uses only stored BrokerBeacon information. Verify mutable licensing, pricing, and program details before relying on them.</p></div>
+    </div>
+  </div>
+</div>
 </section>
 <section id="salescoach" class="view">
 <div class="coach-hero">
@@ -658,7 +682,7 @@ async function sendGlobalAsh(){
    ashAddMessage('assistant',html);ashHistory.push({question,answer:d.answer||'',view:context.view});
  }catch(e){loading.remove();ashAddMessage('assistant',`<strong>I couldn't complete that request.</strong><div>${esc(e.message)}</div>`)}
 }
-function show(v){$$('.view').forEach(x=>x.classList.toggle('active',x.id===v));$$('nav button').forEach(x=>x.classList.toggle('active',x.dataset.v===v));const titles={dashboard:'Ash Workplace',salescoach:'Ash Sales Coach',voiceagent:'AI Voice Agent',marketing:'Marketing Center',boss:'Executive View',followups:'Follow-ups',intelligence:'Opportunity Intelligence',opportunityengine:'Opportunity Engine',templates:'Templates & Sequences',guidelines:'Loan Guidelines Library',production:'Production Intelligence',brokerdna:'Broker DNA'};$('#title').textContent=titles[v]||v[0].toUpperCase()+v.slice(1);if(v==='brokerdna')brokerDna();if(v==='opportunityengine')opportunityEngine();if(v==='salescoach')salesCoach();if(v==='voiceagent')voiceAgent();if(v==='copilot'){copilotBrief()}if(v==='daily')dailyPlan();if(v==='pipeline')pipe();if(v==='followups')followups();if(v==='outreach')outreach();if(v==='marketing')marketingCenter();if(v==='campaigns')campaigns();if(v==='inbox')replyInbox();if(v==='intelligence')loadIntelligence();if(v==='templates')templateStudio();if(v==='territory')territory();if(v==='production')productionIntelligence();if(v==='boss')boss();applyExecutiveUX(v);updateAshContext()}
+function show(v){$$('.view').forEach(x=>x.classList.toggle('active',x.id===v));$$('nav button').forEach(x=>x.classList.toggle('active',x.dataset.v===v));const titles={dashboard:'Ash Workplace',salescoach:'Ash Sales Coach',voiceagent:'AI Voice Agent',marketing:'Marketing Center',boss:'Executive View',followups:'Follow-ups',intelligence:'Opportunity Intelligence',opportunityengine:'Opportunity Engine',callprep:'Call Prep Workspace',templates:'Templates & Sequences',guidelines:'Loan Guidelines Library',production:'Production Intelligence',brokerdna:'Broker DNA'};$('#title').textContent=titles[v]||v[0].toUpperCase()+v.slice(1);if(v==='brokerdna')brokerDna();if(v==='opportunityengine')opportunityEngine();if(v==='salescoach')salesCoach();if(v==='voiceagent')voiceAgent();if(v==='copilot'){copilotBrief()}if(v==='daily')dailyPlan();if(v==='pipeline')pipe();if(v==='followups')followups();if(v==='outreach')outreach();if(v==='marketing')marketingCenter();if(v==='campaigns')campaigns();if(v==='inbox')replyInbox();if(v==='intelligence')loadIntelligence();if(v==='templates')templateStudio();if(v==='territory')territory();if(v==='production')productionIntelligence();if(v==='boss')boss();applyExecutiveUX(v);updateAshContext()}
 $$('nav button').forEach(b=>b.onclick=()=>show(b.dataset.v));
 $('#globalAshBtn').onclick=()=>openGlobalAsh();$('#ashClose').onclick=closeGlobalAsh;$('#ashBackdrop').onclick=closeGlobalAsh;$('#ashSend').onclick=sendGlobalAsh;$('#ashInput').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendGlobalAsh()}});document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();openGlobalAsh()}if(e.key==='Escape'&&$('#ashDrawer').classList.contains('open'))closeGlobalAsh()});
 fetch('/api/version?ts='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(v=>{const el=$('#appVersion');if(el)el.textContent=`VERSION ${v.version} · ${v.build}`}).catch(()=>{});
@@ -702,6 +726,29 @@ $('#pemail').textContent=p.email||'Not publicly listed';
 $('#pcontactactions').innerHTML=contactButtons(p)||'<span class="contact-missing">Open the source or company website to locate current contact information.</span>';
 $('#pcontactbadge').textContent=(p.phone||p.email)?'Direct contact ready':'Website contact available';
 $('#scores').innerHTML=[['Opportunity',p.score],['Growth',p.growth_score],['Government fit',p.gov_fit],['HELOC/Jumbo',p.niche_fit]].map(x=>`<div class=scorebox><span class=muted>${x[0]}</span><strong>${x[1]}</strong></div>`).join('');$('#psum').textContent=p.ai_summary;$('#preasons').innerHTML=p.score_reasons.map(x=>`<li>${esc(x)}</li>`).join('');$('#psource').innerHTML=[p.source_name?'<b>Source:</b> '+esc(p.source_name):'',p.source_url?'<a class="btn smallbtn" target="_blank" rel="noopener" href="'+esc(p.source_url)+'">Open source</a>':'',p.nmls?'<a class="btn smallbtn" target="_blank" rel="noopener" href="https://www.nmlsconsumeraccess.org/">Verify in NMLS Consumer Access</a>':'',p.verification_notes?'<div style="margin-top:8px">'+esc(p.verification_notes)+'</div>':''].filter(Boolean).join(' ');$('#pproducts').innerHTML=p.product_fit.split(',').filter(Boolean).map(x=>`<span class=tag>${esc(x.trim())}</span>`).join('');$('#pnext').textContent=p.next_best_action;$('#pcall').value=p.call_opener;$('#pobj').textContent=p.likely_objection;$('#presp').textContent=p.objection_response;$('#profileOut').onclick=()=>{show('outreach');$('#op').value=p.id;$('#profile').close()};renderMemory(p.memories);$('#profile').showModal()}
+$('#appVersion').textContent='VERSION 12.4 · CALL PREP';
+document.querySelector('nav [data-v="opportunityengine"]')?.insertAdjacentHTML('afterend','<button data-v="callprep">☎ Call Prep</button>');
+document.querySelector('nav [data-v="callprep"]')?.addEventListener('click',()=>show('callprep'));
+let callPrepProspectId=null;
+async function openCallPrep(id){
+  const d=await api('/api/call-prep/'+id);callPrepProspectId=id;current=d.prospect;updateAshContext();
+  $('#cpCompany').textContent=d.prospect.company;$('#cpSubtitle').textContent=[d.prospect.owner,d.prospect.city,d.prospect.state,d.prospect.nmls?'NMLS '+d.prospect.nmls:''].filter(Boolean).join(' · ');
+  $('#cpBadge').textContent=d.opportunity.priority_tier+' priority · '+d.prospect.status;$('#cpOpportunity').textContent=d.opportunity.opportunity_score;$('#cpDna').textContent=d.dna.dna_score;$('#cpRelationship').textContent=d.dna.relationship_health;$('#cpConfidence').textContent=d.opportunity.confidence+'%';
+  $('#cpOpener').textContent=d.call_opening;$('#cpReasons').innerHTML=(d.opportunity.reasons||[]).map(x=>`<div class="cp-item">${esc(x)}</div>`).join('')||'<div class="cp-item">No additional opportunity evidence is stored.</div>';
+  $('#cpProducts').innerHTML=(d.products||[]).map(x=>`<div class="cp-item"><b>${esc(x)}</b></div>`).join('')||'<div class="cp-item">Use discovery questions to identify product fit.</div>';$('#cpNext').textContent=d.opportunity.next_best_action;
+  $('#cpObjection').textContent=d.prospect.likely_objection||'Ask what would make a new lender relationship worth exploring.';$('#cpResponse').textContent=d.prospect.objection_response||'Acknowledge the concern, ask one clarifying question, and offer a low-friction scenario review.';
+  const c=d.contact||{};$('#cpContactName').textContent=c.name||d.prospect.owner||'Company contact desk';$('#cpContactMeta').textContent=[c.role,c.preferred_method,c.phone||c.mobile,c.email].filter(Boolean).join(' · ');$('#cpContactActions').innerHTML=contactButtons({...d.prospect,...c,phone:c.phone||c.mobile||d.prospect.phone,email:c.email||d.prospect.email})||'<span class="contact-missing">Verify a decision-maker contact before calling.</span>';
+  $('#cpMemory').innerHTML=(d.memories||[]).map(x=>`<div class="cp-item"><b>${esc(x.note_type)}</b><br>${esc(x.note)}<br><small class="muted">${esc((x.created_at||'').replace('T',' '))}</small></div>`).join('')||'<div class="cp-item">No relationship memory recorded yet.</div>';
+  $('#cpActivity').innerHTML=(d.activity||[]).map(x=>`<div class="cp-item"><b>${esc(x.action_type)}</b> · ${esc(x.outcome||'No outcome')}<br><small class="muted">${esc((x.created_at||'').replace('T',' '))}</small></div>`).join('')||'<div class="cp-item">No sales activity recorded.</div>';
+  $('#cpEvidence').innerHTML=(d.evidence||[]).map(x=>`<div class="cp-item">${esc(x)}</div>`).join('');$('#cpEmpty').style.display='none';$('#cpWorkspace').style.display='block';
+  $('#cpLogCall').onclick=()=>openAction(id,d.prospect.company,'Call');$('#cpDraftOutreach').onclick=()=>quickDraft(id);$('#cpOpenProfile').onclick=()=>fullProfile(id);show('callprep');
+}
+const fullProfile=profile;
+profile=async function(id){
+  const label=(window.event?.target?.textContent||'').trim().toLowerCase();
+  if(label==='call prep')return openCallPrep(id);
+  return fullProfile(id);
+}
 function renderMemory(m){$('#mlist').innerHTML='<h3 style="margin-top:22px">Saved memory</h3>'+((m||[]).map(x=>`<div class=memory-item><b>${esc(x.note_type)}</b><br>${esc(x.note)}<br><small class=muted>${esc(x.created_at.replace('T',' '))}${x.follow_up_date?' · Follow up '+esc(x.follow_up_date):''}</small></div>`).join('')||'<div class=empty>No relationship memory yet.</div>')}
 $$('[data-tab]').forEach(b=>b.onclick=()=>{$$('[data-tab]').forEach(x=>x.classList.toggle('primary',x===b));$$('.tabpane').forEach(x=>x.classList.toggle('active',x.id===b.dataset.tab))});
 $('#msave').onclick=async()=>{if(!$('#mnote').value.trim())return msg('Enter a note');let m=await api('/api/prospects/'+current.id+'/memory',{method:'POST',body:JSON.stringify({note_type:$('#mtype').value,note:$('#mnote').value,follow_up_date:$('#mdate').value})});$('#mnote').value='';$('#mdate').value='';renderMemory(m);msg('Memory saved');dash()}
@@ -1394,6 +1441,35 @@ def broker_dna_detail_api(pid):
             return jsonify(error="Prospect not found"), 404
         result = calculate_broker_dna(c, row)
     return jsonify(result)
+
+@app.get("/api/call-prep/<int:pid>")
+def call_prep_api(pid):
+    """Assemble a concise, evidence-backed workspace for a live broker call."""
+    with db() as c:
+        row=c.execute("select * from prospects where id=?",(pid,)).fetchone()
+        if not row:
+            return jsonify(error="Prospect not found"),404
+        prospect=dict(row)
+        prospect['score_reasons']=json.loads(prospect.get('score_reasons') or '[]')
+        dna=calculate_broker_dna(c,row)
+        contacts=[dict(x) for x in c.execute("select * from contacts where prospect_id=? order by is_decision_maker desc,is_primary desc,name",(pid,))]
+        memories=[dict(x) for x in c.execute("select * from memories where prospect_id=? order by id desc limit 5",(pid,))]
+        activity=[dict(x) for x in c.execute("select action_type,outcome,notes,created_at from sales_actions where prospect_id=? order by id desc limit 5",(pid,))]
+    opportunity_data=opportunity_engine().get_json()
+    opportunity=next((x for x in opportunity_data.get('items',[]) if int(x['prospect_id'])==pid),None)
+    if not opportunity:
+        opportunity={'opportunity_score':int(prospect.get('score') or 0),'priority_tier':'Research','confidence':30,'reasons':prospect.get('score_reasons') or [],'next_best_action':prospect.get('next_best_action') or 'Verify the account and identify the current need.'}
+    first=((contacts[0].get('name') if contacts else '') or prospect.get('owner') or 'there').split()[0]
+    products=[x.strip() for x in (prospect.get('product_fit') or '').split(',') if x.strip()]
+    angle=products[0] if products else 'a current lending scenario'
+    opening=(prospect.get('call_opener') or '').strip() or f"Hi {first}, it’s Clay with Union Home Mortgage. I wanted to connect because I may be able to help {prospect['company']} with {angle}. Do you have two minutes?"
+    evidence=[
+        f"Source: {prospect.get('source_name') or 'not recorded'}",
+        f"Verification: {prospect.get('verification_status') or 'Needs verification'}",
+        f"Last verified: {prospect.get('verified_at') or 'not recorded'}",
+        f"{len(contacts)} stored contact{'s' if len(contacts)!=1 else ''} · {len(activity)} recent recorded activit{'ies' if len(activity)!=1 else 'y'}",
+    ]
+    return jsonify(prospect=prospect,dna=dna,opportunity=opportunity,contact=contacts[0] if contacts else {},contacts=contacts,memories=memories,activity=activity,products=products,call_opening=opening,evidence=evidence)
 
 @app.get("/api/prospects")
 def prospects():
