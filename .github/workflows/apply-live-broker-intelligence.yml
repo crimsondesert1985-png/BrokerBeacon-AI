@@ -1,0 +1,39 @@
+name: Apply Live Broker Intelligence
+
+on:
+  push:
+    branches:
+      - feature/live-broker-intelligence
+    paths:
+      - tools/apply_live_broker_intelligence.py
+      - .github/workflows/apply-live-broker-intelligence.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/live-broker-intelligence
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Apply and validate changes
+        run: python tools/apply_live_broker_intelligence.py
+      - name: Commit generated application changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add BrokerBeacon_AI_Phase2/app.py BrokerBeacon_AI_Phase2/migrations.py
+          if git diff --cached --quiet; then
+            echo "No generated changes to commit."
+          else
+            git commit -m "Implement Live Broker Intelligence trends"
+            git push origin HEAD:feature/live-broker-intelligence
+          fi
