@@ -1455,10 +1455,24 @@ def call_prep_api(pid):
         contacts=[dict(x) for x in c.execute("select * from contacts where prospect_id=? order by is_decision_maker desc,is_primary desc,name",(pid,))]
         memories=[dict(x) for x in c.execute("select * from memories where prospect_id=? order by id desc limit 5",(pid,))]
         activity=[dict(x) for x in c.execute("select action_type,outcome,notes,created_at from sales_actions where prospect_id=? order by id desc limit 5",(pid,))]
-    opportunity_data=opportunity_engine().get_json()
-    opportunity=next((x for x in opportunity_data.get('items',[]) if int(x['prospect_id'])==pid),None)
-    if not opportunity:
-        opportunity={'opportunity_score':int(prospect.get('score') or 0),'priority_tier':'Research','confidence':30,'reasons':prospect.get('score_reasons') or [],'next_best_action':prospect.get('next_best_action') or 'Verify the account and identify the current need.'}
+    # Keep call preparation fast and isolated. Calling the portfolio-wide
+    # Opportunity Engine here can monopolize a single-worker Render service.
+    base_score=int(prospect.get('score') or 0)
+    opportunity_score=max(0,min(100,round(
+        int(dna.get('dna_score') or 0)*.50+
+        base_score*.25+
+        int(dna.get('product_fit_score') or 0)*.15+
+        int(prospect.get('growth_score') or 0)*.10
+    )))
+    confidence=35+(15 if contacts else 0)+(10 if activity else 0)+(15 if prospect.get('verification_status')=='Verified' else 0)+(10 if prospect.get('product_fit') else 0)+(10 if prospect.get('source_url') else 0)
+    confidence=max(30,min(95,confidence))
+    opportunity={
+        'opportunity_score':opportunity_score,
+        'priority_tier':'Hot' if opportunity_score>=80 else 'Warm' if opportunity_score>=65 else 'Watch' if opportunity_score>=50 else 'Research',
+        'confidence':confidence,
+        'reasons':(prospect.get('score_reasons') or [])[:2]+(dna.get('reasons') or [])[:2],
+        'next_best_action':dna.get('next_best_action') or prospect.get('next_best_action') or 'Verify the account and identify the current need.'
+    }
     first=((contacts[0].get('name') if contacts else '') or prospect.get('owner') or 'there').split()[0]
     products=[x.strip() for x in (prospect.get('product_fit') or '').split(',') if x.strip()]
     angle=products[0] if products else 'a current lending scenario'
