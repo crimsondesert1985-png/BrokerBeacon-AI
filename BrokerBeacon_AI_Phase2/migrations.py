@@ -247,6 +247,30 @@ create index if not exists idx_scout_autopilot_runs on scout_autopilot_runs(id d
 create index if not exists idx_scout_research_stage on scout_research(stage,ash_score desc);
 insert or ignore into scout_autopilot(id,enabled,states_json,cadence_hours,states_per_run,daily_query_budget,research_limit,next_run_at,last_run_at,updated_at)
 values(1,0,'["NC","SC"]',24,1,12,12,'','',datetime('now'));
+"""),
+(14, "autopilot_control_tower", """
+create table if not exists scout_control_settings(
+    id integer primary key check(id=1),
+    emergency_stop integer not null default 0,
+    pilot_state text not null default 'ME',
+    estimated_query_cost_micros integer not null default 32000,
+    daily_cost_limit_cents integer not null default 100,
+    updated_at text not null
+);
+create table if not exists scout_agent_events(
+    id integer primary key,
+    run_id integer,
+    agent text not null,
+    status text not null,
+    state text default '',
+    detail text default '',
+    item_count integer not null default 0,
+    created_at text not null
+);
+create index if not exists idx_scout_agent_events_run on scout_agent_events(run_id,id);
+create index if not exists idx_scout_agent_events_created on scout_agent_events(id desc);
+insert or ignore into scout_control_settings(id,emergency_stop,pilot_state,estimated_query_cost_micros,daily_cost_limit_cents,updated_at)
+values(1,0,'ME',32000,100,datetime('now'));
 """)
 ]
 
