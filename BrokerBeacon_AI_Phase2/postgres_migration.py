@@ -323,26 +323,168 @@ def rehearse_cutover(central_path: Path, database_url: str, validation_path: Pat
     }
 
 
+
+def _write_json_atomic(path: Path, payload: dict[str, Any]) -> None:
+    """Persist cutover evidence without leaving a partial report."""
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_suffix(path.suffix + ".tmp")
+    temporary.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    temporary.replace(path)
+
+
+def create_sqlite_rollback_bundle(central_path: Path, backup_root: Path,
+                                  run_id: str | None = None) -> dict[str, Any]:
+    """Create and verify a rollback copy of every authoritative SQLite database."""
+    run_id = run_id or datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
+    safe_run_id = re.sub(r"[^a-zA-Z0-9_-]", "", run_id)
+    bundle_dir = Path(backup_root) / f"postgres-cutover-{safe_run_id}"
+    bundle_dir.mkdir(parents=True, exist_ok=False)
+    checks: list[dict[str, Any]] = []
+    for source, workspace_id in discover_databases(Path(central_path)):
+        destination = bundle_dir / source.name
+        source_uri = f"file:{source}?mode=ro"
+        with sqlite3.connect(source_uri, uri=True) as source_conn:
+            with sqlite3.connect(destination) as target_conn:
+                source_conn.backup(target_conn)
+        source_snapshot = snapshot_database(source, "source", workspace_id)
+        backup_snapshot = snapshot_database(destination, "backup", workspace_id)
+        source_tables = {table.name: table for table in source_snapshot.tables}
+        backup_tables = {table.name: table for table in backup_snapshot.tables}
+        valid = source_tables.keys() == backup_tables.keys() and all(
+            source_tables[name].rows == backup_tables[name].rows
+            and source_tables[name].checksum == backup_tables[name].checksum
+            for name in source_tables
+        )
+        with sqlite3.connect(destination) as verify:
+            integrity = verify.execute("pragma integrity_check").fetchone()[0]
+        valid = valid and integrity == "ok"
+        check = {
+            "workspace_id": workspace_id,
+            "source": str(source),
+            "backup": str(destination),
+            "tables": len(source_snapshot.tables),
+            "rows": source_snapshot.rows,
+            "integrity": integrity,
+            "valid": valid,
+        }
+        checks.append(check)
+        if not valid:
+            raise RuntimeError(f"Rollback backup validation failed for {source.name}")
+    result = {
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "run_id": safe_run_id,
+        "mode": "sqlite_rollback_bundle",
+        "bundle_dir": str(bundle_dir),
+        "source_databases": len(checks),
+        "tables": sum(item["tables"] for item in checks),
+        "rows": sum(item["rows"] for item in checks),
+        "valid": bool(checks) and all(item["valid"] for item in checks),
+        "checks": checks,
+    }
+    _write_json_atomic(bundle_dir / "manifest.json", result)
+    return result
+
+
+def prepare_cutover(central_path: Path, rehearsal_path: Path, backup_root: Path,
+                    report_path: Path, run_id: str | None = None) -> dict[str, Any]:
+    """Prepare a fail-closed production cutover package without switching traffic."""
+    rehearsal = rehearsal_status(rehearsal_path)
+    if not rehearsal.get("cutover_ready"):
+        raise RuntimeError("A valid Sprint 34 cutover rehearsal is required")
+    rollback = create_sqlite_rollback_bundle(central_path, backup_root, run_id)
+    report = {
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "mode": "controlled_cutover_preparation",
+        "version": "27.0",
+        "rehearsal_valid": bool(rehearsal.get("valid")),
+        "restore_valid": bool(rehearsal.get("restore_valid")),
+        "parity_valid": bool(rehearsal.get("parity_valid")),
+        "rollback_ready": bool(rollback.get("valid")),
+        "rollback_manifest": str(Path(rollback["bundle_dir"]) / "manifest.json"),
+        "source_databases": rollback["source_databases"],
+        "tables": rollback["tables"],
+        "rows": rollback["rows"],
+        "maintenance_required": True,
+        "approval_required": True,
+        "approval_granted": False,
+        "production_traffic_enabled": False,
+        "traffic_source": "sqlite",
+    }
+    report["cutover_ready"] = all((
+        report["rehearsal_valid"], report["restore_valid"],
+        report["parity_valid"], report["rollback_ready"],
+    ))
+    _write_json_atomic(report_path, report)
+    return report
+
+
+def cutover_status(report_path: Path | None = None) -> dict[str, Any]:
+    """Return a safe owner-facing summary of the Sprint 35 approval gate."""
+    path = Path(report_path or os.getenv(
+        "POSTGRES_CUTOVER_REPORT", "/var/data/postgres-cutover-preparation.json"
+    ))
+    default = {
+        "prepared": False, "cutover_ready": False, "rollback_ready": False,
+        "approval_required": True, "approval_granted": False,
+        "production_traffic_enabled": False, "traffic_source": "sqlite",
+    }
+    if not path.exists():
+        return default
+    try:
+        report = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError, TypeError):
+        return default
+    return {
+        "prepared": True,
+        "created_at": report.get("created_at", ""),
+        "cutover_ready": bool(report.get("cutover_ready")),
+        "rehearsal_valid": bool(report.get("rehearsal_valid")),
+        "restore_valid": bool(report.get("restore_valid")),
+        "parity_valid": bool(report.get("parity_valid")),
+        "rollback_ready": bool(report.get("rollback_ready")),
+        "maintenance_required": True,
+        "approval_required": True,
+        "approval_granted": False,
+        "production_traffic_enabled": False,
+        "traffic_source": "sqlite",
+        "source_databases": int(report.get("source_databases") or 0),
+        "tables": int(report.get("tables") or 0),
+        "rows": int(report.get("rows") or 0),
+        "environment_switch_requested": (
+            os.getenv("POSTGRES_CUTOVER_ENABLED", "").lower() == "true"
+        ),
+    }
+
 def main() -> int:
     import argparse
     parser = argparse.ArgumentParser(description="BrokerBeacon PostgreSQL shadow migration")
-    parser.add_argument("command", choices=("plan", "migrate", "rehearse"))
+    parser.add_argument("command", choices=("plan", "migrate", "rehearse", "prepare", "status"))
     parser.add_argument("--source", default=os.getenv("BROKERBEACON_DB", "brokerbeacon.db"))
     parser.add_argument("--database-url", default=os.getenv("DATABASE_URL", ""))
     parser.add_argument("--output", default="")
     parser.add_argument("--validation", default="/var/data/postgres-shadow-validation.json")
     parser.add_argument("--keep-restore", action="store_true")
+    parser.add_argument("--rehearsal", default="/var/data/postgres-cutover-rehearsal.json")
+    parser.add_argument("--backup-root", default="/var/data/backups")
+    parser.add_argument("--preparation", default="/var/data/postgres-cutover-preparation.json")
     args = parser.parse_args()
     if args.command == "plan":
         result = build_migration_plan(Path(args.source))
     elif args.command == "migrate":
         result = migrate_shadow(Path(args.source), args.database_url)
-    else:
+    elif args.command == "rehearse":
         result = rehearse_cutover(Path(args.source), args.database_url,
                                   Path(args.validation), keep_restore=args.keep_restore)
+    elif args.command == "prepare":
+        report_path = Path(args.output or args.preparation)
+        result = prepare_cutover(Path(args.source), Path(args.rehearsal),
+                                 Path(args.backup_root), report_path)
+    else:
+        result = cutover_status(Path(args.preparation))
     rendered = json.dumps(result, indent=2)
-    if args.output:
-        Path(args.output).write_text(rendered + "\n", encoding="utf-8")
+    if args.output and args.command != "prepare":
+        _write_json_atomic(Path(args.output), result)
     else:
         print(rendered)
     return 0
