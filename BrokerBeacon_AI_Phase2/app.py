@@ -13,11 +13,12 @@ from voice_agent import configured as voice_configured, create_twilio_call, huma
 from guideline_index import seed_index, index_fha_pdf, search as search_guideline_index, stats as guideline_index_stats
 from saas import install_saas
 from tenant_storage import ensure_workspace_database
-from data_durability import create_backup, prepare_database, storage_status
+from data_durability import create_backup, prepare_database, storage_status, verify_latest_backup
+from security_monitoring import emit_security_alert
 
 app = Flask(__name__)
-BUILD_VERSION = "21.0"
-BUILD_NAME = "DATA DURABILITY"
+BUILD_VERSION = "22.0"
+BUILD_NAME = "PRODUCTION SECURITY"
 DB = prepare_database(Path(__file__).with_name("brokerbeacon.db"))
 NOW = lambda: datetime.now().isoformat(timespec="seconds")
 
@@ -1515,6 +1516,16 @@ print(f"BrokerBeacon startup: VERSION {BUILD_VERSION} · {BUILD_NAME}", flush=Tr
 def add_build_headers(response):
     response.headers["X-BrokerBeacon-Version"] = BUILD_VERSION
     response.headers["X-BrokerBeacon-Build"] = BUILD_NAME
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "camera=(), geolocation=(), microphone=(self)"
+    if os.getenv("RENDER") == "true":
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; "
+        "img-src 'self' data: https:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'"
+    )
     if request.path == "/" or request.path.startswith("/api/guidelines") or request.path in {"/health", "/api/version"}:
         response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
         response.headers["Pragma"] = "no-cache"
@@ -1554,6 +1565,7 @@ def health():
                        build=BUILD_NAME, storage={"persistent": durability["persistent"],
                        "integrity": durability["integrity"], "backup_count": durability["backup_count"]})
     except Exception as exc:
+        emit_security_alert("health_check_failed", "critical", {"error": type(exc).__name__})
         return jsonify(status="error", detail=str(exc)), 500
 
 @app.get("/api/platform/storage")
@@ -1563,7 +1575,19 @@ def platform_storage():
 @app.post("/api/platform/backups")
 def platform_backup():
     backup = create_backup(DB, reason="manual")
-    return jsonify(ok=True, backup=backup.name, storage=storage_status(DB)), 201
+    recovery = verify_latest_backup(DB)
+    return jsonify(ok=True, backup=backup.name, recovery=recovery,
+                   storage=storage_status(DB)), 201
+
+@app.post("/api/platform/recovery-check")
+def platform_recovery_check():
+    try:
+        result = verify_latest_backup(DB)
+        return jsonify(result), 200
+    except Exception as exc:
+        emit_security_alert("backup_recovery_check_failed", "critical",
+                            {"error": type(exc).__name__})
+        return jsonify(ok=False, error="Recovery check failed"), 500
 
 def reject_demo_write():
     if request.cookies.get("bb_demo") == "1":

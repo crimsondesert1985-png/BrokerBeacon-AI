@@ -2,16 +2,24 @@
 from datetime import datetime, timedelta
 from functools import wraps
 import hashlib
+from email.message import EmailMessage
+import json
+import os
 import secrets
+import smtplib
 import sqlite3
 
 from flask import Blueprint, g, jsonify, redirect, render_template_string, request, session
 from markupsafe import escape
 from werkzeug.security import check_password_hash, generate_password_hash
+from security_monitoring import emit_security_alert
 
 
 ROLE_RANK = {"Read Only": 10, "AE": 20, "Manager": 30, "Owner": 40}
-PUBLIC_PATHS = {"/login", "/register", "/forgot-password", "/reset-password", "/health", "/api/version", "/demo"}
+PUBLIC_PATHS = {"/login", "/register", "/forgot-password", "/reset-password", "/verify-email",
+                "/resend-verification", "/health", "/api/version", "/demo"}
+LOGIN_LIMIT = 5
+LOGIN_WINDOW_MINUTES = 15
 PLATFORM_PREFIXES = (
     "/api/scout", "/api/index-population", "/api/automation",
     "/api/platform", "/api/population",
@@ -65,6 +73,16 @@ create table if not exists saas_password_resets(
  id integer primary key, user_id integer not null, token_hash text unique not null,
  expires_at text not null, used_at text default '', created_at text not null
 );
+create table if not exists saas_email_verifications(
+ id integer primary key, user_id integer not null, token_hash text unique not null,
+ expires_at text not null, used_at text default '', created_at text not null,
+ foreign key(user_id) references saas_users(id)
+);
+create table if not exists saas_auth_attempts(
+ identity_hash text not null, ip_address text not null, attempt_count integer not null default 0,
+ window_started_at text not null, blocked_until text default '', updated_at text not null,
+ primary key(identity_hash,ip_address)
+);
 create table if not exists saas_audit_log(
  id integer primary key, workspace_id integer, user_id integer, action text not null,
  target_type text default '', target_id text default '', detail_json text default '{}',
@@ -84,6 +102,8 @@ create table if not exists workspace_broker_records(
 );
 create index if not exists idx_saas_memberships_user on saas_memberships(user_id,workspace_id);
 create index if not exists idx_saas_audit_workspace on saas_audit_log(workspace_id,id desc);
+create index if not exists idx_saas_resets_user on saas_password_resets(user_id,created_at desc);
+create index if not exists idx_saas_verifications_user on saas_email_verifications(user_id,created_at desc);
 create index if not exists idx_workspace_brokers_workspace on workspace_broker_records(workspace_id,id);
 """
 
@@ -124,23 +144,103 @@ def install_saas(app, db_path, build_version):
     with connect() as conn:
         conn.executescript(SCHEMA)
         now = _now()
+        user_columns = {row[1] for row in conn.execute("pragma table_info(saas_users)")}
+        if "email_verified_at" not in user_columns:
+            conn.execute("alter table saas_users add column email_verified_at text default ''")
+            conn.execute("update saas_users set email_verified_at=? where email_verified_at=''", (now,))
+        if "auth_version" not in user_columns:
+            conn.execute("alter table saas_users add column auth_version integer not null default 1")
         conn.execute("""insert or ignore into national_broker_index
             (prospect_id,nmls,company,city,state,source_name,source_url,verification_status,indexed_at,updated_at)
             select id,coalesce(nmls,''),company,coalesce(city,''),coalesce(state,''),
             coalesce(source_name,''),coalesce(source_url,''),coalesce(verification_status,'Needs verification'),?,?
             from prospects""", (now, now))
 
-    app.secret_key = app.config.get("SECRET_KEY") or __import__("os").getenv("SECRET_KEY") or secrets.token_hex(32)
+    app.secret_key = app.config.get("SECRET_KEY") or os.getenv("SECRET_KEY") or secrets.token_hex(32)
     app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Lax",
-                      SESSION_COOKIE_SECURE=__import__("os").getenv("RENDER") == "true",
+                      SESSION_COOKIE_SECURE=os.getenv("RENDER") == "true",
                       PERMANENT_SESSION_LIFETIME=timedelta(hours=12))
 
+    def deliver_security_email(recipient, subject, text):
+        """Deliver security mail without logging or persisting raw tokens."""
+        if app.config.get("TESTING"):
+            app.extensions.setdefault("security_outbox", []).append(
+                {"to": recipient, "subject": subject, "text": text}
+            )
+            return True
+        host = os.getenv("SMTP_HOST", "").strip()
+        sender = os.getenv("SECURITY_EMAIL_FROM", "").strip()
+        if not host or not sender:
+            app.logger.error("Security email delivery is not configured")
+            return False
+        message = EmailMessage()
+        message["From"], message["To"], message["Subject"] = sender, recipient, subject
+        message.set_content(text)
+        port = int(os.getenv("SMTP_PORT", "587"))
+        try:
+            with smtplib.SMTP(host, port, timeout=10) as client:
+                client.starttls()
+                username = os.getenv("SMTP_USERNAME", "")
+                if username:
+                    client.login(username, os.getenv("SMTP_PASSWORD", ""))
+                client.send_message(message)
+            return True
+        except Exception:
+            app.logger.exception("Security email delivery failed")
+            return False
+
+    def create_verification(conn, user_id, email):
+        token = secrets.token_urlsafe(32)
+        conn.execute("update saas_email_verifications set used_at=? where user_id=? and used_at=''",
+                     (_now(), user_id))
+        conn.execute("""insert into saas_email_verifications
+            (user_id,token_hash,expires_at,created_at) values(?,?,?,?)""",
+            (user_id, _hash_token(token),
+             (datetime.now()+timedelta(hours=24)).isoformat(timespec="seconds"), _now()))
+        link = request.url_root.rstrip("/") + "/verify-email?token=" + token
+        return deliver_security_email(email, "Verify your BrokerBeacon email",
+            "Verify your BrokerBeacon email address within 24 hours:\n\n" + link)
+
+    def client_ip():
+        return request.headers.get("X-Forwarded-For", request.remote_addr or "").split(",", 1)[0].strip()[:120]
+
+    def login_key(email):
+        return hashlib.sha256(email.encode("utf-8")).hexdigest()
+
+    def login_is_blocked(conn, email):
+        attempt = conn.execute("select blocked_until from saas_auth_attempts where identity_hash=? and ip_address=?",
+                               (login_key(email), client_ip())).fetchone()
+        return bool(attempt and attempt["blocked_until"] and attempt["blocked_until"] > _now())
+
+    def record_login_failure(conn, email):
+        key, ip, now = login_key(email), client_ip(), _now()
+        attempt = conn.execute("select * from saas_auth_attempts where identity_hash=? and ip_address=?",
+                               (key, ip)).fetchone()
+        window_cutoff = (datetime.now()-timedelta(minutes=LOGIN_WINDOW_MINUTES)).isoformat(timespec="seconds")
+        count = (int(attempt["attempt_count"]) if attempt and attempt["window_started_at"] > window_cutoff else 0) + 1
+        started = attempt["window_started_at"] if attempt and attempt["window_started_at"] > window_cutoff else now
+        blocked = (datetime.now()+timedelta(minutes=LOGIN_WINDOW_MINUTES)).isoformat(timespec="seconds") if count >= LOGIN_LIMIT else ""
+        conn.execute("""insert into saas_auth_attempts(identity_hash,ip_address,attempt_count,window_started_at,blocked_until,updated_at)
+            values(?,?,?,?,?,?) on conflict(identity_hash,ip_address) do update set attempt_count=excluded.attempt_count,
+            window_started_at=excluded.window_started_at,blocked_until=excluded.blocked_until,updated_at=excluded.updated_at""",
+            (key, ip, count, started, blocked, now))
+        return count, blocked
+
+    def clear_login_failures(conn, email):
+        conn.execute("delete from saas_auth_attempts where identity_hash=? and ip_address=?",
+                     (login_key(email), client_ip()))
+
     def audit(conn, action, target_type="", target_id="", detail="{}"):
+        workspace_id = getattr(g, "workspace_id", None)
+        if not workspace_id and target_type == "user" and target_id:
+            member = conn.execute("select workspace_id from saas_memberships where user_id=? order by id limit 1",
+                                  (target_id,)).fetchone()
+            workspace_id = member["workspace_id"] if member else None
         conn.execute("""insert into saas_audit_log
             (workspace_id,user_id,action,target_type,target_id,detail_json,ip_address,created_at)
-            values(?,?,?,?,?,?,?,?)""", (getattr(g, "workspace_id", None),
+            values(?,?,?,?,?,?,?,?)""", (workspace_id,
             getattr(g, "user_id", None), action, target_type, str(target_id), detail,
-            request.headers.get("X-Forwarded-For", request.remote_addr or "")[:120], _now()))
+            client_ip(), _now()))
 
     @app.before_request
     def load_saas_context():
@@ -155,6 +255,11 @@ def install_saas(app, db_path, build_version):
                     session.clear()
                 else:
                     g.is_platform_owner = bool(user["is_platform_owner"])
+                    if session.get("auth_version") != int(user["auth_version"]):
+                        session.clear()
+                        if request.path.startswith("/api/"):
+                            return jsonify(error="Session expired"), 401
+                        return redirect("/login")
                     membership = conn.execute("""select role from saas_memberships
                         where user_id=? and workspace_id=?""", (g.user_id, g.workspace_id)).fetchone()
                     g.membership_role = membership["role"] if membership else None
@@ -215,7 +320,8 @@ def install_saas(app, db_path, build_version):
                         conn.execute("""insert into saas_memberships
                             (workspace_id,user_id,role,created_at) values(?,?,?,?)""",
                             (workspace_id, user_id, "Owner", now))
-                        session.update(user_id=user_id, workspace_id=workspace_id)
+                        create_verification(conn, user_id, email)
+                        session.update(user_id=user_id, workspace_id=workspace_id, auth_version=1)
                         session.permanent = True
                         g.user_id, g.workspace_id = user_id, workspace_id
                         audit(conn, "account.registered", "workspace", workspace_id)
@@ -236,19 +342,36 @@ def install_saas(app, db_path, build_version):
         if request.method == "POST":
             email = (request.form.get("email") or "").strip().lower()
             with connect() as conn:
+                if login_is_blocked(conn, email):
+                    audit(conn, "security.login_blocked", "email_hash", login_key(email)[:16])
+                    emit_security_alert("login_blocked", "warning", {"ip": client_ip()})
+                    return render_template_string(AUTH_PAGE, title="Welcome back",
+                        subtitle=f"Secure access to BrokerBeacon {build_version}.",
+                        error="Too many attempts. Try again in 15 minutes.", message="", form=""), 429
                 user = conn.execute("select * from saas_users where email=? and is_active=1", (email,)).fetchone()
                 if user and check_password_hash(user["password_hash"], request.form.get("password") or ""):
-                    member = conn.execute("""select workspace_id from saas_memberships
-                        where user_id=? order by id limit 1""", (user["id"],)).fetchone()
-                    session.clear()
-                    session.permanent = True
-                    session.update(user_id=user["id"], workspace_id=member["workspace_id"])
-                    conn.execute("update saas_users set last_login_at=?,updated_at=? where id=?",
-                                 (_now(), _now(), user["id"]))
-                    g.user_id, g.workspace_id = user["id"], member["workspace_id"]
-                    audit(conn, "session.login", "user", user["id"])
-                    return redirect(_safe_next(request.args.get("next")))
-            error = "Email or password was incorrect."
+                    if not user["email_verified_at"]:
+                        audit(conn, "security.unverified_login_blocked", "user", user["id"])
+                        error = "Verify your email before signing in."
+                    else:
+                        member = conn.execute("""select workspace_id from saas_memberships
+                            where user_id=? order by id limit 1""", (user["id"],)).fetchone()
+                        clear_login_failures(conn, email)
+                        session.clear()
+                        session.permanent = True
+                        session.update(user_id=user["id"], workspace_id=member["workspace_id"],
+                                       auth_version=int(user["auth_version"]))
+                        conn.execute("update saas_users set last_login_at=?,updated_at=? where id=?",
+                                     (_now(), _now(), user["id"]))
+                        g.user_id, g.workspace_id = user["id"], member["workspace_id"]
+                        audit(conn, "session.login", "user", user["id"])
+                        return redirect(_safe_next(request.args.get("next")))
+                else:
+                    count, blocked = record_login_failure(conn, email)
+                    audit(conn, "security.login_failed", "email_hash", login_key(email)[:16],
+                          json.dumps({"attempt": count, "blocked": bool(blocked)}))
+            if not error:
+                error = "Email or password was incorrect."
         form = """<form method="post"><label>Email</label><input type="email" name="email" required>
         <label>Password</label><input type="password" name="password" required>
         <button>Sign in</button></form><div class="links"><a href="/register">Create account</a>
@@ -258,6 +381,8 @@ def install_saas(app, db_path, build_version):
 
     @bp.post("/logout")
     def logout():
+        with connect() as conn:
+            audit(conn, "session.logout", "user", g.user_id)
         session.clear()
         return redirect("/login")
 
@@ -313,7 +438,11 @@ def install_saas(app, db_path, build_version):
                                      (_now(), invitation["id"]))
                         session.clear()
                         session.permanent = True
-                        session.update(user_id=user["id"], workspace_id=invitation["workspace_id"])
+                        session.update(user_id=user["id"], workspace_id=invitation["workspace_id"],
+                                       auth_version=int(user["auth_version"]))
+                        if not user["email_verified_at"]:
+                            conn.execute("update saas_users set email_verified_at=?,updated_at=? where id=?",
+                                         (_now(), _now(), user["id"]))
                         g.user_id, g.workspace_id = user["id"], invitation["workspace_id"]
                         audit(conn, "member.invitation_accepted", "user", user["id"])
                         return redirect("/")
@@ -339,11 +468,17 @@ def install_saas(app, db_path, build_version):
                 user = conn.execute("select id from saas_users where email=? and is_active=1", (email,)).fetchone()
                 if user:
                     token = secrets.token_urlsafe(32)
+                    conn.execute("update saas_password_resets set used_at=? where user_id=? and used_at=''",
+                                 (_now(), user["id"]))
                     conn.execute("""insert into saas_password_resets
                         (user_id,token_hash,expires_at,created_at) values(?,?,?,?)""",
                         (user["id"], _hash_token(token),
                          (datetime.now()+timedelta(hours=1)).isoformat(timespec="seconds"), _now()))
-                    app.logger.info("Password reset requested; configure email delivery for token %s", token)
+                    link = request.url_root.rstrip("/") + "/reset-password?token=" + token
+                    deliver_security_email(email, "Reset your BrokerBeacon password",
+                        "Reset your BrokerBeacon password within one hour:\n\n" + link +
+                        "\n\nIf you did not request this, ignore this message.")
+                    audit(conn, "security.password_reset_requested", "user", user["id"])
             message = "If that account exists, a reset link has been prepared."
         form = """<form method="post"><label>Email</label><input type="email" name="email" required>
         <button>Request reset</button></form><div class="links"><a href="/login">Back to sign in</a></div>"""
@@ -363,9 +498,14 @@ def install_saas(app, db_path, build_version):
                     reset = conn.execute("""select * from saas_password_resets where token_hash=?
                         and used_at='' and expires_at>?""", (_hash_token(token), _now())).fetchone()
                     if reset:
-                        conn.execute("update saas_users set password_hash=?,updated_at=? where id=?",
-                                     (generate_password_hash(password), _now(), reset["user_id"]))
+                        conn.execute("""update saas_users set password_hash=?,auth_version=auth_version+1,
+                            updated_at=? where id=?""",
+                            (generate_password_hash(password), _now(), reset["user_id"]))
                         conn.execute("update saas_password_resets set used_at=? where id=?", (_now(), reset["id"]))
+                        conn.execute("update saas_password_resets set used_at=? where user_id=? and used_at=''",
+                                     (_now(), reset["user_id"]))
+                        audit(conn, "security.password_reset_completed", "user", reset["user_id"])
+                        session.clear()
                         return redirect("/login")
                     error = "This reset link is invalid or expired."
         form = f"""<form method="post"><input type="hidden" name="token" value="{token}">
@@ -373,6 +513,43 @@ def install_saas(app, db_path, build_version):
         <button>Save new password</button></form>"""
         return render_template_string(AUTH_PAGE, title="Choose a new password",
             subtitle="Use at least 12 characters.", error=error, message="", form=form)
+
+    @bp.get("/verify-email")
+    def verify_email():
+        token = request.args.get("token") or ""
+        with connect() as conn:
+            verification = conn.execute("""select * from saas_email_verifications
+                where token_hash=? and used_at='' and expires_at>?""",
+                (_hash_token(token), _now())).fetchone()
+            if not verification:
+                return render_template_string(AUTH_PAGE, title="Verification unavailable",
+                    subtitle="Email verification links expire after 24 hours.",
+                    error="This verification link is invalid, expired, or already used.",
+                    message="", form='<div class="links"><a href="/resend-verification">Send a new link</a></div>'), 410
+            conn.execute("update saas_users set email_verified_at=?,updated_at=? where id=?",
+                         (_now(), _now(), verification["user_id"]))
+            conn.execute("update saas_email_verifications set used_at=? where id=?",
+                         (_now(), verification["id"]))
+            g.user_id = verification["user_id"]
+            audit(conn, "security.email_verified", "user", verification["user_id"])
+        return redirect("/login")
+
+    @bp.route("/resend-verification", methods=["GET", "POST"])
+    def resend_verification():
+        message = ""
+        if request.method == "POST":
+            email = (request.form.get("email") or "").strip().lower()
+            with connect() as conn:
+                user = conn.execute("""select id,email from saas_users
+                    where email=? and is_active=1 and email_verified_at=''""", (email,)).fetchone()
+                if user:
+                    create_verification(conn, user["id"], user["email"])
+                    audit(conn, "security.email_verification_resent", "user", user["id"])
+            message = "If that unverified account exists, a new verification link has been sent."
+        form = """<form method="post"><label>Email</label><input type="email" name="email" required>
+        <button>Send verification link</button></form><div class="links"><a href="/login">Back to sign in</a></div>"""
+        return render_template_string(AUTH_PAGE, title="Verify your email",
+            subtitle="Verification links expire after 24 hours.", error="", message=message, form=form)
 
     @bp.get("/api/saas/context")
     def context():
@@ -492,6 +669,16 @@ def install_saas(app, db_path, build_version):
             rows = [dict(row) for row in conn.execute("""select id,user_id,action,target_type,
                 target_id,detail_json,ip_address,created_at from saas_audit_log
                 where workspace_id=? order by id desc limit 200""", (g.workspace_id,))]
+        return jsonify(items=rows)
+
+    @bp.get("/api/platform/security-audit")
+    def platform_security_audit():
+        with connect() as conn:
+            rows = [dict(row) for row in conn.execute("""select a.id,a.workspace_id,a.user_id,
+                a.action,a.target_type,a.target_id,a.detail_json,a.ip_address,a.created_at,
+                w.name workspace_name,u.email user_email from saas_audit_log a
+                left join saas_workspaces w on w.id=a.workspace_id
+                left join saas_users u on u.id=a.user_id order by a.id desc limit 500""")]
         return jsonify(items=rows)
 
     @bp.get("/api/national-broker-index")

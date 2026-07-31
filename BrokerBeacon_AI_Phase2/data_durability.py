@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import shutil
 import sqlite3
+import tempfile
 
 
 DEFAULT_DATA_DIR = Path("/var/data")
@@ -47,6 +48,42 @@ def create_backup(database_path, reason="manual", retention=BACKUP_RETENTION):
     return destination
 
 
+def verify_backup_restore(backup_path):
+    """Restore a backup into an isolated temporary database and verify its schema."""
+    source = Path(backup_path)
+    if not source.is_file():
+        raise FileNotFoundError(source)
+    with tempfile.TemporaryDirectory(prefix="brokerbeacon-restore-check-") as directory:
+        restored = Path(directory) / "restored.db"
+        with sqlite3.connect(source) as backup, sqlite3.connect(restored) as target:
+            backup.backup(target)
+        verify_database(restored)
+        with sqlite3.connect(restored) as conn:
+            tables = conn.execute(
+                "select count(*) from sqlite_master where type='table' and name not like 'sqlite_%'"
+            ).fetchone()[0]
+            migrations = 0
+            if conn.execute(
+                "select 1 from sqlite_master where type='table' and name='schema_migrations'"
+            ).fetchone():
+                migrations = conn.execute("select count(*) from schema_migrations").fetchone()[0]
+        if not tables:
+            raise RuntimeError("Restored backup contains no application tables")
+    return {"ok": True, "backup": source.name, "tables": tables, "migrations": migrations}
+
+
+def verify_latest_backup(database_path):
+    """Run a non-destructive restore drill against the newest retained backup."""
+    path = Path(database_path)
+    backups = sorted(
+        (path.parent / "backups").glob(f"{path.stem}-*.db"),
+        key=lambda item: item.stat().st_mtime,
+    )
+    if not backups:
+        raise FileNotFoundError("No backup is available for a recovery check")
+    return verify_backup_restore(backups[-1])
+
+
 def prepare_database(seed_path):
     """Place the central database on durable storage, preserving an existing copy."""
     seed = Path(seed_path)
@@ -76,7 +113,8 @@ def prepare_database(seed_path):
         verify_database(target)
         databases = [target, *target.parent.glob(f"{target.stem}.workspace-*{target.suffix}")]
         for database in databases:
-            create_backup(database, reason="pre-deploy")
+            backup = create_backup(database, reason="pre-deploy")
+            verify_backup_restore(backup)
     return target
 
 
