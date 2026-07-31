@@ -11,10 +11,11 @@ from intelligence import intelligence_dashboard, save_snapshots
 from revenue_intelligence import executive_dashboard, log_revenue_event
 from voice_agent import configured as voice_configured, create_twilio_call, human_greeting, voicemail, twiml, say, appointment_slots, ai_reply
 from guideline_index import seed_index, index_fha_pdf, search as search_guideline_index, stats as guideline_index_stats
+from saas import install_saas
 
 app = Flask(__name__)
-BUILD_VERSION = "18.0"
-BUILD_NAME = "INDEX POPULATION ENGINE"
+BUILD_VERSION = "19.0"
+BUILD_NAME = "SAAS FOUNDATION"
 DB = Path(os.getenv("BROKERBEACON_DB_PATH") or Path(__file__).with_name("brokerbeacon.db"))
 NOW = lambda: datetime.now().isoformat(timespec="seconds")
 
@@ -1476,6 +1477,7 @@ def calculate_broker_dna(c, prospect):
     return dict(prospect_id=pid,company=p.get('company') or '',city=p.get('city') or '',state=p.get('state') or '',status=p.get('status') or '',dna_score=dna_score,tier=tier,relationship_health=relationship,opportunity_strength=opportunity,engagement_score=engagement,product_fit_score=product_fit,next_best_action=next_action,reasons=reasons,calculated_at=calculated_at)
 
 init()
+install_saas(app, DB, BUILD_VERSION)
 print(f"BrokerBeacon startup: VERSION {BUILD_VERSION} · {BUILD_NAME}", flush=True)
 
 @app.after_request
