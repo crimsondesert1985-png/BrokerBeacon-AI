@@ -10,3 +10,5 @@ services:
         value: 3.13.5
       - key: BROKERBEACON_DATA_DIR
         value: /var/data
+      - key: SECRET_KEY
+        generateValue: true
