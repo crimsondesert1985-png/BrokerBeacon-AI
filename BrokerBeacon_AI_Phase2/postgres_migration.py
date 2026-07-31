@@ -151,6 +151,29 @@ def migration_status(central_path: Path) -> dict[str, Any]:
     }
 
 
+def rehearsal_status(report_path: Path | None = None) -> dict[str, Any]:
+    """Return a safe summary of the latest cutover rehearsal report."""
+    path = Path(report_path or os.getenv(
+        "POSTGRES_REHEARSAL_REPORT", "/var/data/postgres-cutover-rehearsal.json"
+    ))
+    if not path.exists():
+        return {"completed": False, "valid": False, "cutover_ready": False}
+    try:
+        report = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError, TypeError):
+        return {"completed": False, "valid": False, "cutover_ready": False}
+    return {
+        "completed": True,
+        "valid": bool(report.get("valid")),
+        "restore_valid": bool(report.get("restore_valid")),
+        "parity_valid": bool(report.get("parity_valid")),
+        "cutover_ready": bool(report.get("cutover_ready")),
+        "created_at": report.get("created_at", ""),
+        "rows": int(report.get("rows") or 0),
+        "tables": int(report.get("tables") or 0),
+    }
+
+
 def _load_psycopg():
     try:
         import psycopg
@@ -210,16 +233,113 @@ def migrate_shadow(central_path: Path, database_url: str, run_id: str | None = N
     return plan
 
 
+def _validated_shadow_report(path: Path) -> dict[str, Any]:
+    report = json.loads(Path(path).read_text(encoding="utf-8"))
+    if not report.get("valid") or not report.get("databases"):
+        raise RuntimeError("A successful Sprint 33 shadow validation report is required")
+    return report
+
+
+def rehearse_cutover(central_path: Path, database_url: str, validation_path: Path,
+                     run_id: str | None = None, keep_restore: bool = False) -> dict[str, Any]:
+    """Restore the validated shadow copy into isolated schemas and compare live parity.
+
+    The rehearsal runs in one PostgreSQL transaction. By default that transaction is rolled
+    back after validation so no rehearsal schema is retained. SQLite remains authoritative.
+    """
+    if not database_url:
+        raise ValueError("A PostgreSQL DATABASE_URL is required")
+    shadow = _validated_shadow_report(validation_path)
+    current = build_migration_plan(central_path, include_rows=True, run_id="parity")
+    current_by_workspace = {item["workspace_id"]: item for item in current["databases"]}
+    run_id = run_id or datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
+    restore_prefix = "bb_restore_" + re.sub(r"[^a-zA-Z0-9_]", "", run_id).lower()
+    psycopg = _load_psycopg()
+    checks: list[dict[str, Any]] = []
+    with psycopg.connect(database_url) as target:
+        try:
+            for database in shadow["databases"]:
+                workspace_id = database.get("workspace_id")
+                live = current_by_workspace.get(workspace_id)
+                if live is None:
+                    raise RuntimeError(f"Workspace parity failed for {workspace_id}")
+                live_tables = {table["name"]: table for table in live["tables"]}
+                suffix = "core" if workspace_id is None else f"workspace_{workspace_id}"
+                restore_schema = f"{restore_prefix}_{suffix}"
+                source_schema = database["schema"]
+                with target.cursor() as cursor:
+                    cursor.execute(f"create schema {quote_identifier(restore_schema)}")
+                for table in database["tables"]:
+                    name = table["name"]
+                    live_table = live_tables.get(name)
+                    if live_table is None:
+                        raise RuntimeError(f"Live parity table missing: {suffix}.{name}")
+                    source = f"{quote_identifier(source_schema)}.{quote_identifier(name)}"
+                    restored = f"{quote_identifier(restore_schema)}.{quote_identifier(name)}"
+                    with target.cursor() as cursor:
+                        cursor.execute(f"create table {restored} (like {source} including all)")
+                        cursor.execute(f"insert into {restored} select * from {source}")
+                        cursor.execute(f"select * from {restored}")
+                        copied = cursor.fetchall()
+                    target_checksum = rows_checksum(copied)
+                    check = {
+                        "workspace_id": workspace_id,
+                        "table": name,
+                        "source_schema": source_schema,
+                        "restore_schema": restore_schema,
+                        "rows": len(copied),
+                        "restore_valid": (len(copied) == table["rows"] and
+                                          target_checksum == table["checksum"]),
+                        "parity_valid": (len(copied) == live_table["rows"] and
+                                         target_checksum == live_table["checksum"]),
+                    }
+                    checks.append(check)
+                    if not check["restore_valid"] or not check["parity_valid"]:
+                        raise RuntimeError(f"Cutover rehearsal failed for {suffix}.{name}")
+            if keep_restore:
+                target.commit()
+            else:
+                target.rollback()
+        except Exception:
+            target.rollback()
+            raise
+    restore_valid = bool(checks) and all(item["restore_valid"] for item in checks)
+    parity_valid = bool(checks) and all(item["parity_valid"] for item in checks)
+    return {
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "mode": "cutover_rehearsal",
+        "source_run_id": shadow.get("run_id", ""),
+        "rehearsal_run_id": run_id,
+        "restore_retained": keep_restore,
+        "restore_valid": restore_valid,
+        "parity_valid": parity_valid,
+        "valid": restore_valid and parity_valid,
+        "cutover_ready": restore_valid and parity_valid,
+        "cutover_enabled": os.getenv("POSTGRES_CUTOVER_ENABLED", "").lower() == "true",
+        "approval_required": True,
+        "tables": len(checks),
+        "rows": sum(item["rows"] for item in checks),
+        "checks": checks,
+    }
+
+
 def main() -> int:
     import argparse
     parser = argparse.ArgumentParser(description="BrokerBeacon PostgreSQL shadow migration")
-    parser.add_argument("command", choices=("plan", "migrate"))
+    parser.add_argument("command", choices=("plan", "migrate", "rehearse"))
     parser.add_argument("--source", default=os.getenv("BROKERBEACON_DB", "brokerbeacon.db"))
     parser.add_argument("--database-url", default=os.getenv("DATABASE_URL", ""))
     parser.add_argument("--output", default="")
+    parser.add_argument("--validation", default="/var/data/postgres-shadow-validation.json")
+    parser.add_argument("--keep-restore", action="store_true")
     args = parser.parse_args()
-    result = (build_migration_plan(Path(args.source)) if args.command == "plan" else
-              migrate_shadow(Path(args.source), args.database_url))
+    if args.command == "plan":
+        result = build_migration_plan(Path(args.source))
+    elif args.command == "migrate":
+        result = migrate_shadow(Path(args.source), args.database_url)
+    else:
+        result = rehearse_cutover(Path(args.source), args.database_url,
+                                  Path(args.validation), keep_restore=args.keep_restore)
     rendered = json.dumps(result, indent=2)
     if args.output:
         Path(args.output).write_text(rendered + "\n", encoding="utf-8")
