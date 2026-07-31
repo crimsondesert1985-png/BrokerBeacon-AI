@@ -28,6 +28,18 @@ class StreamlinedWorkspaceTests(unittest.TestCase):
     def test_platform_navigation_initializes_account_context_on_startup(self):
         self.assertIn("loadSaasAccount().catch(e=>msg(e.message||'Unable to load account context'));load();", SOURCE)
 
+    def test_platform_admin_has_clickable_state_discovery(self):
+        self.assertIn('id="runScoutBtn"', SOURCE)
+        self.assertIn('id="scoutMetro"', SOURCE)
+        self.assertIn("selectScoutState(code,focusSearch=false)", SOURCE)
+        self.assertIn("filterScoutStatus(status)", SOURCE)
+        self.assertIn("admin-clickable", SOURCE)
+
+    def test_dashboard_metrics_have_workflow_destinations(self):
+        self.assertIn('title="Open Opportunity Engine"', SOURCE)
+        self.assertIn('title="Open Daily Plan"', SOURCE)
+        self.assertIn('title="Open Pipeline"', SOURCE)
+
     def test_platform_navigation_requires_owner_context(self):
         self.assertIn("ownerOnly:true", SOURCE)
         self.assertIn("v==='platformadmin'&&!SaaSContext?.user?.is_platform_owner", SOURCE)
