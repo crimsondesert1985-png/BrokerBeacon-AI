@@ -115,9 +115,10 @@ def install_saas(app, db_path, build_version):
     bp = Blueprint("saas", __name__)
 
     def connect():
-        conn = sqlite3.connect(db_path)
+        conn = sqlite3.connect(db_path, timeout=30)
         conn.row_factory = sqlite3.Row
         conn.execute("pragma foreign_keys=on")
+        conn.execute("pragma busy_timeout=30000")
         return conn
 
     with connect() as conn:
