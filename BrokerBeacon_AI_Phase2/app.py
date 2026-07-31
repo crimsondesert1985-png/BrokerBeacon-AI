@@ -18,8 +18,8 @@ from security_monitoring import emit_security_alert
 from postgres_migration import migration_status, rehearsal_status
 
 app = Flask(__name__)
-BUILD_VERSION = "26.2"
-BUILD_NAME = "OWNER-GATED PLATFORM ADMIN"
+BUILD_VERSION = "26.2.1"
+BUILD_NAME = "OWNER NAV INITIALIZATION"
 DB = prepare_database(Path(__file__).with_name("brokerbeacon.db"))
 NOW = lambda: datetime.now().isoformat(timespec="seconds")
 
@@ -1296,7 +1296,7 @@ function renderIntelligence(){if(!OI)return;let tier=$('#oiTier').value;let xs=O
 async function saveIntelligenceSettings(){let weights={};$$('[data-weight]').forEach(x=>weights[x.dataset.weight]=+x.value);await api('/api/intelligence/settings',{method:'POST',body:JSON.stringify({weights})});msg('Scoring weights saved');await rescoreIntelligence()}
 async function rescoreIntelligence(){let d=await api('/api/intelligence/rescore',{method:'POST'});msg(`${d.updated} prospects rescored`);await loadIntelligence();missionControl();load()}
 
-load();dash();outreach();followups();dailyPlan();ints();missionControl();agentCommandCenter();
+loadSaasAccount().catch(e=>msg(e.message||'Unable to load account context'));load();dash();outreach();followups();dailyPlan();ints();missionControl();agentCommandCenter();
 </script></body></html>'''
 
 def db():
