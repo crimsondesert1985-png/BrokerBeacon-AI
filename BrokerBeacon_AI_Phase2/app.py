@@ -17,8 +17,8 @@ from data_durability import create_backup, prepare_database, storage_status, ver
 from security_monitoring import emit_security_alert
 
 app = Flask(__name__)
-BUILD_VERSION = "22.0"
-BUILD_NAME = "PRODUCTION SECURITY"
+BUILD_VERSION = "23.0"
+BUILD_NAME = "CUSTOMER ONBOARDING"
 DB = prepare_database(Path(__file__).with_name("brokerbeacon.db"))
 NOW = lambda: datetime.now().isoformat(timespec="seconds")
 

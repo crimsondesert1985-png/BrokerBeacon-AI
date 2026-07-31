@@ -39,6 +39,11 @@ class Sprint28TenantIsolationTests(unittest.TestCase):
             "email": "customer@example.com", "password": "CustomerPassword!28",
         })
         assert response.status_code == 302
+        response = cls.customer.post("/onboarding", data={
+            "primary_market": "South Carolina", "team_size": "Just me",
+            "primary_goal": "Build private customer pipeline",
+        })
+        assert response.status_code == 302
 
     @classmethod
     def tearDownClass(cls):
