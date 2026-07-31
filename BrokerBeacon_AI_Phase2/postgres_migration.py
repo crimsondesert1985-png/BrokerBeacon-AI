@@ -25,6 +25,7 @@ TYPE_MAP = {
     "DATE": "TEXT", "DATETIME": "TEXT", "TIMESTAMP": "TEXT", "BLOB": "BYTEA",
 }
 WORKSPACE_PATTERN = re.compile(r"\.workspace-(\d+)\.db$")
+SQLITE_FTS_SHADOW = re.compile(r"_fts_(?:config|content|data|docsize|idx)$")
 
 
 @dataclass(frozen=True)
@@ -89,14 +90,22 @@ def discover_databases(central_path: Path) -> list[tuple[Path, int | None]]:
     return found
 
 
+def portable_table_names(conn: sqlite3.Connection) -> list[str]:
+    """Return canonical tables, excluding SQLite virtual tables and their shadow indexes."""
+    rows = conn.execute(
+        "select name,coalesce(sql,'') from sqlite_master "
+        "where type='table' and name not like 'sqlite_%' order by name"
+    )
+    return [name for name, sql in rows
+            if "create virtual table" not in sql.lower() and not SQLITE_FTS_SHADOW.search(name)]
+
+
 def snapshot_database(path: Path, schema: str, workspace_id: int | None = None,
                       include_rows: bool = True) -> DatabaseSnapshot:
     tables: list[TableSnapshot] = []
     uri = f"file:{Path(path).resolve()}?mode=ro"
     with sqlite3.connect(uri, uri=True) as conn:
-        names = [row[0] for row in conn.execute(
-            "select name from sqlite_master where type='table' and name not like 'sqlite_%' order by name"
-        )]
+        names = portable_table_names(conn)
         for name in names:
             quoted = quote_identifier(name)
             columns = tuple((row[1], row[2] or "TEXT") for row in conn.execute(

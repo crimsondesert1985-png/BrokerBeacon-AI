@@ -10,6 +10,8 @@ PostgreSQL. Each workspace is copied into its own schema to preserve tenant isol
 - Every migration creates new, run-specific `bb_shadow_*` schemas.
 - No source file, existing PostgreSQL schema, or production environment variable is replaced.
 - A failed table checksum rolls back the entire PostgreSQL transaction.
+- SQLite virtual full-text tables and engine-owned shadow indexes are excluded; canonical
+  guideline documents remain validated and PostgreSQL search indexes are rebuilt after cutover.
 - `POSTGRES_CUTOVER_ENABLED` defaults to false and this release contains no automatic cutover.
 
 ## Plan locally
