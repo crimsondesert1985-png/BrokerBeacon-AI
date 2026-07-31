@@ -69,6 +69,12 @@ class Sprint28TenantIsolationTests(unittest.TestCase):
         response = self.customer.post("/api/saas/workspace/switch", json={"workspace_id": founding_workspace})
         self.assertEqual(response.status_code, 403)
 
+    def test_customer_cannot_access_platform_automation_controls(self):
+        for path in ("/api/scout-control-tower", "/api/scout-autopilot", "/api/index-population"):
+            response = self.customer.get(path)
+            self.assertEqual(response.status_code, 403, path)
+            self.assertEqual(response.get_json()["error"], "Platform owner access required")
+
     def test_invitation_acceptance_adds_only_the_invited_workspace(self):
         invitation = self.founding.post("/api/saas/invitations", json={
             "email": "ae@example.com", "role": "AE",
