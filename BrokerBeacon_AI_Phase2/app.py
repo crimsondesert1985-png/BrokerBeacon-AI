@@ -13,11 +13,12 @@ from voice_agent import configured as voice_configured, create_twilio_call, huma
 from guideline_index import seed_index, index_fha_pdf, search as search_guideline_index, stats as guideline_index_stats
 from saas import install_saas
 from tenant_storage import ensure_workspace_database
+from data_durability import create_backup, prepare_database, storage_status
 
 app = Flask(__name__)
-BUILD_VERSION = "20.0"
-BUILD_NAME = "TENANT ISOLATION"
-DB = Path(os.getenv("BROKERBEACON_DB_PATH") or Path(__file__).with_name("brokerbeacon.db"))
+BUILD_VERSION = "21.0"
+BUILD_NAME = "DATA DURABILITY"
+DB = prepare_database(Path(__file__).with_name("brokerbeacon.db"))
 NOW = lambda: datetime.now().isoformat(timespec="seconds")
 
 HTML = r'''<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BrokerBeacon AI</title>
@@ -1254,8 +1255,10 @@ def db():
     database_path = DB
     if has_request_context() and getattr(g, "workspace_id", None):
         database_path = ensure_workspace_database(DB, g.workspace_id)
-    c = sqlite3.connect(database_path)
+    c = sqlite3.connect(database_path, timeout=30)
     c.row_factory = sqlite3.Row
+    c.execute("pragma foreign_keys=on")
+    c.execute("pragma busy_timeout=30000")
     return c
 
 def cols(c, table):
@@ -1546,9 +1549,21 @@ def health():
     try:
         with db() as c:
             prospect_count = c.execute("select count(*) from prospects").fetchone()[0]
-        return jsonify(status="ok", prospects=prospect_count, version=BUILD_VERSION, build=BUILD_NAME)
+        durability = storage_status(DB)
+        return jsonify(status="ok", prospects=prospect_count, version=BUILD_VERSION,
+                       build=BUILD_NAME, storage={"persistent": durability["persistent"],
+                       "integrity": durability["integrity"], "backup_count": durability["backup_count"]})
     except Exception as exc:
         return jsonify(status="error", detail=str(exc)), 500
+
+@app.get("/api/platform/storage")
+def platform_storage():
+    return jsonify(storage_status(DB))
+
+@app.post("/api/platform/backups")
+def platform_backup():
+    backup = create_backup(DB, reason="manual")
+    return jsonify(ok=True, backup=backup.name, storage=storage_status(DB)), 201
 
 def reject_demo_write():
     if request.cookies.get("bb_demo") == "1":

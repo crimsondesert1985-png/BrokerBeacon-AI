@@ -4,6 +4,9 @@ services:
     runtime: python
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn app:app
+    healthCheckPath: /health
     envVars:
       - key: PYTHON_VERSION
         value: 3.13.5
+      - key: BROKERBEACON_DATA_DIR
+        value: /var/data
