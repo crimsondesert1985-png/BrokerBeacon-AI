@@ -40,6 +40,18 @@ class StreamlinedWorkspaceTests(unittest.TestCase):
         self.assertIn('title="Open Daily Plan"', SOURCE)
         self.assertIn('title="Open Pipeline"', SOURCE)
 
+    def test_sitewide_fields_have_guided_interactions(self):
+        self.assertIn("function enhanceSiteSurfaces(root=document)", SOURCE)
+        self.assertIn("const FIELD_HELP=", SOURCE)
+        self.assertIn("const SURFACE_VIEWS=", SOURCE)
+        self.assertIn("className='site-tooltip'", SOURCE)
+        self.assertIn("new MutationObserver", SOURCE)
+
+    def test_non_actionable_surfaces_explain_themselves(self):
+        self.assertIn("guided-info", SOURCE)
+        self.assertIn("This value updates from BrokerBeacon data.", SOURCE)
+        self.assertIn("keeps its existing confirmation or approval control", SOURCE)
+
     def test_platform_navigation_requires_owner_context(self):
         self.assertIn("ownerOnly:true", SOURCE)
         self.assertIn("v==='platformadmin'&&!SaaSContext?.user?.is_platform_owner", SOURCE)
