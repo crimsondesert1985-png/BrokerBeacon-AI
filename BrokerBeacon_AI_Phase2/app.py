@@ -15,10 +15,11 @@ from saas import install_saas
 from tenant_storage import ensure_workspace_database
 from data_durability import create_backup, prepare_database, storage_status, verify_latest_backup
 from security_monitoring import emit_security_alert
+from postgres_migration import migration_status
 
 app = Flask(__name__)
-BUILD_VERSION = "24.0"
-BUILD_NAME = "PILOT BILLING EXPERIENCE"
+BUILD_VERSION = "25.0"
+BUILD_NAME = "POSTGRESQL MIGRATION READINESS"
 DB = prepare_database(Path(__file__).with_name("brokerbeacon.db"))
 NOW = lambda: datetime.now().isoformat(timespec="seconds")
 
@@ -1593,9 +1594,14 @@ def health():
         with db() as c:
             prospect_count = c.execute("select count(*) from prospects").fetchone()[0]
         durability = storage_status(DB)
+        postgres = migration_status(DB)
         return jsonify(status="ok", prospects=prospect_count, version=BUILD_VERSION,
                        build=BUILD_NAME, storage={"persistent": durability["persistent"],
-                       "integrity": durability["integrity"], "backup_count": durability["backup_count"]})
+                       "integrity": durability["integrity"], "backup_count": durability["backup_count"]},
+                       postgres={"configured": postgres["configured"], "mode": postgres["mode"],
+                       "cutover_enabled": postgres["cutover_enabled"],
+                       "source_databases": postgres["source_databases"],
+                       "ready_for_shadow_copy": postgres["ready_for_shadow_copy"]})
     except Exception as exc:
         emit_security_alert("health_check_failed", "critical", {"error": type(exc).__name__})
         return jsonify(status="error", detail=str(exc)), 500

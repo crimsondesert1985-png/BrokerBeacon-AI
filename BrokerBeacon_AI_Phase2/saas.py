@@ -17,6 +17,7 @@ from flask import Blueprint, g, jsonify, redirect, render_template_string, reque
 from markupsafe import escape
 from werkzeug.security import check_password_hash, generate_password_hash
 from security_monitoring import emit_security_alert
+from postgres_migration import build_migration_plan, migration_status
 
 
 ROLE_RANK = {"Read Only": 10, "AE": 20, "Manager": 30, "Owner": 40}
@@ -949,6 +950,13 @@ def install_saas(app, db_path, build_version):
                 left join saas_workspace_settings s on s.workspace_id=w.id
                 group by w.id order by w.id""")]
         return jsonify(items=rows)
+
+    @bp.get("/api/platform/postgres-readiness")
+    def platform_postgres_readiness():
+        status = migration_status(db_path)
+        if request.args.get("detail") == "1":
+            status["plan"] = build_migration_plan(db_path, include_rows=False)
+        return jsonify(status)
 
     @bp.put("/api/platform/customers/<int:workspace_id>")
     def platform_update_customer(workspace_id):
