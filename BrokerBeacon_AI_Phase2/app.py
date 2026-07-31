@@ -559,7 +559,7 @@ Reply STOP to opt out of texts."></textarea></label><p class="contact-note">Avai
 </div>
 <div class="panel" style="margin-top:14px"><div class="profile-head"><div><div class="kicker">ACCOUNT DETAIL</div><h3 id="prodDetailTitle">Select a company</h3></div><span id="prodDetailSource" class="source-badge">Source not selected</span></div><div id="productionDetail" class="production-empty">Choose a company above to view loan type, monthly trend, and loan-officer production.</div></div>
 </section><section id="boss" class="view"><div class="hero exec"><div><div class="kicker">SPRINT 3 · REVENUE INTELLIGENCE</div><h2>Pipeline, conversion, and campaign attribution</h2><p>Separate actual recorded outcomes from configurable projections. Track applications, submissions, fundings, funded volume, estimated revenue, and which campaign preceded an outcome.</p></div><div class="contact-tools"><select id="execPeriod"><option value="30">30 days</option><option value="90" selected>90 days</option><option value="365">12 months</option></select><button class="btn primary" onclick="boss()">Refresh</button><button class="btn" onclick="window.print()">Print / Save PDF</button></div></div><div class="metrics"><div class="metric"><span>Recorded funded volume</span><strong id="eFunded">$0</strong></div><div class="metric"><span>Recorded fundings</span><strong id="eUnits">0</strong></div><div class="metric"><span>Estimated actual revenue</span><strong id="eRevenue">$0</strong></div><div class="metric"><span>Projected pipeline volume</span><strong id="eProjected">$0</strong></div></div><div class="grid"><div class="panel"><h3>Conversion funnel</h3><div id="execFunnel" class="bars"></div><div id="execConversion" class="scoregrid" style="margin-top:14px"></div></div><div class="panel"><h3>Record an outcome</h3><p class="muted">Log only real business events. BrokerBeacon attributes the outcome to the most recent sent campaign within 90 days when one exists.</p><label>Broker<select id="revProspect" class="full"></select></label><div class="formgrid"><label>Outcome<select id="revType"><option>Application</option><option>Submitted</option><option>Funded</option><option>Lost</option></select></label><label>Amount<input id="revAmount" type="number" min="0" step="1000" value="0"></label><label>Date/time<input id="revDate" type="datetime-local"></label><label>Loan count<input id="revCount" type="number" min="1" value="1"></label></div><label>Notes<input id="revNotes" class="full" placeholder="Optional scenario or outcome note"></label><button class="btn primary" id="saveRevenue">Save outcome</button></div></div><div class="grid" style="margin-top:14px"><div class="panel"><h3>Campaign-to-outcome attribution</h3><div id="execCampaigns"></div></div><div class="panel"><h3>Top accounts by recorded results</h3><div id="execTop"></div></div></div><div class="grid" style="margin-top:14px"><div class="panel"><h3>Recent outcomes</h3><div id="execRecent" class="activity"></div></div><div class="panel"><h3>Projection assumptions</h3><p class="muted">These settings affect projected figures only. They do not alter recorded production.</p><div id="revenueSettings"></div><button class="btn" id="saveRevenueSettings">Save assumptions</button></div></div></section>
-<section id="voiceagent" class="view"><div class="hero"><div><div class="kicker">CONSENT-FIRST AUTOMATION</div><h2>Ash AI Voice Agent</h2><p>Place disclosed automated calls with a professional female voice, detect voicemail, handle a brief conversation, and schedule appointments. Calls are allowed only for contacts explicitly marked as having voice consent.</p></div><span class="pill" id="voiceStatus">Checking connection…</span></div><div class="callout" style="margin:14px 0"><b>Compliance guardrails:</b> no cold-call automation, no voice cloning, no calls to opted-out contacts, and the AI identifies itself at the beginning of every live conversation.</div><div class="grid"><div class="panel"><div class="profile-head"><div><h3>Eligible contacts</h3><p class="muted">Review each contact before calling.</p></div><button class="btn" onclick="voiceAgent()">Refresh</button></div><div id="voiceContacts"></div></div><div><div class="panel"><h3>Upcoming appointments</h3><div id="voiceAppointments"></div></div><div class="panel" style="margin-top:14px"><h3>Recent call activity</h3><div id="voiceCalls"></div></div></div></div></section><section id="integrations" class="view"><div class="int"><div class="panel integration"><b>✉ Gmail</b><p>Future OAuth draft creation and reply tracking.</p><input type="checkbox" data-key="gmail_connected"></div><div class="panel integration"><b>H HubSpot</b><p>Future prospect and lifecycle synchronization.</p><input type="checkbox" data-key="hubspot_connected"></div><div class="panel integration"><b>N Licensing feed</b><p>Future authorized broker-data import adapter.</p><input type="checkbox" data-key="nmls_source_configured"></div></div><div class="panel" style="margin-top:14px;color:var(--m)"><b>Demo safety:</b> connection toggles store flags only. No passwords, tokens, or paid-data credentials are stored. Live research and integrations require approved data sources and credentials.</div></section>
+<section id="voiceagent" class="view"><div class="hero"><div><div class="kicker">CONSENT-FIRST AUTOMATION</div><h2>Ash AI Voice Agent</h2><p>Write and preview reusable call scripts, approve the final language, then choose the exact script Ash will use for a consented prospect.</p></div><span class="pill" id="voiceStatus">Checking connection…</span></div><div class="callout" style="margin:14px 0"><b>Compliance guardrails:</b> every live call keeps the automated-agent disclosure, recording/transcription notice, opt-out handling, documented voice consent, and final confirmation before dialing.</div><div class="grid"><div class="panel"><div class="profile-head"><div><div class="kicker">VOICE SCRIPT STUDIO</div><h3>Write it. Hear it. Approve it.</h3><p class="muted">Use {{first_name}} and {{company}} for personalization. Browser preview does not place a call.</p></div><span class="pill" id="voiceScriptState">New draft</span></div><input type="hidden" id="voiceScriptId"><label>Script name<input class="full" id="voiceScriptName" placeholder="Example: HELOC introduction"></label><label>Live-call script<textarea id="voiceScriptText" style="min-height:180px" placeholder="I am reaching out because Clay would like to be a lending resource for {{company}}..."></textarea></label><label>Voicemail version<textarea id="voiceVoicemailText" style="min-height:100px" placeholder="Clay would like to connect about lending support for {{company}}..."></textarea></label><label>Preview voice<select class="full" id="voicePreviewVoice"></select></label><div class="contact-tools"><button class="btn" type="button" onclick="previewVoiceScript()">▶ Hear preview</button><button class="btn" type="button" onclick="stopVoicePreview()">■ Stop</button><button class="btn" type="button" onclick="newVoiceScript()">New</button><button class="btn primary" type="button" onclick="saveVoiceScript()">Save draft</button><button class="btn" id="approveVoiceScriptBtn" type="button" onclick="approveVoiceScript()">Approve for calls</button></div><p class="contact-note">Editing an approved script returns it to Draft. Re-approve after reviewing the final words. The actual phone voice comes from the configured Twilio voice.</p><div id="voiceScriptList" class="contact-list"></div></div><div><div class="panel"><div class="profile-head"><div><h3>Eligible contacts</h3><p class="muted">Choose an approved script, verify consent, then confirm the call.</p></div><button class="btn" onclick="voiceAgent()">Refresh</button></div><div id="voiceContacts"></div></div><div class="panel" style="margin-top:14px"><h3>Upcoming appointments</h3><div id="voiceAppointments"></div></div><div class="panel" style="margin-top:14px"><h3>Recent call activity</h3><div id="voiceCalls"></div></div></div></div></section><section id="integrations" class="view"><div class="int"><div class="panel integration"><b>✉ Gmail</b><p>Future OAuth draft creation and reply tracking.</p><input type="checkbox" data-key="gmail_connected"></div><div class="panel integration"><b>H HubSpot</b><p>Future prospect and lifecycle synchronization.</p><input type="checkbox" data-key="hubspot_connected"></div><div class="panel integration"><b>N Licensing feed</b><p>Future authorized broker-data import adapter.</p><input type="checkbox" data-key="nmls_source_configured"></div></div><div class="panel" style="margin-top:14px;color:var(--m)"><b>Demo safety:</b> connection toggles store flags only. No passwords, tokens, or paid-data credentials are stored. Live research and integrations require approved data sources and credentials.</div></section>
 
 <section id="intelligence" class="view"><div class="hero"><div><div class="kicker">EXPLAINABLE REVENUE INTELLIGENCE</div><h2>Know who to call, why they matter, and what to lead with.</h2><p>Scores are calculated from verified data, roster size, product fit, relationship stage, follow-up urgency, and inactivity. Every recommendation includes its reasoning and confidence.</p></div><button class="btn primary" onclick="rescoreIntelligence()">Recalculate all</button></div><div class="metrics"><div class="metric"><span>Hot opportunities</span><strong id="oiHot">0</strong></div><div class="metric"><span>Warm opportunities</span><strong id="oiWarm">0</strong></div><div class="metric"><span>Due today</span><strong id="oiDue">0</strong></div><div class="metric"><span>Product matched</span><strong id="oiMatched">0</strong></div></div><div class="grid"><div class="panel" style="grid-column:1/-1"><div class="profile-head"><div><h3>Ranked opportunities</h3><p class="muted">The score is transparent and configurable. It is not a production-volume claim.</p></div><select id="oiTier" onchange="renderIntelligence()"><option>All</option><option>Hot</option><option>Warm</option><option>Developing</option><option>Research</option></select></div><div id="oiRows"></div></div><div class="panel"><h3>Scoring controls</h3><p class="muted">Adjust how much each verified signal contributes.</p><div id="oiSettings"></div><button class="btn primary" onclick="saveIntelligenceSettings()">Save weights</button></div><div class="panel"><h3>Union Home product catalog</h3><p class="muted">Editable talking points used by the product-match engine.</p><div id="oiProducts"></div></div></div></section>
 <footer class="legal-footer"><b>© 2026 Clay Carr. All rights reserved.</b> BrokerBeacon AI™ is a trademark of Clay Carr. Unauthorized copying, modification, distribution, or commercial use is prohibited.</footer>
@@ -1216,9 +1216,51 @@ async function boss(){let days=$('#execPeriod')?.value||90,d=await api('/api/exe
 $('#saveRevenue').onclick=async()=>{let d=await api('/api/revenue-events',{method:'POST',body:JSON.stringify({prospect_id:$('#revProspect').value,event_type:$('#revType').value,amount:$('#revAmount').value,loan_count:$('#revCount').value,event_at:$('#revDate').value,notes:$('#revNotes').value})});msg(d.attributed_campaign?`Outcome saved and attributed to ${d.attributed_campaign.name}`:'Outcome saved');boss()};
 $('#saveRevenueSettings').onclick=async()=>{let settings={};$$('.rev-setting').forEach(x=>settings[x.dataset.key]=x.value);await api('/api/revenue-settings',{method:'POST',body:JSON.stringify({settings})});msg('Projection assumptions saved');boss()};
 
-async function voiceAgent(){let d=await api('/api/voice-agent');$('#voiceStatus').textContent=d.connected?'Twilio connected · female voice':'Setup required';$('#voiceStatus').className='pill';$('#voiceContacts').innerHTML=d.contacts.length?d.contacts.map(x=>`<div class="contact-card"><div class="contact-line"><div><b>${esc(x.name||'Unnamed contact')}</b><div class="mini">${esc(x.company)} · ${esc(x.phone||'No phone')}</div></div><span class="pill">${x.voice_consent?'Consent recorded':'No consent'}</span></div><div class="contact-actions"><button class="btn smallbtn" onclick="setVoiceConsent(${x.id},${x.voice_consent?0:1})">${x.voice_consent?'Remove consent':'Record consent'}</button><button class="btn primary smallbtn" ${(!x.voice_consent||!x.phone||!d.connected)?'disabled':''} onclick="startVoiceCall(${x.id})">Call with Ash</button></div></div>`).join(''):'<div class="empty">No contacts with callable phone numbers.</div>';$('#voiceAppointments').innerHTML=d.appointments.length?d.appointments.map(x=>`<div class="timeline-item"><b>${esc(x.company)} · ${esc(x.name)}</b><div class="mini">${esc((x.start_at||'').replace('T',' '))} · ${esc(x.status)}</div></div>`).join(''):'<div class="empty">No AI-scheduled appointments yet.</div>';$('#voiceCalls').innerHTML=d.calls.length?d.calls.map(x=>`<div class="timeline-item"><b>${esc(x.company)} · ${esc(x.name)}</b><div class="mini">${esc(x.status)}${x.answered_by?' · '+esc(x.answered_by):''} · ${esc((x.created_at||'').replace('T',' '))}</div></div>`).join(''):'<div class="empty">No voice calls yet.</div>'}
+let voiceScripts=[],selectedVoiceScriptId=0;
+function populatePreviewVoices(){
+  const select=$('#voicePreviewVoice');if(!select||!window.speechSynthesis)return;
+  const voices=speechSynthesis.getVoices();const chosen=select.value;
+  select.innerHTML=voices.map((v,i)=>`<option value="${i}">${esc(v.name)} · ${esc(v.lang)}</option>`).join('')||'<option value="">System default</option>';
+  if(chosen)select.value=chosen;
+}
+if(window.speechSynthesis){speechSynthesis.onvoiceschanged=populatePreviewVoices}
+function voicePreviewText(){
+  const script=($('#voiceScriptText').value||'').replaceAll('{{first_name}}','Alex').replaceAll('{{company}}','Example Mortgage');
+  return 'Hi Alex. This is Ash, an automated AI assistant calling on behalf of Clay at Union Home Mortgage. This call may be recorded or transcribed for follow-up. You can say stop at any time. '+script;
+}
+function previewVoiceScript(){
+  if(!('speechSynthesis' in window))return msg('Voice preview is not supported in this browser');
+  const text=voicePreviewText().trim();if(!text)return msg('Write a script first');
+  speechSynthesis.cancel();const utterance=new SpeechSynthesisUtterance(text);const voices=speechSynthesis.getVoices();utterance.voice=voices[+($('#voicePreviewVoice').value||0)]||null;utterance.rate=.98;speechSynthesis.speak(utterance);msg('Playing private browser preview');
+}
+function stopVoicePreview(){if(window.speechSynthesis)speechSynthesis.cancel()}
+function newVoiceScript(){stopVoicePreview();$('#voiceScriptId').value='';$('#voiceScriptName').value='';$('#voiceScriptText').value='';$('#voiceVoicemailText').value='';$('#voiceScriptState').textContent='New draft';$('#approveVoiceScriptBtn').disabled=true}
+function editVoiceScript(id){const x=voiceScripts.find(s=>s.id===id);if(!x)return;$('#voiceScriptId').value=x.id;$('#voiceScriptName').value=x.name;$('#voiceScriptText').value=x.script_text;$('#voiceVoicemailText').value=x.voicemail_text||'';$('#voiceScriptState').textContent=x.approved_at?'Approved for calls':'Draft · needs approval';$('#approveVoiceScriptBtn').disabled=!!x.approved_at}
+function renderVoiceScripts(){
+  $('#voiceScriptList').innerHTML=voiceScripts.length?voiceScripts.map(x=>`<button type="button" class="template-item" onclick="editVoiceScript(${x.id})"><b>${esc(x.name)}</b><small>${x.approved_at?'✓ Approved for calls':'Draft · preview and approve'}</small></button>`).join(''):'<div class="empty">No scripts yet. Write your first script above.</div>';
+}
+async function saveVoiceScript(){
+  const id=+($('#voiceScriptId').value||0),name=$('#voiceScriptName').value.trim(),script_text=$('#voiceScriptText').value.trim(),voicemail_text=$('#voiceVoicemailText').value.trim();
+  if(!name||!script_text)return msg('Add a script name and live-call script');
+  const d=await api(id?'/api/voice-agent/scripts/'+id:'/api/voice-agent/scripts',{method:id?'PUT':'POST',body:JSON.stringify({name,script_text,voicemail_text})});
+  msg('Draft saved · approval required');await voiceAgent();editVoiceScript(d.id);
+}
+async function approveVoiceScript(){
+  const id=+($('#voiceScriptId').value||0);if(!id)return msg('Save the draft first');
+  if(!confirm('Approve this exact script for consented prospect calls? Editing it later will require approval again.'))return;
+  await api('/api/voice-agent/scripts/'+id+'/approve',{method:'POST'});msg('Script approved for calls');await voiceAgent();editVoiceScript(id);
+}
+async function voiceAgent(){
+  let d=await api('/api/voice-agent');voiceScripts=d.scripts||[];populatePreviewVoices();
+  $('#voiceStatus').textContent=d.connected?'Twilio connected · '+d.female_voice:'Preview ready · calling setup required';$('#voiceStatus').className='pill';renderVoiceScripts();
+  if(!$('#voiceScriptId').value&&voiceScripts.length)editVoiceScript(voiceScripts.find(x=>x.approved_at)?.id||voiceScripts[0].id);
+  const approved=voiceScripts.filter(x=>x.approved_at);if(!approved.some(x=>x.id===selectedVoiceScriptId))selectedVoiceScriptId=approved[0]?.id||0;
+  $('#voiceContacts').innerHTML=d.contacts.length?d.contacts.map(x=>`<div class="contact-card"><div class="contact-line"><div><b>${esc(x.name||'Unnamed contact')}</b><div class="mini">${esc(x.company)} · ${esc(x.phone||'No phone')}</div></div><span class="pill">${x.voice_consent?'Consent recorded':'No consent'}</span></div><label>Approved call script<select class="full" onchange="selectedVoiceScriptId=+this.value"><option value="">Choose approved script</option>${approved.map(s=>`<option value="${s.id}" ${s.id===selectedVoiceScriptId?'selected':''}>${esc(s.name)}</option>`).join('')}</select></label><div class="contact-actions"><button class="btn smallbtn" onclick="setVoiceConsent(${x.id},${x.voice_consent?0:1})">${x.voice_consent?'Remove consent':'Record consent'}</button><button class="btn primary smallbtn" ${(!x.voice_consent||!x.phone||!d.connected||!approved.length)?'disabled':''} onclick="startVoiceCall(${x.id})">Review & call with Ash</button></div></div>`).join(''):'<div class="empty">No contacts with callable phone numbers.</div>';
+  $('#voiceAppointments').innerHTML=d.appointments.length?d.appointments.map(x=>`<div class="timeline-item"><b>${esc(x.company)} · ${esc(x.name)}</b><div class="mini">${esc((x.start_at||'').replace('T',' '))} · ${esc(x.status)}</div></div>`).join(''):'<div class="empty">No AI-scheduled appointments yet.</div>';
+  $('#voiceCalls').innerHTML=d.calls.length?d.calls.map(x=>`<div class="timeline-item"><b>${esc(x.company)} · ${esc(x.name)}</b><div class="mini">${esc(x.status)}${x.script_name?' · '+esc(x.script_name):''}${x.answered_by?' · '+esc(x.answered_by):''} · ${esc((x.created_at||'').replace('T',' '))}</div></div>`).join(''):'<div class="empty">No voice calls yet.</div>';
+}
 async function setVoiceConsent(id,value){await api('/api/voice-agent/consent',{method:'POST',body:JSON.stringify({contact_id:id,consent:value})});msg(value?'Voice consent recorded':'Voice consent removed');voiceAgent()}
-async function startVoiceCall(id){if(!confirm('Place a disclosed automated call to this consented contact now?'))return;let d=await api('/api/voice-agent/call',{method:'POST',body:JSON.stringify({contact_id:id})});msg('Call queued · '+d.status);voiceAgent()}
+async function startVoiceCall(id){const script=voiceScripts.find(x=>x.id===selectedVoiceScriptId&&x.approved_at);if(!script)return msg('Choose an approved script');if(!confirm('Review complete: place a disclosed automated call using “'+script.name+'” now?'))return;let d=await api('/api/voice-agent/call',{method:'POST',body:JSON.stringify({contact_id:id,script_id:script.id})});msg('Call queued · '+d.status);voiceAgent()}
 async function ints(){let d=await api('/api/integrations');$$('[data-key]').forEach(x=>{x.checked=d[x.dataset.key];x.onchange=()=>api('/api/integrations',{method:'POST',body:JSON.stringify({key:x.dataset.key,value:x.checked})})})}
 if(document.body.dataset.demo==='1'){
   const banner=document.createElement('div');banner.className='demo-banner';banner.innerHTML='<b>Executive demo mode</b> · Explore every workflow. Data-changing actions are disabled.';document.querySelector('main').insertBefore(banner,document.querySelector('.top').nextSibling);
@@ -3890,9 +3932,45 @@ def voice_agent_dashboard():
         if 'voice_consent' not in cols: c.execute('alter table contacts add column voice_consent integer default 0')
         if 'voice_opt_out' not in cols: c.execute('alter table contacts add column voice_opt_out integer default 0')
         contacts=[dict(x) for x in c.execute("select c.id,c.prospect_id,c.name,coalesce(c.mobile,c.phone,p.phone) phone,coalesce(c.voice_consent,0) voice_consent,coalesce(c.voice_opt_out,0) voice_opt_out,p.company from contacts c join prospects p on p.id=c.prospect_id where coalesce(c.mobile,c.phone,p.phone,'')<>'' and coalesce(c.voice_opt_out,0)=0 order by p.score desc,c.is_primary desc limit 40")]
-        calls=[dict(x) for x in c.execute("select v.*,p.company,c.name from voice_calls v join prospects p on p.id=v.prospect_id join contacts c on c.id=v.contact_id order by v.id desc limit 20")]
+        calls=[dict(x) for x in c.execute("select v.*,p.company,c.name,coalesce(s.name,'') script_name from voice_calls v join prospects p on p.id=v.prospect_id join contacts c on c.id=v.contact_id left join voice_scripts s on s.id=v.script_id order by v.id desc limit 20")]
         appointments=[dict(x) for x in c.execute("select a.*,p.company,c.name from appointments a join prospects p on p.id=a.prospect_id join contacts c on c.id=a.contact_id where a.status='Scheduled' order by a.start_at limit 12")]
-    return jsonify(connected=voice_configured(),female_voice=os.getenv('TWILIO_VOICE','Polly.Joanna'),contacts=contacts,calls=calls,appointments=appointments)
+        scripts=[dict(x) for x in c.execute("select * from voice_scripts order by case when approved_at<>'' then 0 else 1 end,updated_at desc,id desc")]
+    return jsonify(connected=voice_configured(),female_voice=os.getenv('TWILIO_VOICE','Polly.Joanna'),contacts=contacts,calls=calls,appointments=appointments,scripts=scripts)
+
+@app.post('/api/voice-agent/scripts')
+def create_voice_script():
+    blocked=reject_demo_write()
+    if blocked:return blocked
+    d=request.get_json(silent=True) or {}; name=(d.get('name') or '').strip(); script=(d.get('script_text') or '').strip(); voicemail_text=(d.get('voicemail_text') or '').strip()
+    if not name or not script:return jsonify(error='Script name and live-call script are required.'),400
+    if len(name)>120 or len(script)>2400 or len(voicemail_text)>1200:return jsonify(error='Script is too long.'),400
+    now=NOW()
+    with db() as c:
+        cur=c.execute("insert into voice_scripts(name,script_text,voicemail_text,approved_at,created_at,updated_at) values(?,?,?,'',?,?)",(name,script,voicemail_text,now,now))
+    return jsonify(ok=True,id=cur.lastrowid,status='Draft'),201
+
+@app.put('/api/voice-agent/scripts/<int:script_id>')
+def update_voice_script(script_id):
+    blocked=reject_demo_write()
+    if blocked:return blocked
+    d=request.get_json(silent=True) or {}; name=(d.get('name') or '').strip(); script=(d.get('script_text') or '').strip(); voicemail_text=(d.get('voicemail_text') or '').strip()
+    if not name or not script:return jsonify(error='Script name and live-call script are required.'),400
+    if len(name)>120 or len(script)>2400 or len(voicemail_text)>1200:return jsonify(error='Script is too long.'),400
+    with db() as c:
+        cur=c.execute("update voice_scripts set name=?,script_text=?,voicemail_text=?,approved_at='',updated_at=? where id=?",(name,script,voicemail_text,NOW(),script_id))
+    if not cur.rowcount:return jsonify(error='Script not found'),404
+    return jsonify(ok=True,id=script_id,status='Draft')
+
+@app.post('/api/voice-agent/scripts/<int:script_id>/approve')
+def approve_voice_script(script_id):
+    blocked=reject_demo_write()
+    if blocked:return blocked
+    with db() as c:
+        row=c.execute('select script_text from voice_scripts where id=?',(script_id,)).fetchone()
+        if not row:return jsonify(error='Script not found'),404
+        if not (row['script_text'] or '').strip():return jsonify(error='Script cannot be empty'),400
+        now=NOW();c.execute('update voice_scripts set approved_at=?,updated_at=? where id=?',(now,now,script_id))
+    return jsonify(ok=True,id=script_id,status='Approved')
 
 @app.post('/api/voice-agent/consent')
 def voice_agent_consent():
@@ -3911,17 +3989,20 @@ def voice_agent_call():
     blocked=reject_demo_write()
     if blocked:return blocked
     if not voice_configured():return jsonify(error='Twilio is not configured. Add TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_FROM_NUMBER in Render.'),400
-    d=request.get_json(silent=True) or {}; cid=int(d.get('contact_id') or 0)
+    d=request.get_json(silent=True) or {}; cid=int(d.get('contact_id') or 0); script_id=int(d.get('script_id') or 0)
     with db() as c:
         row=c.execute("select c.*,p.company from contacts c join prospects p on p.id=c.prospect_id where c.id=?",(cid,)).fetchone()
+        script_row=c.execute("select * from voice_scripts where id=? and approved_at<>''",(script_id,)).fetchone()
         if not row:return jsonify(error='Contact not found'),404
-        x=dict(row); phone=x.get('mobile') or x.get('phone')
+        if not script_row:return jsonify(error='Choose an approved voice script before calling.'),400
+        x=dict(row); script=dict(script_row); phone=x.get('mobile') or x.get('phone')
         if not phone:return jsonify(error='Contact has no phone number'),400
         if not x.get('voice_consent') or x.get('voice_opt_out'):return jsonify(error='Explicit voice consent is required and the contact must not be opted out.'),400
-        cur=c.execute("insert into voice_calls(prospect_id,contact_id,status,created_at,updated_at) values(?,?,'Queued',?,?)",(x['prospect_id'],cid,NOW(),NOW())); call_id=cur.lastrowid
+        snapshot=json.dumps({'name':script['name'],'script_text':script['script_text'],'voicemail_text':script['voicemail_text']})
+        cur=c.execute("insert into voice_calls(prospect_id,contact_id,script_id,script_snapshot,status,created_at,updated_at) values(?,?,?,?,'Queued',?,?)",(x['prospect_id'],cid,script_id,snapshot,NOW(),NOW())); call_id=cur.lastrowid
     base=request.url_root.rstrip('/'); result=create_twilio_call(phone,f'{base}/voice/answer/{call_id}',f'{base}/voice/status/{call_id}')
     with db() as c:c.execute("update voice_calls set twilio_sid=?,status=?,updated_at=? where id=?",(result.get('sid',''),result.get('status','queued'),NOW(),call_id))
-    return jsonify(ok=True,call_id=call_id,status=result.get('status','queued'))
+    return jsonify(ok=True,call_id=call_id,status=result.get('status','queued'),script_id=script_id)
 
 @app.post('/voice/answer/<int:call_id>')
 def voice_answer(call_id):
@@ -3930,7 +4011,8 @@ def voice_answer(call_id):
     if not row:return Response(twiml(say('This call is unavailable. Goodbye.')),mimetype='text/xml')
     x=dict(row); first=(x.get('name') or 'there').split()[0]; answered=(request.form.get('AnsweredBy') or '').lower()
     with db() as c:c.execute('update voice_calls set answered_by=?,status=?,updated_at=? where id=?',(answered or 'unknown','In progress',NOW(),call_id))
-    xml=voicemail(first,x['company']) if answered.startswith('machine') else human_greeting(first,x['company'],call_id)
+    script=json.loads(x.get('script_snapshot') or '{}')
+    xml=voicemail(first,x['company'],script.get('voicemail_text','')) if answered.startswith('machine') else human_greeting(first,x['company'],call_id,script.get('script_text',''))
     return Response(xml,mimetype='text/xml')
 
 @app.post('/voice/respond/<int:call_id>')
