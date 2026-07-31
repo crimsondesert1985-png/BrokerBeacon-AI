@@ -2,12 +2,16 @@
 from datetime import datetime, timedelta
 from functools import wraps
 import hashlib
+import hmac
 from email.message import EmailMessage
 import json
 import os
 import secrets
 import smtplib
 import sqlite3
+import time
+import urllib.parse
+import urllib.request as urlrequest
 
 from flask import Blueprint, g, jsonify, redirect, render_template_string, request, session
 from markupsafe import escape
@@ -17,9 +21,15 @@ from security_monitoring import emit_security_alert
 
 ROLE_RANK = {"Read Only": 10, "AE": 20, "Manager": 30, "Owner": 40}
 PUBLIC_PATHS = {"/login", "/register", "/forgot-password", "/reset-password", "/verify-email",
-                "/resend-verification", "/health", "/api/version", "/demo"}
+                "/resend-verification", "/pricing", "/api/saas/billing/webhook",
+                "/health", "/api/version", "/demo"}
 LOGIN_LIMIT = 5
 LOGIN_WINDOW_MINUTES = 15
+PLAN_LIMITS = {
+    "Founding": {"seats": 25, "monthly_ai_actions": 10000},
+    "Trial": {"seats": 5, "monthly_ai_actions": 500},
+    "Starter": {"seats": 10, "monthly_ai_actions": 2500},
+}
 PLATFORM_PREFIXES = (
     "/api/scout", "/api/index-population", "/api/automation",
     "/api/platform", "/api/population",
@@ -31,7 +41,7 @@ content="width=device-width,initial-scale=1"><title>{{ title }} · BrokerBeacon 
 font:15px Inter,Segoe UI,Arial;color:#17233a}.card{width:min(430px,92vw);background:white;
 padding:32px;border-radius:18px;box-shadow:0 28px 80px #0008}.brand{font-size:24px;font-weight:900;
 color:#0d2347}.brand span{color:#c6283d}h1{font-size:22px;margin:26px 0 8px}p{color:#66758f;
-line-height:1.5}label{display:block;font-size:12px;font-weight:700;margin:16px 0 6px}input{
+line-height:1.5}label{display:block;font-size:12px;font-weight:700;margin:16px 0 6px}input,select{
 box-sizing:border-box;width:100%;padding:12px;border:1px solid #ccd7e7;border-radius:9px}
 button{width:100%;margin-top:20px;padding:13px;border:0;border-radius:9px;background:#174ea6;
 color:white;font-weight:800;cursor:pointer}.error{background:#fdecef;color:#9d1930;padding:10px;
@@ -100,11 +110,22 @@ create table if not exists workspace_broker_records(
  private_notes text default '', created_at text not null, updated_at text not null,
  unique(workspace_id,national_broker_id)
 );
+create table if not exists saas_workspace_settings(
+ workspace_id integer primary key, primary_market text default '', team_size text default '',
+ primary_goal text default '', onboarding_completed_at text default '', updated_at text not null,
+ foreign key(workspace_id) references saas_workspaces(id) on delete cascade
+);
+create table if not exists saas_usage_events(
+ id integer primary key, workspace_id integer not null, event_type text not null,
+ quantity integer not null default 1, detail_json text default '{}', created_at text not null,
+ foreign key(workspace_id) references saas_workspaces(id) on delete cascade
+);
 create index if not exists idx_saas_memberships_user on saas_memberships(user_id,workspace_id);
 create index if not exists idx_saas_audit_workspace on saas_audit_log(workspace_id,id desc);
 create index if not exists idx_saas_resets_user on saas_password_resets(user_id,created_at desc);
 create index if not exists idx_saas_verifications_user on saas_email_verifications(user_id,created_at desc);
 create index if not exists idx_workspace_brokers_workspace on workspace_broker_records(workspace_id,id);
+create index if not exists idx_saas_usage_workspace on saas_usage_events(workspace_id,created_at,event_type);
 """
 
 
@@ -150,6 +171,12 @@ def install_saas(app, db_path, build_version):
             conn.execute("update saas_users set email_verified_at=? where email_verified_at=''", (now,))
         if "auth_version" not in user_columns:
             conn.execute("alter table saas_users add column auth_version integer not null default 1")
+        workspace_columns = {row[1] for row in conn.execute("pragma table_info(saas_workspaces)")}
+        if "billing_price_id" not in workspace_columns:
+            conn.execute("alter table saas_workspaces add column billing_price_id text default ''")
+        conn.execute("""insert or ignore into saas_workspace_settings
+            (workspace_id,onboarding_completed_at,updated_at)
+            select id,case when is_founding=1 then ? else '' end,? from saas_workspaces""", (now, now))
         conn.execute("""insert or ignore into national_broker_index
             (prospect_id,nmls,company,city,state,source_name,source_url,verification_status,indexed_at,updated_at)
             select id,coalesce(nmls,''),company,coalesce(city,''),coalesce(state,''),
@@ -230,6 +257,36 @@ def install_saas(app, db_path, build_version):
         conn.execute("delete from saas_auth_attempts where identity_hash=? and ip_address=?",
                      (login_key(email), client_ip()))
 
+    def stripe_request(path, data):
+        secret = os.getenv("STRIPE_SECRET_KEY", "").strip()
+        if not secret:
+            raise RuntimeError("Stripe billing is not configured")
+        encoded = urllib.parse.urlencode(data).encode("utf-8")
+        stripe_request = urlrequest.Request(
+            "https://api.stripe.com/v1/" + path.lstrip("/"), data=encoded,
+            headers={"Authorization": "Bearer " + secret,
+                     "Content-Type": "application/x-www-form-urlencoded",
+                     "User-Agent": "BrokerBeacon-Billing/1.0"}, method="POST")
+        with urlrequest.urlopen(stripe_request, timeout=15) as response:
+            return json.loads(response.read().decode("utf-8"))
+
+    def verify_stripe_signature(payload, signature):
+        secret = os.getenv("STRIPE_WEBHOOK_SECRET", "").encode("utf-8")
+        if not secret or not signature:
+            return False
+        values = {}
+        for item in signature.split(","):
+            key, _, value = item.partition("=")
+            values.setdefault(key, []).append(value)
+        try:
+            timestamp = int(values["t"][0])
+        except (KeyError, ValueError):
+            return False
+        if abs(int(time.time()) - timestamp) > 300:
+            return False
+        expected = hmac.new(secret, str(timestamp).encode()+b"."+payload, hashlib.sha256).hexdigest()
+        return any(hmac.compare_digest(expected, candidate) for candidate in values.get("v1", []))
+
     def audit(conn, action, target_type="", target_id="", detail="{}"):
         workspace_id = getattr(g, "workspace_id", None)
         if not workspace_id and target_type == "user" and target_id:
@@ -276,6 +333,27 @@ def install_saas(app, db_path, build_version):
             return redirect("/login")
         if any(request.path.startswith(prefix) for prefix in PLATFORM_PREFIXES) and not g.is_platform_owner:
             return jsonify(error="Platform owner access required"), 403
+        if request.path not in {"/onboarding", "/logout"} and not request.path.startswith("/api/saas/"):
+            with connect() as conn:
+                workspace = conn.execute("select is_founding,subscription_status,trial_ends_at from saas_workspaces where id=?",
+                                         (g.workspace_id,)).fetchone()
+                settings = conn.execute("select onboarding_completed_at from saas_workspace_settings where workspace_id=?",
+                                        (g.workspace_id,)).fetchone()
+            if workspace and not workspace["is_founding"] and not (settings and settings["onboarding_completed_at"]):
+                if request.path.startswith("/api/"):
+                    return jsonify(error="Workspace onboarding required", onboarding_url="/onboarding"), 428
+                return redirect("/onboarding")
+        if request.path not in {"/pricing", "/logout"} and not request.path.startswith("/api/saas/billing"):
+            with connect() as conn:
+                workspace = conn.execute("""select is_founding,subscription_status,trial_ends_at
+                    from saas_workspaces where id=?""", (g.workspace_id,)).fetchone()
+            expired = (workspace and not workspace["is_founding"] and
+                       workspace["subscription_status"] != "active" and
+                       workspace["trial_ends_at"] and workspace["trial_ends_at"] < _now())
+            if expired:
+                if request.path.startswith("/api/"):
+                    return jsonify(error="Trial expired", billing_url="/pricing"), 402
+                return redirect("/pricing?trial=expired")
         return None
 
     def require_role(minimum):
@@ -325,7 +403,7 @@ def install_saas(app, db_path, build_version):
                         session.permanent = True
                         g.user_id, g.workspace_id = user_id, workspace_id
                         audit(conn, "account.registered", "workspace", workspace_id)
-                    return redirect("/")
+                    return redirect("/" if first else "/onboarding")
                 except sqlite3.IntegrityError:
                     error = "That email already has an account."
         form = """<form method="post"><label>Your name</label><input name="name" required>
@@ -335,6 +413,33 @@ def install_saas(app, db_path, build_version):
         <button>Create workspace</button></form><div class="links"><a href="/login">Sign in</a></div>"""
         return render_template_string(AUTH_PAGE, title="Create your workspace",
             subtitle="Start a secure, private BrokerBeacon company workspace.", error=error, message="", form=form)
+
+    @bp.route("/onboarding", methods=["GET", "POST"])
+    def onboarding():
+        if request.method == "POST":
+            market = (request.form.get("primary_market") or "").strip()[:120]
+            team_size = (request.form.get("team_size") or "").strip()[:40]
+            goal = (request.form.get("primary_goal") or "").strip()[:200]
+            if market and team_size and goal:
+                with connect() as conn:
+                    conn.execute("""insert into saas_workspace_settings
+                        (workspace_id,primary_market,team_size,primary_goal,onboarding_completed_at,updated_at)
+                        values(?,?,?,?,?,?) on conflict(workspace_id) do update set
+                        primary_market=excluded.primary_market,team_size=excluded.team_size,
+                        primary_goal=excluded.primary_goal,onboarding_completed_at=excluded.onboarding_completed_at,
+                        updated_at=excluded.updated_at""",
+                        (g.workspace_id, market, team_size, goal, _now(), _now()))
+                    audit(conn, "workspace.onboarding_completed", "workspace", g.workspace_id)
+                return redirect("/")
+        form = """<form method="post"><label>Primary market</label>
+        <input name="primary_market" placeholder="Example: North Carolina wholesale" required>
+        <label>Team size</label><select name="team_size" required><option value="">Choose one</option>
+        <option>Just me</option><option>2–5 people</option><option>6–10 people</option><option>11+ people</option></select>
+        <label>First outcome</label><input name="primary_goal" placeholder="Example: Prioritize and convert broker accounts" required>
+        <button>Finish workspace setup</button></form>"""
+        return render_template_string(AUTH_PAGE, title="Set up your workspace",
+            subtitle="Three details help BrokerBeacon prepare the right operating view.",
+            error="", message="", form=form)
 
     @bp.route("/login", methods=["GET", "POST"])
     def login():
@@ -562,6 +667,102 @@ def install_saas(app, db_path, build_version):
                 where m.user_id=? order by w.name""", (g.user_id,))]
         return jsonify(user=user, workspace_id=g.workspace_id, role=g.membership_role, workspaces=workspaces)
 
+    @bp.get("/pricing")
+    def pricing():
+        form = """<div class="ok"><b>Starter</b><p>Up to 10 seats, 2,500 monthly AI-assisted actions,
+        private workspace data, shared National Broker Index, and owner controls.</p></div>
+        <div class="links"><a href="/register">Start 14-day trial</a><a href="/login">Sign in</a></div>"""
+        return render_template_string(AUTH_PAGE, title="BrokerBeacon plans",
+            subtitle="Start with one controlled pilot workspace. Upgrade only when the owner approves it.",
+            error="", message="", form=form)
+
+    @bp.get("/api/saas/billing")
+    def billing_status():
+        with connect() as conn:
+            workspace = dict(conn.execute("""select id,name,plan,subscription_status,trial_ends_at,
+                billing_customer_id,billing_subscription_id,seat_limit,is_founding
+                from saas_workspaces where id=?""", (g.workspace_id,)).fetchone())
+            seats = conn.execute("select count(*) from saas_memberships where workspace_id=?",
+                                 (g.workspace_id,)).fetchone()[0]
+            month = datetime.now().strftime("%Y-%m")
+            usage = conn.execute("""select coalesce(sum(quantity),0) from saas_usage_events
+                where workspace_id=? and event_type='ai_action' and substr(created_at,1,7)=?""",
+                (g.workspace_id, month)).fetchone()[0]
+        limits = PLAN_LIMITS.get(workspace["plan"], PLAN_LIMITS["Trial"])
+        workspace.update(seats_used=seats, seat_limit=workspace["seat_limit"],
+                         ai_actions_used=usage, ai_actions_limit=limits["monthly_ai_actions"],
+                         stripe_configured=bool(os.getenv("STRIPE_SECRET_KEY") and os.getenv("STRIPE_PRICE_ID")))
+        return jsonify(workspace)
+
+    @bp.post("/api/saas/billing/checkout")
+    @require_role("Owner")
+    def billing_checkout():
+        price_id = os.getenv("STRIPE_PRICE_ID", "").strip()
+        if not price_id:
+            return jsonify(error="Billing checkout is not configured"), 503
+        with connect() as conn:
+            workspace = conn.execute("select * from saas_workspaces where id=?", (g.workspace_id,)).fetchone()
+            owner = conn.execute("select email from saas_users where id=?", (g.user_id,)).fetchone()
+        data = {
+            "mode": "subscription", "line_items[0][price]": price_id, "line_items[0][quantity]": "1",
+            "success_url": request.url_root.rstrip("/")+"/?billing=success",
+            "cancel_url": request.url_root.rstrip("/")+"/pricing?billing=cancelled",
+            "client_reference_id": str(g.workspace_id), "metadata[workspace_id]": str(g.workspace_id),
+            "customer_email": owner["email"], "allow_promotion_codes": "true",
+        }
+        if workspace["billing_customer_id"]:
+            data.pop("customer_email", None)
+            data["customer"] = workspace["billing_customer_id"]
+        try:
+            checkout = stripe_request("checkout/sessions", data)
+        except Exception as exc:
+            app.logger.exception("Unable to create Stripe Checkout session")
+            return jsonify(error="Billing checkout is temporarily unavailable"), 502
+        with connect() as conn:
+            audit(conn, "billing.checkout_created", "workspace", g.workspace_id)
+        return jsonify(url=checkout["url"]), 201
+
+    @bp.post("/api/saas/billing/portal")
+    @require_role("Owner")
+    def billing_portal():
+        with connect() as conn:
+            workspace = conn.execute("select billing_customer_id from saas_workspaces where id=?",
+                                     (g.workspace_id,)).fetchone()
+        if not workspace["billing_customer_id"]:
+            return jsonify(error="No billing account exists yet"), 409
+        try:
+            portal = stripe_request("billing_portal/sessions", {
+                "customer": workspace["billing_customer_id"],
+                "return_url": request.url_root.rstrip("/")+"/",
+            })
+        except Exception:
+            app.logger.exception("Unable to create Stripe customer portal session")
+            return jsonify(error="Billing portal is temporarily unavailable"), 502
+        return jsonify(url=portal["url"]), 201
+
+    @bp.post("/api/saas/billing/webhook")
+    def billing_webhook():
+        payload = request.get_data(cache=False)
+        if not verify_stripe_signature(payload, request.headers.get("Stripe-Signature", "")):
+            return jsonify(error="Invalid signature"), 400
+        event = json.loads(payload)
+        kind, item = event.get("type", ""), event.get("data", {}).get("object", {})
+        with connect() as conn:
+            if kind == "checkout.session.completed":
+                workspace_id = int(item.get("client_reference_id") or item.get("metadata", {}).get("workspace_id") or 0)
+                if workspace_id:
+                    conn.execute("""update saas_workspaces set plan='Starter',subscription_status='active',
+                        billing_customer_id=?,billing_subscription_id=?,billing_price_id=?,seat_limit=?,updated_at=?
+                        where id=?""", (item.get("customer") or "", item.get("subscription") or "",
+                        os.getenv("STRIPE_PRICE_ID", ""), PLAN_LIMITS["Starter"]["seats"], _now(), workspace_id))
+                    g.workspace_id = workspace_id
+                    audit(conn, "billing.subscription_activated", "workspace", workspace_id)
+            elif kind in {"customer.subscription.deleted", "customer.subscription.paused"}:
+                subscription_id = item.get("id") or ""
+                conn.execute("""update saas_workspaces set subscription_status='canceled',updated_at=?
+                    where billing_subscription_id=?""", (_now(), subscription_id))
+        return jsonify(received=True)
+
     @bp.put("/api/saas/account")
     def update_account():
         name = ((request.get_json(silent=True) or {}).get("full_name") or "").strip()
@@ -610,9 +811,14 @@ def install_saas(app, db_path, build_version):
                 values(?,?,?,?,?,?,?)""", (g.workspace_id, email, role, _hash_token(token), g.user_id,
                 (datetime.now()+timedelta(days=7)).isoformat(timespec="seconds"), _now()))
             audit(conn, "member.invited", "email", email)
-        return jsonify(ok=True, invitation_token=token,
-                       accept_url=request.url_root.rstrip("/") + "/invite/" + token,
-                       expires_in_days=7), 201
+        accept_url = request.url_root.rstrip("/") + "/invite/" + token
+        delivered = deliver_security_email(email, "You’re invited to BrokerBeacon",
+            "Your BrokerBeacon workspace owner invited you to join as "+role+".\n\n"+
+            accept_url+"\n\nThis invitation expires in seven days.")
+        response = {"ok": True, "email_delivered": delivered, "expires_in_days": 7}
+        if app.config.get("TESTING"):
+            response.update(invitation_token=token, accept_url=accept_url)
+        return jsonify(response), 201
 
     @bp.get("/api/saas/members")
     @require_role("Manager")
@@ -707,5 +913,33 @@ def install_saas(app, db_path, build_version):
                 indexed_brokers=conn.execute("select count(*) from national_broker_index").fetchone()[0],
                 trials=conn.execute("select count(*) from saas_workspaces where subscription_status='trialing'").fetchone()[0],
             )
+
+    @bp.get("/api/platform/customers")
+    def platform_customers():
+        with connect() as conn:
+            rows = [dict(row) for row in conn.execute("""select w.id,w.name,w.slug,w.plan,
+                w.subscription_status,w.trial_ends_at,w.seat_limit,w.is_founding,w.created_at,
+                count(m.id) seats_used,s.onboarding_completed_at,s.primary_market,s.primary_goal
+                from saas_workspaces w left join saas_memberships m on m.workspace_id=w.id
+                left join saas_workspace_settings s on s.workspace_id=w.id
+                group by w.id order by w.id""")]
+        return jsonify(items=rows)
+
+    @bp.put("/api/platform/customers/<int:workspace_id>")
+    def platform_update_customer(workspace_id):
+        data = request.get_json(silent=True) or {}
+        status = data.get("subscription_status")
+        plan = data.get("plan")
+        if status not in {"active", "trialing", "paused", "canceled"} or plan not in PLAN_LIMITS:
+            return jsonify(error="Valid plan and subscription status required"), 400
+        limits = PLAN_LIMITS[plan]
+        with connect() as conn:
+            cur = conn.execute("""update saas_workspaces set plan=?,subscription_status=?,seat_limit=?,updated_at=?
+                where id=? and is_founding=0""", (plan, status, limits["seats"], _now(), workspace_id))
+            if not cur.rowcount:
+                return jsonify(error="Customer workspace not found or protected"), 404
+            audit(conn, "platform.customer_plan_updated", "workspace", workspace_id,
+                  json.dumps({"plan": plan, "subscription_status": status}))
+        return jsonify(ok=True, workspace_id=workspace_id, plan=plan, subscription_status=status)
 
     app.register_blueprint(bp)
