@@ -25,6 +25,9 @@ class StreamlinedWorkspaceTests(unittest.TestCase):
         self.assertIn("const page=$('#platformAdminContent')", SOURCE)
         self.assertNotIn("const page=$('#prospects')", SOURCE)
 
+    def test_platform_navigation_initializes_account_context_on_startup(self):
+        self.assertIn("loadSaasAccount().catch(e=>msg(e.message||'Unable to load account context'));load();", SOURCE)
+
     def test_platform_navigation_requires_owner_context(self):
         self.assertIn("ownerOnly:true", SOURCE)
         self.assertIn("v==='platformadmin'&&!SaaSContext?.user?.is_platform_owner", SOURCE)
