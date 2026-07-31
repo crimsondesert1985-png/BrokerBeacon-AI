@@ -39,18 +39,23 @@ def twiml(body):
     return '<?xml version="1.0" encoding="UTF-8"?><Response>'+body+'</Response>'
 
 
-def human_greeting(first_name, company, call_id):
-    intro=(f'Hi {first_name}. This is Ash, an automated AI assistant calling on behalf of Clay at Union Home Mortgage. '
-           f'I am calling about lending support for {company}. This call may be recorded or transcribed for follow-up. '
-           'Is now a good time for a brief conversation? You can also say stop at any time.')
+def render_script(text, first_name, company):
+    rendered=(text or '').replace('{{first_name}}', first_name).replace('{{company}}', company)
+    return ' '.join(rendered.split())[:2400]
+
+
+def human_greeting(first_name, company, call_id, script_text=''):
+    disclosure=(f'Hi {first_name}. This is Ash, an automated AI assistant calling on behalf of Clay at Union Home Mortgage. '
+                'This call may be recorded or transcribed for follow-up. You can say stop at any time. ')
+    script=render_script(script_text, first_name, company) or f'I am calling about lending support for {company}. Is now a good time for a brief conversation?'
+    intro=disclosure+script
     return twiml(f'<Gather input="speech dtmf" action="/voice/respond/{call_id}" method="POST" speechTimeout="auto" timeout="6">{say(intro)}</Gather>{say("I did not hear a response. I will send this back to Clay for personal follow-up. Goodbye.")}')
 
 
-def voicemail(first_name, company):
-    text=(f'Hi {first_name}, this is Ash, an automated assistant calling for Clay at Union Home Mortgage. '
-          f'Clay would like to connect regarding lending support for {company}. Please return his call when convenient. '
-          'Thank you, and have a great day.')
-    return twiml(say(text))
+def voicemail(first_name, company, voicemail_text=''):
+    disclosure=f'Hi {first_name}, this is Ash, an automated assistant calling for Clay at Union Home Mortgage. '
+    script=render_script(voicemail_text, first_name, company) or f'Clay would like to connect regarding lending support for {company}. Please return his call when convenient.'
+    return twiml(say(disclosure+script+' Thank you, and have a great day.'))
 
 
 def appointment_slots(now=None):

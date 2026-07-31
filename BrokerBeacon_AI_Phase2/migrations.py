@@ -362,6 +362,27 @@ create table if not exists index_population_settings(
 create index if not exists idx_population_queue_priority on index_population_queue(status,priority desc,state);
 insert or ignore into index_population_settings(id,enabled,target_brokers_per_state,monthly_query_reserve,refresh_days,updated_at)
 values(1,0,25,1000,30,datetime('now'));
+"""),
+(17, "voice_script_studio", """
+create table if not exists voice_scripts(
+    id integer primary key,
+    name text not null,
+    script_text text not null,
+    voicemail_text text default '',
+    approved_at text default '',
+    created_at text not null,
+    updated_at text not null
+);
+alter table voice_calls add column script_id integer default 0;
+alter table voice_calls add column script_snapshot text default '';
+create index if not exists idx_voice_scripts_updated on voice_scripts(updated_at desc);
+create index if not exists idx_voice_calls_script on voice_calls(script_id);
+insert into voice_scripts(name,script_text,voicemail_text,approved_at,created_at,updated_at)
+select 'Ash introduction',
+       'I am reaching out because Clay would like to be a lending resource for {{company}}. Is now a good time for a brief conversation?',
+       'Clay would like to connect about lending support for {{company}}. Please return his call when convenient.',
+       datetime('now'),datetime('now'),datetime('now')
+where not exists(select 1 from voice_scripts);
 """)
 ]
 
