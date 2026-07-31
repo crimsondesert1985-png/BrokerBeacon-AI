@@ -20,6 +20,16 @@ class StreamlinedWorkspaceTests(unittest.TestCase):
         self.assertIn('<details class="workspace-more">', SOURCE)
         self.assertIn("if(v==='dashboard')return", SOURCE)
 
+    def test_platform_controls_are_separated_from_prospects(self):
+        self.assertIn('id="platformadmin"', SOURCE)
+        self.assertIn("const page=$('#platformAdminContent')", SOURCE)
+        self.assertNotIn("const page=$('#prospects')", SOURCE)
+
+    def test_platform_navigation_requires_owner_context(self):
+        self.assertIn("ownerOnly:true", SOURCE)
+        self.assertIn("v==='platformadmin'&&!SaaSContext?.user?.is_platform_owner", SOURCE)
+        self.assertIn("adminButton.onclick=()=>show('platformadmin')", SOURCE)
+
 
 if __name__ == "__main__":
     unittest.main()
