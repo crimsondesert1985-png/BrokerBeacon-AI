@@ -6,6 +6,7 @@ import secrets
 import sqlite3
 
 from flask import Blueprint, g, jsonify, redirect, render_template_string, request, session
+from markupsafe import escape
 from werkzeug.security import check_password_hash, generate_password_hash
 
 
@@ -95,6 +96,11 @@ def _hash_token(token):
     return hashlib.sha256(token.encode()).hexdigest()
 
 
+def _safe_next(value):
+    value = value or "/"
+    return value if value.startswith("/") and not value.startswith("//") else "/"
+
+
 def _slug(conn, name):
     base = "".join(ch.lower() if ch.isalnum() else "-" for ch in name).strip("-") or "workspace"
     base = "-".join(filter(None, base.split("-")))[:44]
@@ -151,12 +157,17 @@ def install_saas(app, db_path, build_version):
                     membership = conn.execute("""select role from saas_memberships
                         where user_id=? and workspace_id=?""", (g.user_id, g.workspace_id)).fetchone()
                     g.membership_role = membership["role"] if membership else None
-        if request.path in PUBLIC_PATHS or request.path.startswith("/static/"):
+        if request.path in PUBLIC_PATHS or request.path.startswith(("/static/", "/invite/")):
             return None
         if not g.user_id:
             if request.path.startswith("/api/"):
                 return jsonify(error="Authentication required"), 401
             return redirect("/login?next=" + request.path)
+        if not g.membership_role:
+            if request.path.startswith("/api/"):
+                return jsonify(error="Workspace access required"), 403
+            session.pop("workspace_id", None)
+            return redirect("/login")
         if any(request.path.startswith(prefix) for prefix in PLATFORM_PREFIXES) and not g.is_platform_owner:
             return jsonify(error="Platform owner access required"), 403
         return None
@@ -204,6 +215,7 @@ def install_saas(app, db_path, build_version):
                             (workspace_id,user_id,role,created_at) values(?,?,?,?)""",
                             (workspace_id, user_id, "Owner", now))
                         session.update(user_id=user_id, workspace_id=workspace_id)
+                        session.permanent = True
                         g.user_id, g.workspace_id = user_id, workspace_id
                         audit(conn, "account.registered", "workspace", workspace_id)
                     return redirect("/")
@@ -234,7 +246,7 @@ def install_saas(app, db_path, build_version):
                                  (_now(), _now(), user["id"]))
                     g.user_id, g.workspace_id = user["id"], member["workspace_id"]
                     audit(conn, "session.login", "user", user["id"])
-                    return redirect(request.args.get("next") or "/")
+                    return redirect(_safe_next(request.args.get("next")))
             error = "Email or password was incorrect."
         form = """<form method="post"><label>Email</label><input type="email" name="email" required>
         <label>Password</label><input type="password" name="password" required>
@@ -247,6 +259,75 @@ def install_saas(app, db_path, build_version):
     def logout():
         session.clear()
         return redirect("/login")
+
+    @bp.route("/invite/<token>", methods=["GET", "POST"])
+    def accept_invitation(token):
+        error = ""
+        with connect() as conn:
+            invitation = conn.execute("""select i.*,w.name workspace_name from saas_invitations i
+                join saas_workspaces w on w.id=i.workspace_id where i.token_hash=?
+                and i.accepted_at='' and i.expires_at>?""", (_hash_token(token), _now())).fetchone()
+            if not invitation:
+                return render_template_string(AUTH_PAGE, title="Invitation unavailable",
+                    subtitle="This invitation is invalid, expired, or has already been used.",
+                    error="Ask your workspace owner for a new invitation.", message="", form=""), 410
+            existing = conn.execute("select * from saas_users where email=? collate nocase",
+                                    (invitation["email"],)).fetchone()
+            if request.method == "POST":
+                user = existing
+                if existing:
+                    signed_in_as_invitee = g.user_id == existing["id"]
+                    if not signed_in_as_invitee and not check_password_hash(
+                            existing["password_hash"], request.form.get("password") or ""):
+                        error = "Enter the password for this BrokerBeacon account."
+                else:
+                    name = (request.form.get("name") or "").strip()
+                    password = request.form.get("password") or ""
+                    if not name:
+                        error = "Your name is required."
+                    elif len(password) < 12:
+                        error = "Use a password of at least 12 characters."
+                    else:
+                        now = _now()
+                        cur = conn.execute("""insert into saas_users
+                            (email,full_name,password_hash,created_at,updated_at)
+                            values(?,?,?,?,?)""", (invitation["email"], name,
+                            generate_password_hash(password), now, now))
+                        user = conn.execute("select * from saas_users where id=?", (cur.lastrowid,)).fetchone()
+                if not error:
+                    seats = conn.execute("select count(*) from saas_memberships where workspace_id=?",
+                                         (invitation["workspace_id"],)).fetchone()[0]
+                    limit = conn.execute("select seat_limit from saas_workspaces where id=?",
+                                         (invitation["workspace_id"],)).fetchone()[0]
+                    already_member = conn.execute("""select 1 from saas_memberships
+                        where workspace_id=? and user_id=?""",
+                        (invitation["workspace_id"], user["id"])).fetchone()
+                    if seats >= limit and not already_member:
+                        error = "This workspace has reached its seat limit."
+                    else:
+                        conn.execute("""insert or ignore into saas_memberships
+                            (workspace_id,user_id,role,created_at) values(?,?,?,?)""",
+                            (invitation["workspace_id"], user["id"], invitation["role"], _now()))
+                        conn.execute("update saas_invitations set accepted_at=? where id=?",
+                                     (_now(), invitation["id"]))
+                        session.clear()
+                        session.permanent = True
+                        session.update(user_id=user["id"], workspace_id=invitation["workspace_id"])
+                        g.user_id, g.workspace_id = user["id"], invitation["workspace_id"]
+                        audit(conn, "member.invitation_accepted", "user", user["id"])
+                        return redirect("/")
+        identity = ("Enter your existing password to join." if existing else
+                    "Choose your name and a password to create your account.")
+        safe_email = escape(invitation["email"])
+        safe_workspace = escape(invitation["workspace_name"])
+        name_field = "" if existing else '<label>Your name</label><input name="name" required>'
+        form = f'''<form method="post">{name_field}<label>Email</label>
+        <input value="{safe_email}" disabled><label>Password</label>
+        <input type="password" name="password" minlength="12" required>
+        <button>Join {safe_workspace}</button></form>'''
+        return render_template_string(AUTH_PAGE, title=f"Join {invitation['workspace_name']}",
+            subtitle=f"You were invited as {invitation['role']}. {identity}",
+            error=error, message="", form=form)
 
     @bp.route("/forgot-password", methods=["GET", "POST"])
     def forgot_password():
@@ -303,6 +384,17 @@ def install_saas(app, db_path, build_version):
                 where m.user_id=? order by w.name""", (g.user_id,))]
         return jsonify(user=user, workspace_id=g.workspace_id, role=g.membership_role, workspaces=workspaces)
 
+    @bp.put("/api/saas/account")
+    def update_account():
+        name = ((request.get_json(silent=True) or {}).get("full_name") or "").strip()
+        if not name:
+            return jsonify(error="Name is required"), 400
+        with connect() as conn:
+            conn.execute("update saas_users set full_name=?,updated_at=? where id=?",
+                         (name[:120], _now(), g.user_id))
+            audit(conn, "account.updated", "user", g.user_id)
+        return jsonify(ok=True, full_name=name[:120])
+
     @bp.post("/api/saas/workspace/switch")
     def switch_workspace():
         workspace_id = int((request.get_json(silent=True) or {}).get("workspace_id") or 0)
@@ -325,16 +417,72 @@ def install_saas(app, db_path, build_version):
             return jsonify(error="Valid email and permitted role required"), 400
         token = secrets.token_urlsafe(32)
         with connect() as conn:
+            member = conn.execute("""select 1 from saas_memberships m join saas_users u on u.id=m.user_id
+                where m.workspace_id=? and u.email=? collate nocase""", (g.workspace_id, email)).fetchone()
+            if member:
+                return jsonify(error="That person is already a workspace member"), 409
             workspace = conn.execute("select seat_limit from saas_workspaces where id=?", (g.workspace_id,)).fetchone()
             seats = conn.execute("select count(*) from saas_memberships where workspace_id=?", (g.workspace_id,)).fetchone()[0]
             if seats >= workspace["seat_limit"]:
                 return jsonify(error="Workspace seat limit reached"), 409
+            conn.execute("update saas_invitations set accepted_at=? where workspace_id=? and email=? and accepted_at=''",
+                         (_now(), g.workspace_id, email))
             conn.execute("""insert into saas_invitations
                 (workspace_id,email,role,token_hash,invited_by,expires_at,created_at)
                 values(?,?,?,?,?,?,?)""", (g.workspace_id, email, role, _hash_token(token), g.user_id,
                 (datetime.now()+timedelta(days=7)).isoformat(timespec="seconds"), _now()))
             audit(conn, "member.invited", "email", email)
-        return jsonify(ok=True, invitation_token=token, expires_in_days=7), 201
+        return jsonify(ok=True, invitation_token=token,
+                       accept_url=request.url_root.rstrip("/") + "/invite/" + token,
+                       expires_in_days=7), 201
+
+    @bp.get("/api/saas/members")
+    @require_role("Manager")
+    def members():
+        with connect() as conn:
+            rows = [dict(row) for row in conn.execute("""select u.id,u.email,u.full_name,
+                u.last_login_at,u.is_active,m.role,m.created_at from saas_memberships m
+                join saas_users u on u.id=m.user_id where m.workspace_id=?
+                order by case m.role when 'Owner' then 1 when 'Manager' then 2
+                when 'AE' then 3 else 4 end,u.full_name""", (g.workspace_id,))]
+            pending = [dict(row) for row in conn.execute("""select id,email,role,expires_at,created_at
+                from saas_invitations where workspace_id=? and accepted_at='' and expires_at>?
+                order by id desc""", (g.workspace_id, _now()))]
+        return jsonify(items=rows, pending_invitations=pending)
+
+    @bp.put("/api/saas/members/<int:user_id>")
+    @require_role("Owner")
+    def update_member(user_id):
+        role = (request.get_json(silent=True) or {}).get("role")
+        if role not in ROLE_RANK:
+            return jsonify(error="Valid role required"), 400
+        with connect() as conn:
+            target = conn.execute("select role from saas_memberships where workspace_id=? and user_id=?",
+                                  (g.workspace_id, user_id)).fetchone()
+            if not target:
+                return jsonify(error="Member not found"), 404
+            if user_id == g.user_id and target["role"] == "Owner" and role != "Owner":
+                owners = conn.execute("select count(*) from saas_memberships where workspace_id=? and role='Owner'",
+                                      (g.workspace_id,)).fetchone()[0]
+                if owners == 1:
+                    return jsonify(error="A workspace must retain at least one owner"), 409
+            conn.execute("update saas_memberships set role=? where workspace_id=? and user_id=?",
+                         (role, g.workspace_id, user_id))
+            audit(conn, "member.role_updated", "user", user_id)
+        return jsonify(ok=True, role=role)
+
+    @bp.delete("/api/saas/members/<int:user_id>")
+    @require_role("Owner")
+    def remove_member(user_id):
+        if user_id == g.user_id:
+            return jsonify(error="You cannot remove yourself"), 409
+        with connect() as conn:
+            cur = conn.execute("delete from saas_memberships where workspace_id=? and user_id=?",
+                               (g.workspace_id, user_id))
+            if not cur.rowcount:
+                return jsonify(error="Member not found"), 404
+            audit(conn, "member.removed", "user", user_id)
+        return jsonify(ok=True)
 
     @bp.get("/api/saas/audit")
     @require_role("Manager")
@@ -373,4 +521,3 @@ def install_saas(app, db_path, build_version):
             )
 
     app.register_blueprint(bp)
-
