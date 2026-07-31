@@ -757,10 +757,35 @@ def install_saas(app, db_path, build_version):
                         os.getenv("STRIPE_PRICE_ID", ""), PLAN_LIMITS["Starter"]["seats"], _now(), workspace_id))
                     g.workspace_id = workspace_id
                     audit(conn, "billing.subscription_activated", "workspace", workspace_id)
+            elif kind == "customer.subscription.updated":
+                subscription_id = item.get("id") or ""
+                stripe_status = (item.get("status") or "").lower()
+                status = {
+                    "active": "active", "trialing": "trialing", "past_due": "past_due",
+                    "unpaid": "unpaid", "paused": "paused", "canceled": "canceled",
+                    "incomplete": "incomplete", "incomplete_expired": "canceled",
+                }.get(stripe_status, stripe_status or "inactive")
+                price_id = ""
+                items = item.get("items", {}).get("data", [])
+                if items:
+                    price_id = items[0].get("price", {}).get("id") or ""
+                conn.execute("""update saas_workspaces set subscription_status=?,
+                    billing_price_id=coalesce(nullif(?,''),billing_price_id),updated_at=?
+                    where billing_subscription_id=?""", (status, price_id, _now(), subscription_id))
             elif kind in {"customer.subscription.deleted", "customer.subscription.paused"}:
                 subscription_id = item.get("id") or ""
-                conn.execute("""update saas_workspaces set subscription_status='canceled',updated_at=?
-                    where billing_subscription_id=?""", (_now(), subscription_id))
+                status = "paused" if kind.endswith(".paused") else "canceled"
+                conn.execute("""update saas_workspaces set subscription_status=?,updated_at=?
+                    where billing_subscription_id=?""", (status, _now(), subscription_id))
+            elif kind in {"invoice.payment_failed", "invoice.paid"}:
+                subscription_id = item.get("subscription") or ""
+                if not subscription_id:
+                    subscription_id = (item.get("parent", {}).get("subscription_details", {})
+                                       .get("subscription") or "")
+                if subscription_id:
+                    status = "active" if kind == "invoice.paid" else "past_due"
+                    conn.execute("""update saas_workspaces set subscription_status=?,updated_at=?
+                        where billing_subscription_id=?""", (status, _now(), subscription_id))
         return jsonify(received=True)
 
     @bp.put("/api/saas/account")
