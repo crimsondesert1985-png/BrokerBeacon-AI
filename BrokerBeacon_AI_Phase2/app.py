@@ -18,8 +18,8 @@ from security_monitoring import emit_security_alert
 from postgres_migration import migration_status, rehearsal_status
 
 app = Flask(__name__)
-BUILD_VERSION = "26.2"
-BUILD_NAME = "OWNER-GATED PLATFORM ADMIN"
+BUILD_VERSION = "26.2.1"
+BUILD_NAME = "FOUNDING OWNER ACCESS REPAIR"
 DB = prepare_database(Path(__file__).with_name("brokerbeacon.db"))
 NOW = lambda: datetime.now().isoformat(timespec="seconds")
 
