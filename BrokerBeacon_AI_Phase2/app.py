@@ -18,8 +18,8 @@ from security_monitoring import emit_security_alert
 from postgres_migration import migration_status, rehearsal_status
 
 app = Flask(__name__)
-BUILD_VERSION = "26.2.1"
-BUILD_NAME = "OWNER NAV INITIALIZATION"
+BUILD_VERSION = "27.0"
+BUILD_NAME = "CONTROLLED POSTGRES CUTOVER GATE"
 DB = prepare_database(Path(__file__).with_name("brokerbeacon.db"))
 NOW = lambda: datetime.now().isoformat(timespec="seconds")
 
