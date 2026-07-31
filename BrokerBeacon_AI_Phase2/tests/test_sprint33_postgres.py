@@ -12,6 +12,7 @@ from postgres_migration import (
     postgres_type,
     quote_identifier,
     rows_checksum,
+    portable_table_names,
 )
 
 
@@ -54,6 +55,15 @@ class Sprint33PostgresReadinessTests(unittest.TestCase):
         self.assertEqual(postgres_type("BLOB"), "BYTEA")
         self.assertEqual(quote_identifier('odd"name'), '"odd""name"')
         self.assertEqual(rows_checksum([(2, "b"), (1, "a")]), rows_checksum([(1, "a"), (2, "b")]))
+
+    def test_sqlite_full_text_indexes_are_rebuilt_not_copied(self):
+        with sqlite3.connect(self.central) as conn:
+            conn.execute("create virtual table searchable_fts using fts5(content)")
+            conn.execute("insert into searchable_fts(content) values('canonical source remains elsewhere')")
+            names = portable_table_names(conn)
+        self.assertNotIn("searchable_fts", names)
+        self.assertFalse(any(name.startswith("searchable_fts_") for name in names))
+        self.assertIn("prospects", names)
 
     def test_cutover_is_off_by_default_and_requires_database_url(self):
         with patch.dict(os.environ, {}, clear=True):
