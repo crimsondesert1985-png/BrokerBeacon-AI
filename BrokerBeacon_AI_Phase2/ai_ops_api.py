@@ -6,6 +6,7 @@ from functools import wraps
 
 from flask import Blueprint, g, jsonify, request, session
 
+from ai_intelligence import initialize as initialize_ai_intelligence
 from ai_orchestrator import dashboard as agent_dashboard, learn_from_approved_feedback
 from autonomy_engine import dashboard as autonomy_dashboard, run_cycle, update_policy
 from growth_mission import dashboard as growth_dashboard
@@ -21,7 +22,16 @@ def install_ai_ops(app, db_path):
         conn.execute("pragma busy_timeout=30000")
         return conn
 
+    # Ensure every table used by the briefing exists before the first request.
+    with connect() as conn:
+        initialize_ai_intelligence(conn)
+        agent_dashboard(conn)
+        autonomy_dashboard(conn)
+        growth_dashboard(conn)
+
     def is_owner():
+        if bool(getattr(g, "is_platform_owner", False)):
+            return True
         for user in (getattr(g, "saas_user", None), getattr(g, "current_user", None), getattr(g, "user", None)):
             if user is None:
                 continue
@@ -45,6 +55,7 @@ def install_ai_ops(app, db_path):
     @owner_required
     def status():
         with connect() as conn:
+            initialize_ai_intelligence(conn)
             return jsonify({
                 "agents": agent_dashboard(conn),
                 "autonomy": autonomy_dashboard(conn),
@@ -64,6 +75,7 @@ def install_ai_ops(app, db_path):
     @owner_required
     def execute_cycle():
         with connect() as conn:
+            initialize_ai_intelligence(conn)
             result = run_cycle(conn, "default")
         return jsonify(result), 201
 
@@ -78,20 +90,32 @@ def install_ai_ops(app, db_path):
     return bp
 
 
+def _count(conn: sqlite3.Connection, sql: str) -> int:
+    try:
+        row = conn.execute(sql).fetchone()
+        return int((row[0] if row else 0) or 0)
+    except sqlite3.OperationalError:
+        return 0
+
+
 def _briefing(conn: sqlite3.Connection) -> dict:
-    warehouse = conn.execute("select count(*) from warehouse_companies").fetchone()[0]
-    contacts = conn.execute("select count(*) from discovered_contacts").fetchone()[0]
-    pending = conn.execute("select count(*) from discovered_contacts where review_status='Pending review'").fetchone()[0]
-    high_value = conn.execute("select count(*) from ai_contact_insights where opportunity_score>=75").fetchone()[0]
-    duplicates = conn.execute("select count(*) from warehouse_duplicate_candidates where status='Pending review'").fetchone()[0]
-    last_run = conn.execute("select * from autonomy_runs order by id desc limit 1").fetchone()
+    initialize_ai_intelligence(conn)
+    warehouse = _count(conn, "select count(*) from warehouse_companies")
+    contacts = _count(conn, "select count(*) from discovered_contacts")
+    pending = _count(conn, "select count(*) from discovered_contacts where review_status='Pending review'")
+    high_value = _count(conn, "select count(*) from ai_contact_insights where opportunity_score>=75")
+    duplicates = _count(conn, "select count(*) from warehouse_duplicate_candidates where status='Pending review'")
+    try:
+        last_run = conn.execute("select * from autonomy_runs order by id desc limit 1").fetchone()
+    except sqlite3.OperationalError:
+        last_run = None
     return {
         "headline": "AI growth team operating within owner guardrails",
-        "warehouse_companies": int(warehouse or 0),
-        "discovered_contacts": int(contacts or 0),
-        "pending_review": int(pending or 0),
-        "high_opportunity": int(high_value or 0),
-        "pending_duplicates": int(duplicates or 0),
+        "warehouse_companies": warehouse,
+        "discovered_contacts": contacts,
+        "pending_review": pending,
+        "high_opportunity": high_value,
+        "pending_duplicates": duplicates,
         "last_autonomy_run": dict(last_run) if last_run else None,
         "recommended_focus": "Review high-opportunity prospects and keep approved states supplied with search and enrichment capacity.",
     }
