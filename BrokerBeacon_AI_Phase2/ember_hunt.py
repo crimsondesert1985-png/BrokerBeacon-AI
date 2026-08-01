@@ -25,7 +25,6 @@ def _valid_public_url(value: str) -> bool:
 
 
 def _seed_rows(conn: sqlite3.Connection, state: str, limit: int) -> list[sqlite3.Row]:
-    """Read existing public company websites without assuming every legacy column exists."""
     columns = {row[1] for row in conn.execute("pragma table_info(national_broker_index)")}
     required = {"company", "state", "source_url"}
     if not required.issubset(columns):
@@ -38,13 +37,18 @@ def _seed_rows(conn: sqlite3.Connection, state: str, limit: int) -> list[sqlite3
     return conn.execute(query, (state, limit)).fetchall()
 
 
-def launch(conn: sqlite3.Connection, *, state: str = "NC", company_limit: int = 10,
+def launch(conn: sqlite3.Connection, *, state: str = "NC", company_limit: int = 4,
            contact_limit: int = 200) -> dict:
+    """Run a fast web-request-safe hunt.
+
+    Larger continuous batches belong in the background worker. This interactive
+    launch is intentionally small so the button returns before Gunicorn's timeout.
+    """
     state = (state or "NC").strip().upper()
     if len(state) != 2 or not state.isalpha():
         raise ValueError("A valid two-letter state is required")
-    company_limit = min(max(int(company_limit), 1), 25)
-    contact_limit = min(max(int(contact_limit), 1), 500)
+    company_limit = min(max(int(company_limit), 1), 4)
+    contact_limit = min(max(int(contact_limit), 1), 200)
 
     init_public(conn)
     init_enrichment(conn)
@@ -58,7 +62,7 @@ def launch(conn: sqlite3.Connection, *, state: str = "NC", company_limit: int = 
     seeded = skipped = 0
     seen_domains: set[str] = set()
 
-    for rank, row in enumerate(_seed_rows(conn, state, company_limit * 4), start=1):
+    for rank, row in enumerate(_seed_rows(conn, state, company_limit * 6), start=1):
         url = str(row["source_url"] or "").strip()
         if not _valid_public_url(url):
             skipped += 1
@@ -97,13 +101,12 @@ def launch(conn: sqlite3.Connection, *, state: str = "NC", company_limit: int = 
     enrichment = run_batch(
         conn,
         state=state,
-        batch_size=company_limit,
-        per_domain_limit=3,
-        delay_seconds=0.5,
+        batch_size=min(company_limit, 4),
+        per_domain_limit=1,
+        delay_seconds=0.0,
     ) if enqueued else {"claimed": 0, "processed": 0, "contacts_found": 0, "pages_fetched": 0}
     ai = process_ai_batch(conn, limit=contact_limit)
 
-    # Reassert the safety boundary after every hunt.
     conn.execute(
         """update autonomy_policies set enabled=1,approved_states_json='[\"NC\"]',
            require_human_review=1,allow_crm_promotion=0,allow_outreach=0,
@@ -127,4 +130,5 @@ def launch(conn: sqlite3.Connection, *, state: str = "NC", company_limit: int = 
         "pending_review": int(pending or 0),
         "outreach_enabled": False,
         "crm_promotion_enabled": False,
+        "message": "Ember completed a safe North Carolina discovery batch.",
     }
