@@ -15,11 +15,14 @@ def install_ember_automation(app,db_path):
   if not expected or not supplied or not hmac.compare_digest(expected,supplied):return jsonify(error='Unauthorized'),401
   with connect() as conn:
    conn.execute("""create table if not exists ember_automation_runs(id integer primary key,state text not null,status text not null,detail_json text not null default '{}',created_at text not null,finished_at text default '')""")
-   recent=conn.execute("select created_at from ember_automation_runs where status='Running' order by id desc limit 1").fetchone()
+   recent=conn.execute("select status,created_at,finished_at from ember_automation_runs order by id desc limit 1").fetchone()
    if recent:
     try:
-     if datetime.fromisoformat(recent['created_at'])>datetime.now()-timedelta(minutes=20):return jsonify(status='Skipped',reason='An Ember cycle is already running'),202
-    except ValueError:pass
+     stamp=recent['finished_at'] or recent['created_at']
+     age=datetime.now()-datetime.fromisoformat(stamp)
+     if recent['status']=='Running' and age<timedelta(minutes=20):return jsonify(status='Skipped',reason='An Ember cycle is already running'),202
+     if recent['status']=='Completed' and age<timedelta(minutes=12):return jsonify(status='Skipped',reason='A recent Ember cycle already completed'),202
+    except (ValueError,TypeError):pass
    started=datetime.now().isoformat(timespec='seconds');run_id=int(conn.execute("insert into ember_automation_runs(state,status,created_at) values('AUTO','Running',?)",(started,)).lastrowid);conn.commit()
    try:
     result=launch(conn,state='',company_limit=6,contact_limit=250)
