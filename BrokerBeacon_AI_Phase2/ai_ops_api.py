@@ -8,7 +8,8 @@ from flask import Blueprint, g, jsonify, request, session
 
 from ai_intelligence import initialize as initialize_ai_intelligence
 from ai_orchestrator import dashboard as agent_dashboard, learn_from_approved_feedback
-from autonomy_engine import dashboard as autonomy_dashboard, run_cycle, update_policy
+from autonomy_engine import dashboard as autonomy_dashboard, update_policy
+from ember_hunt import launch as launch_ember_hunt
 from growth_mission import dashboard as growth_dashboard
 
 
@@ -74,9 +75,28 @@ def install_ai_ops(app, db_path):
     @bp.post("/api/platform/ai-ops/run-cycle")
     @owner_required
     def execute_cycle():
+        """Launch one bounded Ember hunt; never promote to CRM or initiate outreach."""
+        payload = request.get_json(silent=True) or {}
+        state = str(payload.get("state") or "NC").strip().upper()
+        company_limit = min(max(int(payload.get("company_limit") or 10), 1), 25)
+        contact_limit = min(max(int(payload.get("contact_limit") or 200), 1), 500)
         with connect() as conn:
             initialize_ai_intelligence(conn)
-            result = run_cycle(conn, "default")
+            # Force the approved pilot guardrails before the hunt begins.
+            update_policy(conn, "default", {
+                "enabled": True,
+                "approved_states": [state],
+                "require_human_review": True,
+                "allow_crm_promotion": False,
+                "allow_outreach": False,
+                "allow_permission_changes": False,
+            })
+            result = launch_ember_hunt(
+                conn,
+                state=state,
+                company_limit=company_limit,
+                contact_limit=contact_limit,
+            )
         return jsonify(result), 201
 
     @bp.post("/api/platform/ai-ops/learn/<agent_key>")
@@ -117,5 +137,5 @@ def _briefing(conn: sqlite3.Connection) -> dict:
         "high_opportunity": high_value,
         "pending_duplicates": duplicates,
         "last_autonomy_run": dict(last_run) if last_run else None,
-        "recommended_focus": "Review high-opportunity prospects and keep approved states supplied with search and enrichment capacity.",
+        "recommended_focus": "Launch Ember's bounded North Carolina hunt, then review every discovered contact before any CRM promotion or outreach.",
     }
