@@ -8,9 +8,10 @@ from ember_automation_api import install_ember_automation
 from national_data_center import install_national_data_center
 from national_warehouse_api import install_national_warehouse
 from sprint38_api import install_sprint38_api
+from sprint39_api import install_sprint39_api
 from sprint39_ux import install_sprint39_ux
 from state_connector_api import install_state_connectors
-install_national_warehouse(app,DB);install_state_connectors(app,DB);install_discovery_ops(app,DB);install_ai_ops(app,DB);install_ember_automation(app,DB);install_sprint38_api(app,DB);install_national_data_center(app);install_control_tower_ux(app);install_sprint39_ux(app)
+install_national_warehouse(app,DB);install_state_connectors(app,DB);install_discovery_ops(app,DB);install_ai_ops(app,DB);install_ember_automation(app,DB);install_sprint38_api(app,DB);install_sprint39_api(app,DB);install_national_data_center(app);install_control_tower_ux(app);install_sprint39_ux(app)
 @app.before_request
 def bridge_platform_owner_context():
  if bool(getattr(g,'is_platform_owner',False)):session['is_platform_owner']=True
