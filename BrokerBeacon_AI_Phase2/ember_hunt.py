@@ -33,22 +33,30 @@ def _seed_rows(conn: sqlite3.Connection, state: str, limit: int) -> list[sqlite3
     for optional in ("city", "nmls", "source_name"):
         if optional in columns:
             fields.append(optional)
-    query = f"select {','.join(fields)} from national_broker_index where upper(state)=? and trim(coalesce(source_url,''))<>'' order by id limit ?"
+    # Prefer companies Ember has never queued before so every scheduled cycle
+    # advances through the index instead of rechecking the same first records.
+    query = f"""
+        select {','.join('n.' + f for f in fields)}
+        from national_broker_index n
+        where upper(n.state)=?
+          and trim(coalesce(n.source_url,''))<>''
+          and not exists (
+              select 1 from public_search_results p
+              where lower(trim(p.source_url))=lower(trim(n.source_url))
+          )
+        order by n.id
+        limit ?
+    """
     return conn.execute(query, (state, limit)).fetchall()
 
 
 def launch(conn: sqlite3.Connection, *, state: str = "NC", company_limit: int = 4,
            contact_limit: int = 200) -> dict:
-    """Run a fast web-request-safe hunt.
-
-    Larger continuous batches belong in the background worker. This interactive
-    launch is intentionally small so the button returns before Gunicorn's timeout.
-    """
     state = (state or "NC").strip().upper()
     if len(state) != 2 or not state.isalpha():
         raise ValueError("A valid two-letter state is required")
-    company_limit = min(max(int(company_limit), 1), 4)
-    contact_limit = min(max(int(contact_limit), 1), 200)
+    company_limit = min(max(int(company_limit), 1), 8)
+    contact_limit = min(max(int(contact_limit), 1), 300)
 
     init_public(conn)
     init_enrichment(conn)
@@ -62,7 +70,7 @@ def launch(conn: sqlite3.Connection, *, state: str = "NC", company_limit: int = 
     seeded = skipped = 0
     seen_domains: set[str] = set()
 
-    for rank, row in enumerate(_seed_rows(conn, state, company_limit * 6), start=1):
+    for rank, row in enumerate(_seed_rows(conn, state, company_limit * 8), start=1):
         url = str(row["source_url"] or "").strip()
         if not _valid_public_url(url):
             skipped += 1
@@ -97,11 +105,11 @@ def launch(conn: sqlite3.Connection, *, state: str = "NC", company_limit: int = 
     )
     conn.commit()
 
-    enqueued = enqueue_search_results(conn, state=state, limit=company_limit)
+    enqueued = enqueue_search_results(conn, state=state, limit=max(company_limit, 25))
     enrichment = run_batch(
         conn,
         state=state,
-        batch_size=min(company_limit, 4),
+        batch_size=min(company_limit, 8),
         per_domain_limit=1,
         delay_seconds=0.0,
     ) if enqueued else {"claimed": 0, "processed": 0, "contacts_found": 0, "pages_fetched": 0}
@@ -119,11 +127,18 @@ def launch(conn: sqlite3.Connection, *, state: str = "NC", company_limit: int = 
         "select count(*) from discovered_contacts where state=? and review_status='Pending review'",
         (state,),
     ).fetchone()[0]
+    remaining = conn.execute(
+        """select count(*) from national_broker_index n where upper(n.state)=?
+           and trim(coalesce(n.source_url,''))<>'' and not exists (
+             select 1 from public_search_results p where lower(trim(p.source_url))=lower(trim(n.source_url))
+           )""", (state,)
+    ).fetchone()[0]
     return {
         "state": state,
         "search_run_id": run_id,
         "companies_seeded": seeded,
         "companies_skipped": skipped,
+        "companies_remaining": int(remaining or 0),
         "enqueued": enqueued,
         "enrichment": enrichment,
         "ai": ai,
