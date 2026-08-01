@@ -7,6 +7,7 @@ from flask import g, session
 
 from app import app, DB
 from ai_ops_api import install_ai_ops
+from control_tower_ux import install_control_tower_ux
 from discovery_ops_api import install_discovery_ops
 from national_data_center import install_national_data_center
 from national_warehouse_api import install_national_warehouse
@@ -17,18 +18,12 @@ install_state_connectors(app, DB)
 install_discovery_ops(app, DB)
 install_ai_ops(app, DB)
 install_national_data_center(app)
+install_control_tower_ux(app)
 
 
 @app.before_request
 def bridge_platform_owner_context():
-    """Expose the canonical SaaS owner flag to Sprint 37 extensions.
-
-    The SaaS layer stores authorization on ``g.is_platform_owner``. Sprint 37
-    originally looked for legacy user objects or a session flag, which caused
-    legitimate founding owners to receive a 403. This bridge uses only the
-    already-authenticated database-backed flag; it does not grant access based
-    on a name, email address, or client-provided value.
-    """
+    """Expose the canonical SaaS owner flag to Sprint 37 extensions."""
     if bool(getattr(g, "is_platform_owner", False)):
         session["is_platform_owner"] = True
     else:
