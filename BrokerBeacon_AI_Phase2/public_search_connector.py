@@ -1,19 +1,13 @@
-"""Public browser-search discovery connector for Sprint 37.
-
-Uses an approved search API rather than scraping search-result pages directly.
-Every result preserves its source URL and remains review-gated before CRM use.
-"""
+"""Review-gated public search discovery using BrokerBeacon's configured Google CSE."""
 from __future__ import annotations
 
-import json
-import os
 import re
 import sqlite3
 import time
 import urllib.parse
-import urllib.request
 from datetime import datetime
-from typing import Iterable
+
+from multi_search_provider import search_all
 
 NOW = lambda: datetime.now().isoformat(timespec="seconds")
 
@@ -118,21 +112,16 @@ def classify_result(title: str, snippet: str, url: str) -> dict:
 
 
 def search_provider(query: str, *, count: int = 10) -> list[dict]:
-    """Query an approved search API.
-
-    Supported provider: Brave Search API. Configure BRAVE_SEARCH_API_KEY.
-    The function intentionally does not scrape Google/Bing result HTML.
-    """
-    api_key = os.getenv("BRAVE_SEARCH_API_KEY", "").strip()
-    if not api_key:
-        raise RuntimeError("BRAVE_SEARCH_API_KEY is not configured")
-    params = urllib.parse.urlencode({"q": query, "count": min(max(count, 1), 20), "safesearch": "moderate"})
-    req = urllib.request.Request("https://api.search.brave.com/res/v1/web/search?" + params)
-    req.add_header("Accept", "application/json")
-    req.add_header("X-Subscription-Token", api_key)
-    with urllib.request.urlopen(req, timeout=20) as response:
-        payload = json.loads(response.read().decode("utf-8"))
-    return list((payload.get("web") or {}).get("results") or [])
+    """Use the existing Google CSE provider and its established result limits."""
+    limit = min(max(int(count), 1), 20)
+    response = search_all(query, limit_per_provider=limit, providers=["google_cse"])
+    stats = response.get("provider_stats", {}).get("google_cse", {})
+    if stats.get("status") != "Completed":
+        raise RuntimeError(stats.get("error") or "Google CSE search is not configured")
+    return [
+        {"title": item.get("title", ""), "description": item.get("description", ""), "url": item.get("url", "")}
+        for item in response.get("results", [])[:limit]
+    ]
 
 
 def run_public_search(conn: sqlite3.Connection, *, connector_id: int | None,
@@ -141,17 +130,15 @@ def run_public_search(conn: sqlite3.Connection, *, connector_id: int | None,
     initialize(conn)
     queries = build_queries(state, metro)
     now = NOW()
-    cur = conn.execute(
+    run_id = int(conn.execute(
         "insert into public_search_runs(connector_id,state,status,created_at,started_at) values(?,?,'Running',?,?)",
         (connector_id, state.upper(), now, now),
-    )
-    run_id = int(cur.lastrowid)
+    ).lastrowid)
     conn.commit()
     accepted = rejected = total = 0
     try:
         for query in queries:
-            results = search_provider(query, count=results_per_query)
-            for rank, item in enumerate(results, start=1):
+            for rank, item in enumerate(search_provider(query, count=results_per_query), start=1):
                 url = str(item.get("url") or "").strip()
                 if not url.startswith(("http://", "https://")):
                     rejected += 1
@@ -173,20 +160,16 @@ def run_public_search(conn: sqlite3.Connection, *, connector_id: int | None,
             conn.commit()
             if delay_seconds:
                 time.sleep(delay_seconds)
-        finished = NOW()
         conn.execute(
             """update public_search_runs set status='Completed',query_count=?,result_count=?,
                accepted_count=?,rejected_count=?,finished_at=? where id=?""",
-            (len(queries), total, accepted, rejected, finished, run_id),
+            (len(queries), total, accepted, rejected, NOW(), run_id),
         )
         conn.commit()
-        return {"run_id": run_id, "queries": len(queries), "results": total, "accepted": accepted, "rejected": rejected}
+        return {"run_id": run_id, "queries": len(queries), "results": total, "accepted": accepted, "rejected": rejected, "provider": "google_cse"}
     except Exception as exc:
-        finished = NOW()
-        conn.execute(
-            "update public_search_runs set status='Failed',error=?,finished_at=? where id=?",
-            (str(exc)[:500], finished, run_id),
-        )
+        conn.execute("update public_search_runs set status='Failed',error=?,finished_at=? where id=?",
+                     (str(exc)[:500], NOW(), run_id))
         conn.commit()
         raise
 
