@@ -7,7 +7,8 @@ import threading
 import time
 
 from ember_hunt import launch
-from ember_jobs import claim_next, complete, enqueue, fail, heartbeat, initialize
+from ember_jobs import claim_next, complete, fail, heartbeat, initialize
+from national_scheduler import refill_national_queue
 
 _started = False
 _start_lock = threading.Lock()
@@ -23,19 +24,8 @@ def _connect(db_path):
 
 
 def _seed_if_idle(conn):
-    initialize(conn)
-    active = conn.execute(
-        "select count(*) from crawl_jobs where job_type='discovery_cycle' and status in ('Queued','Running')"
-    ).fetchone()[0]
-    if active:
-        return None
-    return enqueue(
-        conn,
-        "discovery_cycle",
-        payload={"state": "", "company_limit": 6, "contact_limit": 250},
-        priority=100,
-        max_attempts=3,
-    )
+    """Maintain a bounded multi-state backlog instead of one generic job."""
+    return refill_national_queue(conn)
 
 
 def _process_one(app, db_path):
@@ -51,10 +41,11 @@ def _process_one(app, db_path):
             result = launch(
                 conn,
                 state=str(payload.get("state") or job.get("state") or "").strip().upper(),
-                company_limit=min(max(int(payload.get("company_limit", 6)), 1), 25),
-                contact_limit=min(max(int(payload.get("contact_limit", 250)), 1), 1000),
+                company_limit=min(max(int(payload.get("company_limit", 8)), 1), 25),
+                contact_limit=min(max(int(payload.get("contact_limit", 350)), 1), 1000),
             )
             complete(conn, int(job["id"]), WORKER_KEY, detail=result)
+            refill_national_queue(conn)
             heartbeat(conn, WORKER_KEY, status="Idle", jobs_completed_today=1)
             app.logger.warning(
                 "EMBER_QUEUE completed job_id=%s state=%s companies=%s contacts=%s",
@@ -63,6 +54,7 @@ def _process_one(app, db_path):
             )
         except Exception as exc:
             fail(conn, int(job["id"]), WORKER_KEY, str(exc), retry_delay_seconds=120)
+            refill_national_queue(conn)
             heartbeat(conn, WORKER_KEY, status="Failed", current_job_id=None, last_error=str(exc))
             app.logger.exception("EMBER_QUEUE job failed safely")
 
@@ -84,6 +76,7 @@ def install_ember_worker(app, db_path):
     def loop():
         with _connect(db_path) as conn:
             initialize(conn)
+            refill_national_queue(conn)
             heartbeat(conn, WORKER_KEY, status="Starting")
         app.logger.warning("EMBER_QUEUE worker started interval=%ss", interval)
         time.sleep(20)
@@ -94,6 +87,7 @@ def install_ember_worker(app, db_path):
                 app.logger.exception("EMBER_QUEUE loop recovered from unexpected error")
                 try:
                     with _connect(db_path) as conn:
+                        refill_national_queue(conn)
                         heartbeat(conn, WORKER_KEY, status="Failed", last_error=str(exc))
                 except Exception:
                     app.logger.exception("EMBER_QUEUE could not persist recovery state")
