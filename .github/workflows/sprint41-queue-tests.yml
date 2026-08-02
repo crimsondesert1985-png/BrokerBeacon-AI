@@ -1,0 +1,29 @@
+name: Sprint 41 Queue Tests
+
+on:
+  pull_request:
+    paths:
+      - 'BrokerBeacon_AI_Phase2/ember_jobs.py'
+      - 'BrokerBeacon_AI_Phase2/ember_worker.py'
+      - 'BrokerBeacon_AI_Phase2/ember_automation_api.py'
+      - 'BrokerBeacon_AI_Phase2/sprint39_api.py'
+      - 'BrokerBeacon_AI_Phase2/test_ember_jobs.py'
+      - 'BrokerBeacon_AI_Phase2/test_ember_queue_migration.py'
+      - '.github/workflows/sprint41-queue-tests.yml'
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: pip install -r BrokerBeacon_AI_Phase2/requirements.txt
+      - name: Compile changed modules
+        run: python -m py_compile BrokerBeacon_AI_Phase2/ember_jobs.py BrokerBeacon_AI_Phase2/ember_worker.py BrokerBeacon_AI_Phase2/ember_automation_api.py BrokerBeacon_AI_Phase2/sprint39_api.py
+      - name: Run queue tests
+        working-directory: BrokerBeacon_AI_Phase2
+        run: python -m unittest -v test_ember_jobs.py test_ember_queue_migration.py
