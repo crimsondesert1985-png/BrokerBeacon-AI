@@ -9,6 +9,7 @@ from ember_automation_api import install_ember_automation
 from ember_queue_api import install_ember_queue_api
 from ember_status_api import install_ember_status_api
 from ember_worker import install_ember_worker
+from founder_briefing import install_founder_briefing
 from national_autopilot_api import install_national_autopilot_api
 from national_data_center import install_national_data_center
 from national_warehouse_api import install_national_warehouse
@@ -32,6 +33,7 @@ install_sprint38_api(app, DB)
 install_sprint39_api(app, DB)
 install_national_autopilot_api(app, DB)
 install_role_management(app, DB)
+install_founder_briefing(app, DB)
 install_national_data_center(app)
 install_control_tower_ux(app)
 install_sprint39_ux(app)
