@@ -5,7 +5,7 @@ import os
 import sqlite3
 from datetime import datetime, timedelta
 
-from ember_jobs import emit_event, enqueue, initialize
+from ember_jobs import emit_event, enqueue, initialize, now_iso
 
 ALL_STATES = (
     "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA","KS","KY","LA","ME","MD",
@@ -47,6 +47,41 @@ def ranked_states(conn: sqlite3.Connection) -> list[str]:
     )
 
 
+def _cancel_duplicate_queued_states(conn: sqlite3.Connection) -> int:
+    """Retire duplicate queued state jobs while preserving running and oldest jobs."""
+    rows = conn.execute(
+        """select id,state,status from crawl_jobs
+           where job_type='discovery_cycle' and status in ('Queued','Running')
+           order by case when status='Running' then 0 else 1 end,id"""
+    ).fetchall()
+    seen: set[str] = set()
+    duplicate_ids: list[int] = []
+    for row in rows:
+        state = str(row["state"] or "").upper()
+        if state in seen and row["status"] == "Queued":
+            duplicate_ids.append(int(row["id"]))
+        else:
+            seen.add(state)
+    if not duplicate_ids:
+        return 0
+    stamp = now_iso()
+    placeholders = ",".join("?" for _ in duplicate_ids)
+    conn.execute(
+        f"""update crawl_jobs set status='Cancelled',completed_at=?,updated_at=?,
+            last_error='Superseded duplicate national state job'
+            where id in ({placeholders}) and status='Queued'""",
+        (stamp, stamp, *duplicate_ids),
+    )
+    conn.commit()
+    emit_event(
+        conn,
+        "NationalQueueDeduplicated",
+        f"Retired {len(duplicate_ids)} duplicate state hunts",
+        detail={"jobs": duplicate_ids},
+    )
+    return len(duplicate_ids)
+
+
 def refill_national_queue(
     conn: sqlite3.Connection,
     *,
@@ -56,6 +91,7 @@ def refill_national_queue(
 ) -> list[int]:
     """Keep a bounded national queue full without duplicating active state jobs."""
     initialize(conn)
+    _cancel_duplicate_queued_states(conn)
     target = max(1, min(int(target_depth or os.getenv("EMBER_NATIONAL_QUEUE_DEPTH", "6")), 12))
     company_limit = max(1, min(int(company_limit or os.getenv("EMBER_COMPANY_LIMIT", "8")), 12))
     contact_limit = max(25, min(int(contact_limit or os.getenv("EMBER_CONTACT_LIMIT", "350")), 500))
