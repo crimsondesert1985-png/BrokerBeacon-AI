@@ -24,8 +24,19 @@ def _connect(db_path):
 
 
 def _seed_if_idle(conn):
-    """Maintain a bounded multi-state backlog instead of one generic job."""
-    return refill_national_queue(conn)
+    """Refill nationally only when no discovery work is already active.
+
+    This preserves explicitly queued/manual discovery jobs as the next work item
+    while still maintaining a bounded all-state backlog whenever the queue is idle.
+    """
+    initialize(conn)
+    active = conn.execute(
+        "select id from crawl_jobs where job_type='discovery_cycle' and status in ('Queued','Running') order by priority,id limit 1"
+    ).fetchone()
+    if active:
+        return None
+    created = refill_national_queue(conn)
+    return created[0] if created else None
 
 
 def _process_one(app, db_path):
