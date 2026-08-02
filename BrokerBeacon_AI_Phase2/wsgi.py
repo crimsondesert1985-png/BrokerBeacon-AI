@@ -14,6 +14,7 @@ from national_warehouse_api import install_national_warehouse
 from sprint38_api import install_sprint38_api
 from sprint39_api import install_sprint39_api
 from sprint39_ux import install_sprint39_ux
+from sprint41_ux import install_sprint41_ux
 from state_connector_api import install_state_connectors
 
 install_national_warehouse(app, DB)
@@ -28,6 +29,7 @@ install_sprint39_api(app, DB)
 install_national_data_center(app)
 install_control_tower_ux(app)
 install_sprint39_ux(app)
+install_sprint41_ux(app)
 install_ember_worker(app, DB)
 
 
