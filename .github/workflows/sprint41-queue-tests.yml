@@ -8,10 +8,12 @@ on:
       - 'BrokerBeacon_AI_Phase2/ember_automation_api.py'
       - 'BrokerBeacon_AI_Phase2/sprint39_api.py'
       - 'BrokerBeacon_AI_Phase2/sprint41_ux.py'
+      - 'BrokerBeacon_AI_Phase2/sprint41_drilldown_ux.py'
       - 'BrokerBeacon_AI_Phase2/wsgi.py'
       - 'BrokerBeacon_AI_Phase2/test_ember_jobs.py'
       - 'BrokerBeacon_AI_Phase2/test_ember_queue_migration.py'
       - 'BrokerBeacon_AI_Phase2/test_sprint41_ux.py'
+      - 'BrokerBeacon_AI_Phase2/test_sprint41_drilldown_ux.py'
       - '.github/workflows/sprint41-queue-tests.yml'
   workflow_dispatch:
 
@@ -26,7 +28,7 @@ jobs:
       - name: Install dependencies
         run: pip install -r BrokerBeacon_AI_Phase2/requirements.txt
       - name: Compile Sprint 41 modules
-        run: python -m py_compile BrokerBeacon_AI_Phase2/ember_jobs.py BrokerBeacon_AI_Phase2/ember_worker.py BrokerBeacon_AI_Phase2/ember_automation_api.py BrokerBeacon_AI_Phase2/sprint39_api.py BrokerBeacon_AI_Phase2/sprint41_ux.py BrokerBeacon_AI_Phase2/wsgi.py
+        run: python -m py_compile BrokerBeacon_AI_Phase2/ember_jobs.py BrokerBeacon_AI_Phase2/ember_worker.py BrokerBeacon_AI_Phase2/ember_automation_api.py BrokerBeacon_AI_Phase2/sprint39_api.py BrokerBeacon_AI_Phase2/sprint41_ux.py BrokerBeacon_AI_Phase2/sprint41_drilldown_ux.py BrokerBeacon_AI_Phase2/wsgi.py
       - name: Run Sprint 41 tests
         working-directory: BrokerBeacon_AI_Phase2
-        run: python -m unittest -v test_ember_jobs.py test_ember_queue_migration.py test_sprint41_ux.py
+        run: python -m unittest -v test_ember_jobs.py test_ember_queue_migration.py test_sprint41_ux.py test_sprint41_drilldown_ux.py
