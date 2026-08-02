@@ -25,10 +25,20 @@ def choose_state(conn:sqlite3.Connection)->str:
 def _seed_rows(conn:sqlite3.Connection,state:str,after_id:int,limit:int):
  columns={row[1] for row in conn.execute("pragma table_info(national_broker_index)")}
  if not {'id','company','state','source_url'}.issubset(columns):return []
- fields=['id','company','state','source_url']+[x for x in ('city','nmls','source_name') if x in columns]
- q=f"select {','.join(fields)} from national_broker_index where upper(state)=? and id>? and trim(coalesce(source_url,''))<>'' order by id limit ?"
- rows=conn.execute(q,(state,after_id,limit)).fetchall()
- if not rows and after_id>0: rows=conn.execute(q,(state,0,limit)).fetchall()
+ optional=[x for x in ('city','nmls','source_name') if x in columns]
+ fields=['id','company','state','source_url']+optional
+ selected=','.join(f'n.{field}' for field in fields)
+ now=NOW()
+ q=f"""select {selected} from national_broker_index n
+        where upper(n.state)=? and n.id>? and trim(coalesce(n.source_url,''))<>''
+          and not exists (
+            select 1 from ember_company_history h
+            where upper(h.state)=upper(n.state) and h.source_url=n.source_url
+              and trim(coalesce(h.next_crawl_at,''))<>'' and h.next_crawl_at>?
+          )
+        order by n.id limit ?"""
+ rows=conn.execute(q,(state,after_id,now,limit)).fetchall()
+ if not rows and after_id>0: rows=conn.execute(q,(state,0,now,limit)).fetchall()
  return rows
 
 def _promote_public_results(conn:sqlite3.Connection,run_id:int,state:str)->int:
