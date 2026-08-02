@@ -7,7 +7,7 @@ import threading
 import time
 
 from ember_hunt import launch
-from ember_jobs import claim_next, complete, fail, heartbeat, initialize
+from ember_jobs import claim_next, complete, emit_event, fail, heartbeat, initialize
 from national_scheduler import refill_national_queue
 
 _started = False
@@ -24,11 +24,7 @@ def _connect(db_path):
 
 
 def _seed_if_idle(conn):
-    """Refill nationally only when no discovery work is already active.
-
-    This preserves explicitly queued/manual discovery jobs as the next work item
-    while still maintaining a bounded all-state backlog whenever the queue is idle.
-    """
+    """Keep the national backlog full while preserving manual-job priority."""
     initialize(conn)
     active = conn.execute(
         "select id from crawl_jobs where job_type='discovery_cycle' and status in ('Queued','Running') order by priority,id limit 1"
@@ -41,11 +37,11 @@ def _seed_if_idle(conn):
 
 def _process_one(app, db_path):
     with _connect(db_path) as conn:
-        _seed_if_idle(conn)
+        refill_national_queue(conn)
         job = claim_next(conn, WORKER_KEY, lease_seconds=1200)
         if not job:
             heartbeat(conn, WORKER_KEY, status="Idle")
-            return
+            return False
         heartbeat(conn, WORKER_KEY, status="Running", current_job_id=job["id"])
         try:
             payload = job.get("payload") or {}
@@ -57,17 +53,45 @@ def _process_one(app, db_path):
             )
             complete(conn, int(job["id"]), WORKER_KEY, detail=result)
             refill_national_queue(conn)
+            emit_event(
+                conn,
+                "PipelineAdvanced",
+                f"{result.get('state', '')} flowed from discovery through enrichment and scoring",
+                worker_key=WORKER_KEY,
+                job_id=int(job["id"]),
+                state=result.get("state", ""),
+                detail={
+                    "companies": result.get("companies_seeded", 0),
+                    "contacts": result.get("new_contacts", 0),
+                    "pending_review": result.get("pending_review", 0),
+                    "next_stage": "Human review",
+                },
+            )
             heartbeat(conn, WORKER_KEY, status="Idle", jobs_completed_today=1)
             app.logger.warning(
                 "EMBER_QUEUE completed job_id=%s state=%s companies=%s contacts=%s",
                 job["id"], result.get("state", ""), result.get("companies_seeded", 0),
                 (result.get("enrichment") or {}).get("contacts_found", 0),
             )
+            return True
         except Exception as exc:
             fail(conn, int(job["id"]), WORKER_KEY, str(exc), retry_delay_seconds=120)
             refill_national_queue(conn)
             heartbeat(conn, WORKER_KEY, status="Failed", current_job_id=None, last_error=str(exc))
             app.logger.exception("EMBER_QUEUE job failed safely")
+            return False
+
+
+def _run_burst(app, db_path, max_jobs: int, between_jobs: int) -> int:
+    """Process a bounded burst so the queue flows without blocking forever."""
+    completed = 0
+    for index in range(max(1, max_jobs)):
+        if not _process_one(app, db_path):
+            break
+        completed += 1
+        if index + 1 < max_jobs and between_jobs:
+            time.sleep(between_jobs)
+    return completed
 
 
 def install_ember_worker(app, db_path):
@@ -82,18 +106,26 @@ def install_ember_worker(app, db_path):
             return
         _started = True
 
-    interval = max(int(os.getenv("EMBER_LOOP_SECONDS", "300")), 180)
+    idle_interval = max(int(os.getenv("EMBER_IDLE_SECONDS", "60")), 30)
+    startup_delay = max(int(os.getenv("EMBER_STARTUP_DELAY_SECONDS", "10")), 0)
+    burst_jobs = max(1, min(int(os.getenv("EMBER_BURST_JOBS", "3")), 6))
+    between_jobs = max(0, min(int(os.getenv("EMBER_BETWEEN_JOBS_SECONDS", "5")), 30))
 
     def loop():
         with _connect(db_path) as conn:
             initialize(conn)
             refill_national_queue(conn)
             heartbeat(conn, WORKER_KEY, status="Starting")
-        app.logger.warning("EMBER_QUEUE worker started interval=%ss", interval)
-        time.sleep(20)
+        app.logger.warning(
+            "EMBER_QUEUE worker started idle=%ss burst=%s between=%ss",
+            idle_interval, burst_jobs, between_jobs,
+        )
+        time.sleep(startup_delay)
         while True:
             try:
-                _process_one(app, db_path)
+                completed = _run_burst(app, db_path, burst_jobs, between_jobs)
+                if completed:
+                    app.logger.warning("EMBER_QUEUE burst completed jobs=%s", completed)
             except Exception as exc:
                 app.logger.exception("EMBER_QUEUE loop recovered from unexpected error")
                 try:
@@ -102,6 +134,6 @@ def install_ember_worker(app, db_path):
                         heartbeat(conn, WORKER_KEY, status="Failed", last_error=str(exc))
                 except Exception:
                     app.logger.exception("EMBER_QUEUE could not persist recovery state")
-            time.sleep(interval)
+            time.sleep(idle_interval)
 
     threading.Thread(target=loop, name="ember-queue-worker", daemon=True).start()
