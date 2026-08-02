@@ -1,4 +1,4 @@
-name: Sprint 41-48 Queue, UX, National, Role, Founder, Flow, Intelligence, and Source Tests
+name: Sprint 41-49 Queue, UX, National, Role, Founder, Flow, Intelligence, Source, and Guided Flow Tests
 
 on:
   pull_request:
@@ -28,6 +28,7 @@ on:
       - 'BrokerBeacon_AI_Phase2/test_national_flow_engine.py'
       - 'BrokerBeacon_AI_Phase2/test_intelligence_flow.py'
       - 'BrokerBeacon_AI_Phase2/test_source_resilience.py'
+      - 'BrokerBeacon_AI_Phase2/test_sprint49_guided_flow.py'
       - '.github/workflows/sprint41-queue-tests.yml'
   workflow_dispatch:
 
@@ -41,8 +42,8 @@ jobs:
           python-version: '3.12'
       - name: Install dependencies
         run: pip install -r BrokerBeacon_AI_Phase2/requirements.txt
-      - name: Compile Sprint 41-48 modules
+      - name: Compile Sprint 41-49 modules
         run: python -m py_compile BrokerBeacon_AI_Phase2/ember_jobs.py BrokerBeacon_AI_Phase2/ember_worker.py BrokerBeacon_AI_Phase2/ember_hunt.py BrokerBeacon_AI_Phase2/ember_status_api.py BrokerBeacon_AI_Phase2/public_search_connector.py BrokerBeacon_AI_Phase2/multi_search_provider.py BrokerBeacon_AI_Phase2/source_resilience.py BrokerBeacon_AI_Phase2/national_scheduler.py BrokerBeacon_AI_Phase2/national_autopilot_api.py BrokerBeacon_AI_Phase2/sprint42_national_ux.py BrokerBeacon_AI_Phase2/role_management.py BrokerBeacon_AI_Phase2/founder_briefing.py BrokerBeacon_AI_Phase2/intelligence_network.py BrokerBeacon_AI_Phase2/intelligence_flow.py BrokerBeacon_AI_Phase2/wsgi.py
-      - name: Run Sprint 41-48 tests
+      - name: Run Sprint 41-49 tests
         working-directory: BrokerBeacon_AI_Phase2
-        run: python -m unittest -v test_ember_jobs.py test_ember_queue_migration.py test_sprint41_ux.py test_sprint41_drilldown_ux.py test_national_scheduler.py test_role_management.py test_founder_briefing.py test_national_flow_engine.py test_intelligence_flow.py test_source_resilience.py
+        run: python -m unittest -v test_ember_jobs.py test_ember_queue_migration.py test_sprint41_ux.py test_sprint41_drilldown_ux.py test_national_scheduler.py test_role_management.py test_founder_briefing.py test_national_flow_engine.py test_intelligence_flow.py test_source_resilience.py test_sprint49_guided_flow.py
