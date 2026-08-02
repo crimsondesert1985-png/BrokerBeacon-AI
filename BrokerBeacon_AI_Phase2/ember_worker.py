@@ -7,7 +7,7 @@ import threading
 import time
 
 from ember_hunt import launch
-from ember_jobs import claim_next, complete, emit_event, fail, heartbeat, initialize
+from ember_jobs import claim_next, complete, emit_event, fail, heartbeat, initialize, now_iso
 from intelligence_flow import advance_intelligence
 from national_scheduler import refill_national_queue
 
@@ -24,16 +24,29 @@ def _connect(db_path):
     return conn
 
 
-def _seed_if_idle(conn):
-    """Keep the national backlog full while preserving manual-job priority."""
+def _reset_stale_discovery_backlog(conn):
+    """Cancel queued discovery jobs left by older scheduler versions and rebuild fairly."""
     initialize(conn)
-    active = conn.execute(
-        "select id from crawl_jobs where job_type='discovery_cycle' and status in ('Queued','Running') order by priority,id limit 1"
-    ).fetchone()
-    if active:
-        return None
-    created = refill_national_queue(conn)
-    return created[0] if created else None
+    stamp = now_iso()
+    rows = conn.execute(
+        "select id,state from crawl_jobs where job_type='discovery_cycle' and status='Queued' order by id"
+    ).fetchall()
+    if not rows:
+        return 0
+    conn.execute(
+        """update crawl_jobs set status='Cancelled',completed_at=?,updated_at=?,
+           last_error='Superseded by national queue reset' where job_type='discovery_cycle' and status='Queued'""",
+        (stamp, stamp),
+    )
+    conn.commit()
+    emit_event(
+        conn,
+        "NationalQueueReset",
+        f"Ember cleared {len(rows)} stale discovery jobs before rebuilding national coverage",
+        worker_key=WORKER_KEY,
+        detail={"cancelled_jobs": len(rows), "states": sorted({str(row['state'] or '') for row in rows})},
+    )
+    return len(rows)
 
 
 def _process_one(app, db_path):
@@ -55,6 +68,7 @@ def _process_one(app, db_path):
             complete(conn, int(job["id"]), WORKER_KEY, detail=result)
             graph = advance_intelligence(conn, state=result.get("state", ""))
             refill_national_queue(conn)
+            public_search = result.get("public_search") or {}
             emit_event(
                 conn,
                 "PipelineAdvanced",
@@ -66,6 +80,9 @@ def _process_one(app, db_path):
                     "companies": result.get("companies_seeded", 0),
                     "contacts": result.get("new_contacts", 0),
                     "pending_review": result.get("pending_review", 0),
+                    "public_search_status": public_search.get("status", "Not needed"),
+                    "public_search_indexed": public_search.get("indexed", 0),
+                    "public_search_reason": public_search.get("reason", ""),
                     "company_nodes": graph.get("company_nodes", 0),
                     "person_nodes": graph.get("person_nodes", 0),
                     "relationships": graph.get("relationships", 0),
@@ -75,9 +92,11 @@ def _process_one(app, db_path):
             )
             heartbeat(conn, WORKER_KEY, status="Idle", jobs_completed_today=1)
             app.logger.warning(
-                "EMBER_QUEUE completed job_id=%s state=%s companies=%s contacts=%s graph=%s",
+                "EMBER_QUEUE completed job_id=%s state=%s companies=%s contacts=%s search=%s indexed=%s reason=%s graph=%s",
                 job["id"], result.get("state", ""), result.get("companies_seeded", 0),
-                (result.get("enrichment") or {}).get("contacts_found", 0), graph.get("status", "Deferred"),
+                (result.get("enrichment") or {}).get("contacts_found", 0),
+                public_search.get("status", "Not needed"), public_search.get("indexed", 0),
+                public_search.get("reason", ""), graph.get("status", "Deferred"),
             )
             return True
         except Exception as exc:
@@ -120,11 +139,12 @@ def install_ember_worker(app, db_path):
     def loop():
         with _connect(db_path) as conn:
             initialize(conn)
-            refill_national_queue(conn)
+            cancelled = _reset_stale_discovery_backlog(conn)
+            created = refill_national_queue(conn)
             heartbeat(conn, WORKER_KEY, status="Starting")
         app.logger.warning(
-            "EMBER_QUEUE worker started idle=%ss burst=%s between=%ss",
-            idle_interval, burst_jobs, between_jobs,
+            "EMBER_QUEUE worker started idle=%ss burst=%s between=%ss reset=%s queued=%s",
+            idle_interval, burst_jobs, between_jobs, cancelled, len(created),
         )
         time.sleep(startup_delay)
         while True:
