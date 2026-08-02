@@ -8,6 +8,7 @@ import time
 
 from ember_hunt import launch
 from ember_jobs import claim_next, complete, emit_event, fail, heartbeat, initialize
+from intelligence_flow import advance_intelligence
 from national_scheduler import refill_national_queue
 
 _started = False
@@ -52,11 +53,12 @@ def _process_one(app, db_path):
                 contact_limit=min(max(int(payload.get("contact_limit", 350)), 1), 1000),
             )
             complete(conn, int(job["id"]), WORKER_KEY, detail=result)
+            graph = advance_intelligence(conn, state=result.get("state", ""))
             refill_national_queue(conn)
             emit_event(
                 conn,
                 "PipelineAdvanced",
-                f"{result.get('state', '')} flowed from discovery through enrichment and scoring",
+                f"{result.get('state', '')} flowed from discovery through intelligence and review",
                 worker_key=WORKER_KEY,
                 job_id=int(job["id"]),
                 state=result.get("state", ""),
@@ -64,14 +66,18 @@ def _process_one(app, db_path):
                     "companies": result.get("companies_seeded", 0),
                     "contacts": result.get("new_contacts", 0),
                     "pending_review": result.get("pending_review", 0),
+                    "company_nodes": graph.get("company_nodes", 0),
+                    "person_nodes": graph.get("person_nodes", 0),
+                    "relationships": graph.get("relationships", 0),
+                    "graph_status": graph.get("status", "Deferred"),
                     "next_stage": "Human review",
                 },
             )
             heartbeat(conn, WORKER_KEY, status="Idle", jobs_completed_today=1)
             app.logger.warning(
-                "EMBER_QUEUE completed job_id=%s state=%s companies=%s contacts=%s",
+                "EMBER_QUEUE completed job_id=%s state=%s companies=%s contacts=%s graph=%s",
                 job["id"], result.get("state", ""), result.get("companies_seeded", 0),
-                (result.get("enrichment") or {}).get("contacts_found", 0),
+                (result.get("enrichment") or {}).get("contacts_found", 0), graph.get("status", "Deferred"),
             )
             return True
         except Exception as exc:

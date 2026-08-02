@@ -1,4 +1,4 @@
-name: Sprint 41-45 Queue, UX, National, Role, Founder, and Flow Tests
+name: Sprint 41-46 Queue, UX, National, Role, Founder, Flow, and Intelligence Tests
 
 on:
   pull_request:
@@ -11,6 +11,8 @@ on:
       - 'BrokerBeacon_AI_Phase2/sprint42_national_ux.py'
       - 'BrokerBeacon_AI_Phase2/role_management.py'
       - 'BrokerBeacon_AI_Phase2/founder_briefing.py'
+      - 'BrokerBeacon_AI_Phase2/intelligence_network.py'
+      - 'BrokerBeacon_AI_Phase2/intelligence_flow.py'
       - 'BrokerBeacon_AI_Phase2/wsgi.py'
       - 'BrokerBeacon_AI_Phase2/test_ember_jobs.py'
       - 'BrokerBeacon_AI_Phase2/test_ember_queue_migration.py'
@@ -20,6 +22,7 @@ on:
       - 'BrokerBeacon_AI_Phase2/test_role_management.py'
       - 'BrokerBeacon_AI_Phase2/test_founder_briefing.py'
       - 'BrokerBeacon_AI_Phase2/test_national_flow_engine.py'
+      - 'BrokerBeacon_AI_Phase2/test_intelligence_flow.py'
       - '.github/workflows/sprint41-queue-tests.yml'
   workflow_dispatch:
 
@@ -33,8 +36,8 @@ jobs:
           python-version: '3.12'
       - name: Install dependencies
         run: pip install -r BrokerBeacon_AI_Phase2/requirements.txt
-      - name: Compile Sprint 41-45 modules
-        run: python -m py_compile BrokerBeacon_AI_Phase2/ember_jobs.py BrokerBeacon_AI_Phase2/ember_worker.py BrokerBeacon_AI_Phase2/ember_hunt.py BrokerBeacon_AI_Phase2/national_scheduler.py BrokerBeacon_AI_Phase2/national_autopilot_api.py BrokerBeacon_AI_Phase2/sprint42_national_ux.py BrokerBeacon_AI_Phase2/role_management.py BrokerBeacon_AI_Phase2/founder_briefing.py BrokerBeacon_AI_Phase2/wsgi.py
-      - name: Run Sprint 41-45 tests
+      - name: Compile Sprint 41-46 modules
+        run: python -m py_compile BrokerBeacon_AI_Phase2/ember_jobs.py BrokerBeacon_AI_Phase2/ember_worker.py BrokerBeacon_AI_Phase2/ember_hunt.py BrokerBeacon_AI_Phase2/national_scheduler.py BrokerBeacon_AI_Phase2/national_autopilot_api.py BrokerBeacon_AI_Phase2/sprint42_national_ux.py BrokerBeacon_AI_Phase2/role_management.py BrokerBeacon_AI_Phase2/founder_briefing.py BrokerBeacon_AI_Phase2/intelligence_network.py BrokerBeacon_AI_Phase2/intelligence_flow.py BrokerBeacon_AI_Phase2/wsgi.py
+      - name: Run Sprint 41-46 tests
         working-directory: BrokerBeacon_AI_Phase2
-        run: python -m unittest -v test_ember_jobs.py test_ember_queue_migration.py test_sprint41_ux.py test_sprint41_drilldown_ux.py test_national_scheduler.py test_role_management.py test_founder_briefing.py test_national_flow_engine.py
+        run: python -m unittest -v test_ember_jobs.py test_ember_queue_migration.py test_sprint41_ux.py test_sprint41_drilldown_ux.py test_national_scheduler.py test_role_management.py test_founder_briefing.py test_national_flow_engine.py test_intelligence_flow.py
