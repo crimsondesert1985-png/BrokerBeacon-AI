@@ -1,20 +1,13 @@
 """Bounded, review-gated Ember hunt with durable multi-state progress."""
 from __future__ import annotations
-import json, os, sqlite3, urllib.parse
+import json, sqlite3, urllib.parse
 from datetime import datetime, timedelta
 from ai_intelligence import initialize as init_ai, process_batch as process_ai_batch
 from public_search_connector import initialize as init_public
 from website_enrichment import initialize as init_enrichment, enqueue_search_results, run_batch
 from ember_activity import initialize as init_activity, record
+from national_scheduler import approved_states
 NOW=lambda:datetime.now().isoformat(timespec="seconds")
-
-def approved_states()->list[str]:
- raw=os.getenv("EMBER_APPROVED_STATES","NC,SC,VA,GA,FL")
- states=[]
- for value in raw.split(','):
-  state=value.strip().upper()
-  if len(state)==2 and state.isalpha() and state not in states: states.append(state)
- return states or ["NC"]
 
 def _domain(url:str)->str:
  return urllib.parse.urlparse(url).netloc.lower().removeprefix("www.")
@@ -41,6 +34,7 @@ def _seed_rows(conn:sqlite3.Connection,state:str,after_id:int,limit:int):
 def launch(conn:sqlite3.Connection,*,state:str='',company_limit:int=6,contact_limit:int=250)->dict:
  init_public(conn);init_enrichment(conn);init_ai(conn);init_activity(conn)
  state=(state or choose_state(conn)).upper();company_limit=min(max(int(company_limit),1),12);contact_limit=min(max(int(contact_limit),1),500)
+ if state not in approved_states(): raise ValueError(f'State {state} is not enabled for Ember discovery')
  cursor=conn.execute("select * from ember_state_cursors where state=?",(state,)).fetchone();after_id=int(cursor['last_index_id'] if cursor else 0)
  now=NOW();run_id=int(conn.execute("insert into public_search_runs(state,status,created_at,started_at) values(?,'Running',?,?)",(state,now,now)).lastrowid)
  seeded=skipped=0;seen=set();last_index_id=after_id;companies=[]
