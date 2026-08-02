@@ -51,7 +51,12 @@ class ScoutQueueMigrationTests(unittest.TestCase):
         self.assertEqual(len(active), len({row["state"] for row in active}))
 
     def test_process_one_completes_explicit_job_and_refills_national_queue(self):
-        result = {"state": "NC", "companies_seeded": 2, "enrichment": {"contacts_found": 4}}
+        result = {
+            "state": "NC",
+            "companies_seeded": 2,
+            "enrichment": {"contacts_found": 4},
+            "pending_review": 4,
+        }
         with ember_worker._connect(self.db_path) as conn:
             explicit_id = enqueue(
                 conn,
@@ -65,7 +70,11 @@ class ScoutQueueMigrationTests(unittest.TestCase):
         job = self.rows(f"select status from crawl_jobs where id={explicit_id}")[0]
         self.assertEqual("Completed", job["status"])
         events = [row[0] for row in self.rows(f"select event_type from activity_events where job_id={explicit_id} order by id")]
-        self.assertEqual(["JobQueued", "JobClaimed", "JobCompleted"], events)
+        self.assertEqual(["JobQueued", "JobClaimed", "JobCompleted", "PipelineAdvanced"], events)
+        pipeline = self.rows(
+            f"select detail_json from activity_events where job_id={explicit_id} and event_type='PipelineAdvanced'"
+        )[0]
+        self.assertIn('"next_stage": "Human review"', pipeline["detail_json"])
         active = self.rows("select state from crawl_jobs where status in ('Queued','Running')")
         self.assertGreaterEqual(len(active), 1)
         self.assertLessEqual(len(active), 6)
