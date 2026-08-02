@@ -1,4 +1,4 @@
-"""Review-gated public search discovery using BrokerBeacon's configured Google CSE."""
+"""Review-gated public search discovery using every configured provider."""
 from __future__ import annotations
 
 import re
@@ -7,7 +7,7 @@ import time
 import urllib.parse
 from datetime import datetime
 
-from multi_search_provider import search_all
+from multi_search_provider import configured_providers, search_all
 
 NOW = lambda: datetime.now().isoformat(timespec="seconds")
 
@@ -44,6 +44,7 @@ create table if not exists public_search_results(
     nmls_id text default '',
     phone text default '',
     public_email text default '',
+    provider_name text default '',
     review_status text not null default 'Pending review',
     created_at text not null,
     unique(run_id,source_url)
@@ -62,6 +63,9 @@ SEARCH_TEMPLATES = (
 
 def initialize(conn: sqlite3.Connection) -> None:
     conn.executescript(SCHEMA)
+    columns = {row[1] for row in conn.execute("pragma table_info(public_search_results)")}
+    if "provider_name" not in columns:
+        conn.execute("alter table public_search_results add column provider_name text default ''")
     conn.commit()
 
 
@@ -111,17 +115,17 @@ def classify_result(title: str, snippet: str, url: str) -> dict:
     }
 
 
-def search_provider(query: str, *, count: int = 10) -> list[dict]:
-    """Use the existing Google CSE provider and its established result limits."""
-    limit = min(max(int(count), 1), 20)
-    response = search_all(query, limit_per_provider=limit, providers=["google_cse"])
-    stats = response.get("provider_stats", {}).get("google_cse", {})
-    if stats.get("status") != "Completed":
-        raise RuntimeError(stats.get("error") or "Google CSE search is not configured")
-    return [
-        {"title": item.get("title", ""), "description": item.get("description", ""), "url": item.get("url", "")}
-        for item in response.get("results", [])[:limit]
-    ]
+def search_provider(query: str, *, count: int = 10) -> dict:
+    """Search all configured providers and return merged, provenance-tagged results."""
+    providers = configured_providers()
+    if not providers:
+        raise RuntimeError("No public search provider is configured")
+    response = search_all(query, limit_per_provider=min(max(int(count), 1), 20), providers=providers)
+    completed = [name for name, stats in response.get("provider_stats", {}).items() if stats.get("status") == "Completed"]
+    if not completed:
+        errors = [stats.get("error", "") for stats in response.get("provider_stats", {}).values() if stats.get("error")]
+        raise RuntimeError("; ".join(errors) or "All configured public search providers failed")
+    return response
 
 
 def run_public_search(conn: sqlite3.Connection, *, connector_id: int | None,
@@ -136,24 +140,31 @@ def run_public_search(conn: sqlite3.Connection, *, connector_id: int | None,
     ).lastrowid)
     conn.commit()
     accepted = rejected = total = 0
+    used_providers: set[str] = set()
+    provider_stats: dict[str, dict] = {}
     try:
         for query in queries:
-            for rank, item in enumerate(search_provider(query, count=results_per_query), start=1):
+            response = search_provider(query, count=results_per_query)
+            provider_stats.update(response.get("provider_stats", {}))
+            for rank, item in enumerate(response.get("results", []), start=1):
                 url = str(item.get("url") or "").strip()
                 if not url.startswith(("http://", "https://")):
                     rejected += 1
                     continue
+                providers = [str(p.get("provider") or "") for p in item.get("providers", []) if p.get("provider")]
+                used_providers.update(providers)
+                provider_name = ",".join(providers)
                 title = str(item.get("title") or "")
                 snippet = str(item.get("description") or "")
                 parsed = classify_result(title, snippet, url)
                 conn.execute(
                     """insert or ignore into public_search_results(
                        run_id,query_text,result_rank,title,snippet,source_url,source_domain,
-                       candidate_type,company_name,person_name,state,nmls_id,phone,public_email,created_at
-                       ) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                       candidate_type,company_name,person_name,state,nmls_id,phone,public_email,provider_name,created_at
+                       ) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                     (run_id, query, rank, title, snippet, url, _domain(url),
                      parsed["candidate_type"], parsed["company_name"], parsed["person_name"],
-                     state.upper(), parsed["nmls_id"], parsed["phone"], parsed["public_email"], NOW()),
+                     state.upper(), parsed["nmls_id"], parsed["phone"], parsed["public_email"], provider_name, NOW()),
                 )
                 total += 1
                 accepted += 1
@@ -166,7 +177,8 @@ def run_public_search(conn: sqlite3.Connection, *, connector_id: int | None,
             (len(queries), total, accepted, rejected, NOW(), run_id),
         )
         conn.commit()
-        return {"run_id": run_id, "queries": len(queries), "results": total, "accepted": accepted, "rejected": rejected, "provider": "google_cse"}
+        return {"run_id": run_id, "queries": len(queries), "results": total, "accepted": accepted,
+                "rejected": rejected, "providers": sorted(used_providers), "provider_stats": provider_stats}
     except Exception as exc:
         conn.execute("update public_search_runs set status='Failed',error=?,finished_at=? where id=?",
                      (str(exc)[:500], NOW(), run_id))
