@@ -12,6 +12,7 @@ from ember_worker import install_ember_worker
 from national_autopilot_api import install_national_autopilot_api
 from national_data_center import install_national_data_center
 from national_warehouse_api import install_national_warehouse
+from role_management import install_role_management
 from sprint38_api import install_sprint38_api
 from sprint39_api import install_sprint39_api
 from sprint39_ux import install_sprint39_ux
@@ -30,6 +31,7 @@ install_ember_queue_api(app, DB)
 install_sprint38_api(app, DB)
 install_sprint39_api(app, DB)
 install_national_autopilot_api(app, DB)
+install_role_management(app, DB)
 install_national_data_center(app)
 install_control_tower_ux(app)
 install_sprint39_ux(app)
@@ -48,8 +50,10 @@ def bridge_platform_owner_context():
 
 
 @app.after_request
-def add_ember_owner_navigation(response):
-    if not bool(getattr(g, "is_platform_owner", False)):
+def add_role_aware_navigation(response):
+    is_platform_owner = bool(getattr(g, "is_platform_owner", False))
+    can_manage_team = is_platform_owner or getattr(g, "membership_role", None) in {"Owner", "Manager"}
+    if not is_platform_owner and not can_manage_team:
         return response
     if response.status_code != 200 or "text/html" not in response.headers.get("Content-Type", "").lower():
         return response
@@ -57,10 +61,10 @@ def add_ember_owner_navigation(response):
         body = response.get_data(as_text=True)
     except (RuntimeError, UnicodeDecodeError):
         return response
-    if "ember-control-tower-link" in body or "</body>" not in body.lower():
+    if "brokerbeacon-role-aware-navigation" in body or "</body>" not in body.lower():
         return response
-    enhancement = r'''<script id="ember-control-tower-link">(function(){function add(){if(document.getElementById('ember-control-tower-button'))return;const nav=document.querySelector('aside nav')||document.querySelector('aside');if(!nav)return;const b=document.createElement('button');b.id='ember-control-tower-button';b.type='button';b.innerHTML='🔥 Ember Control Tower <span style="float:right;font-size:10px;opacity:.75">ALWAYS ON</span>';b.title='Open Ember discovery, live activity, review queue, and prospect controls.';b.onclick=()=>window.location.href='/platform/control-tower';nav.appendChild(b);const badge=document.createElement('div');badge.id='platform-owner-badge';badge.textContent='Platform Owner';badge.style.cssText='margin:10px 12px;padding:6px 8px;border-radius:999px;background:#43dfa715;color:#137a55;font-size:10px;font-weight:800;text-align:center';nav.appendChild(badge)}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',add);else add()})();</script>'''
-    pos = body.lower().rfind('</body>')
+    enhancement = f'''<script id="brokerbeacon-role-aware-navigation">(function(){{function add(){{const nav=document.querySelector('aside nav')||document.querySelector('aside');if(!nav)return;const make=(id,label,title,path,badge)=>{{if(document.getElementById(id))return;const b=document.createElement('button');b.id=id;b.type='button';b.innerHTML=label+(badge?'<span style="float:right;font-size:10px;opacity:.75">'+badge+'</span>':'');b.title=title;b.onclick=()=>window.location.href=path;nav.appendChild(b)}};{'''make('ember-control-tower-button','🔥 Ember Control Tower','Open national discovery, live activity, review queue, and prospect controls.','/platform/control-tower','ALWAYS ON');''' if is_platform_owner else ''}{'''make('team-access-button','👥 Team & Access','Assign clear roles and control what each person can see and change.','/workspace/team','SIMPLE');''' if can_manage_team else ''}{'''if(!document.getElementById('platform-owner-badge')){const badge=document.createElement('div');badge.id='platform-owner-badge';badge.textContent='Platform Owner';badge.style.cssText='margin:10px 12px;padding:6px 8px;border-radius:999px;background:#43dfa715;color:#137a55;font-size:10px;font-weight:800;text-align:center';nav.appendChild(badge)}''' if is_platform_owner else ''}}}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',add);else add()}})();</script>'''
+    pos = body.lower().rfind("</body>")
     body = body[:pos] + enhancement + body[pos:]
     response.set_data(body)
     response.headers["Content-Length"] = str(len(response.get_data()))
