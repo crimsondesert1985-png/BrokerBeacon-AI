@@ -49,6 +49,18 @@ def _reset_stale_discovery_backlog(conn):
     return len(rows)
 
 
+def _seed_if_idle(conn):
+    """Keep a bounded national backlog while preserving explicit/manual job priority."""
+    initialize(conn)
+    active = conn.execute(
+        "select id from crawl_jobs where job_type='discovery_cycle' and status in ('Queued','Running') order by priority,id limit 1"
+    ).fetchone()
+    if active:
+        return None
+    created = refill_national_queue(conn)
+    return created[0] if created else None
+
+
 def _process_one(app, db_path):
     with _connect(db_path) as conn:
         refill_national_queue(conn)
