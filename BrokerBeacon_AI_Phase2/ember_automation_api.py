@@ -1,4 +1,4 @@
-"""Internal, token-protected endpoint for scheduled Ember discovery batches."""
+"""Internal scheduled Ember endpoint with always-on worker fallback."""
 from __future__ import annotations
 
 import hmac
@@ -26,7 +26,15 @@ def install_ember_automation(app, db_path):
     def scheduled_cycle():
         expected = os.getenv("EMBER_AUTOMATION_TOKEN", "").strip()
         supplied = request.headers.get("X-Ember-Token", "").strip()
-        if not expected or not supplied or not hmac.compare_digest(expected, supplied):
+        authorized = bool(expected and supplied and hmac.compare_digest(expected, supplied))
+        if not authorized:
+            always_on = os.getenv("EMBER_ALWAYS_ON", "1").strip().lower() not in {"0", "false", "no"}
+            if always_on:
+                return jsonify(
+                    status="Skipped",
+                    reason="Always-on Ember worker is the authoritative scheduler",
+                    outreach_enabled=False,
+                ), 202
             return jsonify(error="Unauthorized"), 401
 
         with connect() as conn:
@@ -66,11 +74,9 @@ def install_ember_automation(app, db_path):
                     (result.get("state", ""), json.dumps(result, default=str), finished, run_id),
                 )
                 conn.commit()
-                app.logger.info(
-                    "Ember cycle completed run_id=%s state=%s companies=%s contacts=%s pending=%s",
-                    run_id,
-                    result.get("state", ""),
-                    result.get("companies_seeded", 0),
+                app.logger.warning(
+                    "EMBER_CRON completed run_id=%s state=%s companies=%s contacts=%s pending=%s",
+                    run_id, result.get("state", ""), result.get("companies_seeded", 0),
                     (result.get("enrichment") or {}).get("contacts_found", 0),
                     result.get("pending_review", 0),
                 )
@@ -82,7 +88,7 @@ def install_ember_automation(app, db_path):
                     (str(exc)[:1000], finished, run_id),
                 )
                 conn.commit()
-                app.logger.exception("Scheduled Ember cycle failed")
+                app.logger.exception("EMBER_CRON cycle failed safely")
                 return jsonify(error="Ember cycle failed safely", run_id=run_id), 500
 
     app.register_blueprint(bp)
