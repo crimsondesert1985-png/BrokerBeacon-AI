@@ -1,4 +1,4 @@
-name: Sprint 41-42 Queue, UX, and National Tests
+name: Sprint 41-43 Queue, UX, National, and Role Tests
 
 on:
   pull_request:
@@ -9,12 +9,14 @@ on:
       - 'BrokerBeacon_AI_Phase2/national_scheduler.py'
       - 'BrokerBeacon_AI_Phase2/national_autopilot_api.py'
       - 'BrokerBeacon_AI_Phase2/sprint42_national_ux.py'
+      - 'BrokerBeacon_AI_Phase2/role_management.py'
       - 'BrokerBeacon_AI_Phase2/wsgi.py'
       - 'BrokerBeacon_AI_Phase2/test_ember_jobs.py'
       - 'BrokerBeacon_AI_Phase2/test_ember_queue_migration.py'
       - 'BrokerBeacon_AI_Phase2/test_sprint41_ux.py'
       - 'BrokerBeacon_AI_Phase2/test_sprint41_drilldown_ux.py'
       - 'BrokerBeacon_AI_Phase2/test_national_scheduler.py'
+      - 'BrokerBeacon_AI_Phase2/test_role_management.py'
       - '.github/workflows/sprint41-queue-tests.yml'
   workflow_dispatch:
 
@@ -28,8 +30,8 @@ jobs:
           python-version: '3.12'
       - name: Install dependencies
         run: pip install -r BrokerBeacon_AI_Phase2/requirements.txt
-      - name: Compile Sprint 41-42 modules
-        run: python -m py_compile BrokerBeacon_AI_Phase2/ember_jobs.py BrokerBeacon_AI_Phase2/ember_worker.py BrokerBeacon_AI_Phase2/ember_hunt.py BrokerBeacon_AI_Phase2/national_scheduler.py BrokerBeacon_AI_Phase2/national_autopilot_api.py BrokerBeacon_AI_Phase2/sprint42_national_ux.py BrokerBeacon_AI_Phase2/wsgi.py
-      - name: Run Sprint 41-42 tests
+      - name: Compile Sprint 41-43 modules
+        run: python -m py_compile BrokerBeacon_AI_Phase2/ember_jobs.py BrokerBeacon_AI_Phase2/ember_worker.py BrokerBeacon_AI_Phase2/ember_hunt.py BrokerBeacon_AI_Phase2/national_scheduler.py BrokerBeacon_AI_Phase2/national_autopilot_api.py BrokerBeacon_AI_Phase2/sprint42_national_ux.py BrokerBeacon_AI_Phase2/role_management.py BrokerBeacon_AI_Phase2/wsgi.py
+      - name: Run Sprint 41-43 tests
         working-directory: BrokerBeacon_AI_Phase2
-        run: python -m unittest -v test_ember_jobs.py test_ember_queue_migration.py test_sprint41_ux.py test_sprint41_drilldown_ux.py test_national_scheduler.py
+        run: python -m unittest -v test_ember_jobs.py test_ember_queue_migration.py test_sprint41_ux.py test_sprint41_drilldown_ux.py test_national_scheduler.py test_role_management.py
