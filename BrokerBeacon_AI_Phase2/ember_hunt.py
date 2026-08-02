@@ -41,23 +41,23 @@ def _promote_public_results(conn:sqlite3.Connection,run_id:int,state:str)->int:
   company=str(row['company_name'] or row['title'] or _domain(url) or 'Mortgage company').strip()
   conn.execute("""insert into national_broker_index(nmls,company,city,state,source_name,source_url,
                 verification_status,indexed_at,updated_at) values(?,?,?,?,? ,?,'Needs verification',?,?)""",
-               (str(row['nmls_id'] or ''),company,str(row['city'] or ''),state,'Brave Search API',url,now,now))
+               (str(row['nmls_id'] or ''),company,str(row['city'] or ''),state,'Google Custom Search',url,now,now))
   created+=1
  conn.commit();return created
 
 def _refresh_index_from_public_search(conn:sqlite3.Connection,state:str,company_limit:int)->dict:
- if not os.getenv('BRAVE_SEARCH_API_KEY','').strip():
-  record(conn,'source_configuration_required','Public search is not configured',state=state,
-         detail='Set BRAVE_SEARCH_API_KEY to let Ember discover new public company sources.',severity='warning')
-  return {'status':'Blocked','reason':'BRAVE_SEARCH_API_KEY is not configured','indexed':0}
+ if not os.getenv('GOOGLE_CSE_API_KEY','').strip() or not os.getenv('GOOGLE_CSE_ID','').strip():
+  record(conn,'source_configuration_required','Google public search is not configured',state=state,
+         detail='Set GOOGLE_CSE_API_KEY and GOOGLE_CSE_ID to let Ember discover new public company sources.',severity='warning')
+  return {'status':'Blocked','reason':'Google CSE credentials are not configured','indexed':0}
  try:
   result=run_public_search(conn,connector_id=None,state=state,results_per_query=min(max(company_limit,3),10),delay_seconds=0.2)
   indexed=_promote_public_results(conn,int(result['run_id']),state)
-  record(conn,'public_search_completed',f'Indexed {indexed} public company sources for {state}',state=state,
+  record(conn,'public_search_completed',f'Indexed {indexed} Google company sources for {state}',state=state,
          detail=f"{result.get('results',0)} search results reviewed by the automated intake gate.",severity='success')
   return {'status':'Completed','indexed':indexed,**result}
  except Exception as exc:
-  record(conn,'public_search_failed',f'Public search failed for {state}',state=state,detail=str(exc)[:500],severity='warning')
+  record(conn,'public_search_failed',f'Google public search failed for {state}',state=state,detail=str(exc)[:500],severity='warning')
   return {'status':'Failed','reason':str(exc)[:500],'indexed':0}
 
 def launch(conn:sqlite3.Connection,*,state:str='',company_limit:int=6,contact_limit:int=250)->dict:
