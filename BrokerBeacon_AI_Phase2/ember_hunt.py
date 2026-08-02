@@ -1,12 +1,14 @@
 """Bounded, review-gated Ember hunt with durable multi-state progress."""
 from __future__ import annotations
-import json, os, sqlite3, urllib.parse
+import json, sqlite3, urllib.parse
 from datetime import datetime, timedelta
 from ai_intelligence import initialize as init_ai, process_batch as process_ai_batch
 from public_search_connector import initialize as init_public, run_public_search
 from website_enrichment import initialize as init_enrichment, enqueue_search_results, run_batch
 from ember_activity import initialize as init_activity, record
 from national_scheduler import approved_states
+from multi_search_provider import configured_providers
+from source_resilience import initialize as init_resilience, record_yield, state_available
 NOW=lambda:datetime.now().isoformat(timespec="seconds")
 
 def _domain(url:str)->str:
@@ -18,9 +20,10 @@ def _valid_public_url(value:str)->bool:
  except Exception:return False
 
 def choose_state(conn:sqlite3.Connection)->str:
- init_activity(conn);states=approved_states()
+ init_activity(conn);init_resilience(conn);states=approved_states()
+ available=[state for state in states if state_available(conn,state)] or states
  rows={r['state']:dict(r) for r in conn.execute("select * from ember_state_cursors")}
- return sorted(states,key=lambda s:(rows.get(s,{}).get('last_run_at',''),rows.get(s,{}).get('companies_processed',0),s))[0]
+ return sorted(available,key=lambda s:(rows.get(s,{}).get('last_run_at',''),rows.get(s,{}).get('companies_processed',0),s))[0]
 
 def _seed_rows(conn:sqlite3.Connection,state:str,after_id:int,limit:int):
  columns={row[1] for row in conn.execute("pragma table_info(national_broker_index)")}
@@ -42,40 +45,46 @@ def _seed_rows(conn:sqlite3.Connection,state:str,after_id:int,limit:int):
  return rows
 
 def _promote_public_results(conn:sqlite3.Connection,run_id:int,state:str)->int:
- rows=conn.execute("""select company_name,title,source_url,nmls_id,city from public_search_results
+ columns={row[1] for row in conn.execute("pragma table_info(public_search_results)")}
+ provider_field='provider_name' if 'provider_name' in columns else "'' as provider_name"
+ rows=conn.execute(f"""select company_name,title,source_url,nmls_id,city,{provider_field} from public_search_results
                      where run_id=? and candidate_type='Company' and trim(source_url)<>''""",(run_id,)).fetchall()
  now=NOW();created=0
  for row in rows:
   url=str(row['source_url'] or '').strip()
   if conn.execute("select 1 from national_broker_index where source_url=? limit 1",(url,)).fetchone():continue
   company=str(row['company_name'] or row['title'] or _domain(url) or 'Mortgage company').strip()
+  providers=str(row['provider_name'] or '').strip()
+  source_name='Public search: '+providers if providers else 'Public search'
   conn.execute("""insert into national_broker_index(nmls,company,city,state,source_name,source_url,
                 verification_status,indexed_at,updated_at) values(?,?,?,?,? ,?,'Needs verification',?,?)""",
-               (str(row['nmls_id'] or ''),company,str(row['city'] or ''),state,'Google Custom Search',url,now,now))
+               (str(row['nmls_id'] or ''),company,str(row['city'] or ''),state,source_name,url,now,now))
   created+=1
  conn.commit();return created
 
 def _refresh_index_from_public_search(conn:sqlite3.Connection,state:str,company_limit:int)->dict:
- if not os.getenv('GOOGLE_CSE_API_KEY','').strip() or not os.getenv('GOOGLE_CSE_ID','').strip():
-  record(conn,'source_configuration_required','Google public search is not configured',state=state,
-         detail='Set GOOGLE_CSE_API_KEY and GOOGLE_CSE_ID to let Ember discover new public company sources.',severity='warning')
-  return {'status':'Blocked','reason':'Google CSE credentials are not configured','indexed':0}
+ providers=configured_providers()
+ if not providers:
+  record(conn,'source_configuration_required','No public search provider is configured',state=state,
+         detail='Configure Google CSE, Brave, Tavily, Firecrawl, or SerpAPI to expand national discovery.',severity='warning')
+  return {'status':'Blocked','reason':'No public search provider is configured','indexed':0,'providers':[]}
  try:
   result=run_public_search(conn,connector_id=None,state=state,results_per_query=min(max(company_limit,3),10),delay_seconds=0.2)
   indexed=_promote_public_results(conn,int(result['run_id']),state)
-  record(conn,'public_search_completed',f'Indexed {indexed} Google company sources for {state}',state=state,
-         detail=f"{result.get('results',0)} search results reviewed by the automated intake gate.",severity='success')
+  names=result.get('providers') or providers
+  record(conn,'public_search_completed',f'Indexed {indexed} public company sources for {state}',state=state,
+         detail=f"{result.get('results',0)} results reviewed from {', '.join(names)}.",severity='success')
   return {'status':'Completed','indexed':indexed,**result}
  except Exception as exc:
-  record(conn,'public_search_failed',f'Google public search failed for {state}',state=state,detail=str(exc)[:500],severity='warning')
-  return {'status':'Failed','reason':str(exc)[:500],'indexed':0}
+  record(conn,'public_search_failed',f'Public search failed for {state}',state=state,detail=str(exc)[:500],severity='warning')
+  return {'status':'Failed','reason':str(exc)[:500],'indexed':0,'providers':providers}
 
 def launch(conn:sqlite3.Connection,*,state:str='',company_limit:int=6,contact_limit:int=250)->dict:
- init_public(conn);init_enrichment(conn);init_ai(conn);init_activity(conn)
+ init_public(conn);init_enrichment(conn);init_ai(conn);init_activity(conn);init_resilience(conn)
  state=(state or choose_state(conn)).upper();company_limit=min(max(int(company_limit),1),12);contact_limit=min(max(int(contact_limit),1),500)
  if state not in approved_states(): raise ValueError(f'State {state} is not enabled for Ember discovery')
  cursor=conn.execute("select * from ember_state_cursors where state=?",(state,)).fetchone();after_id=int(cursor['last_index_id'] if cursor else 0)
- seed_rows=list(_seed_rows(conn,state,after_id,company_limit*8));public_search={'status':'Not needed','indexed':0}
+ seed_rows=list(_seed_rows(conn,state,after_id,company_limit*8));public_search={'status':'Not needed','indexed':0,'providers':[]}
  if not seed_rows:
   public_search=_refresh_index_from_public_search(conn,state,company_limit)
   seed_rows=list(_seed_rows(conn,state,after_id,company_limit*8))
@@ -103,6 +112,10 @@ def launch(conn:sqlite3.Connection,*,state:str='',company_limit:int=6,contact_li
  conn.execute("""insert into ember_state_cursors(state,last_index_id,companies_processed,contacts_found,last_run_at,updated_at) values(?,?,?,?,?,?) on conflict(state) do update set last_index_id=excluded.last_index_id,companies_processed=ember_state_cursors.companies_processed+excluded.companies_processed,contacts_found=ember_state_cursors.contacts_found+excluded.contacts_found,last_run_at=excluded.last_run_at,updated_at=excluded.updated_at""",(state,last_index_id,seeded,new_contacts,NOW(),NOW()))
  for company in companies: conn.execute("update ember_company_history set status='Completed',contacts_found=?,pages_fetched=? where state=? and company_name=? and last_crawled_at=?",(new_contacts,int(enrichment.get('pages_fetched',0)),state,company,now))
  conn.execute("update autonomy_policies set enabled=1,approved_states_json=?,require_human_review=1,allow_crm_promotion=0,allow_outreach=0,allow_permission_changes=0,updated_at=? where policy_key='default'",(json.dumps(approved_states()),NOW()));conn.commit()
+ resilience=record_yield(conn,state,companies=seeded,contacts=new_contacts,provider_status=public_search.get('status','Not needed'))
+ if resilience.get('paused'):
+  record(conn,'state_source_paused',f'{state} paused after repeated zero-yield hunts',state=state,
+         detail=f"Automatic retry after {resilience.get('paused_until','')}",severity='warning')
  record(conn,'hunt_completed',f'Ember completed {state}: {new_contacts} new contacts',state=state,detail=f'{seeded} companies checked; {after} contacts waiting in state inventory.',severity='success' if seeded or new_contacts else 'warning')
  pending=int(conn.execute("select count(*) from discovered_contacts where review_status='Pending review'").fetchone()[0])
- return {'state':state,'search_run_id':run_id,'companies_seeded':seeded,'companies_skipped':skipped,'companies':companies,'public_search':public_search,'enqueued':enqueued,'enrichment':enrichment,'ai':ai,'new_contacts':new_contacts,'pending_review':pending,'cursor':last_index_id,'approved_states':approved_states(),'outreach_enabled':False,'crm_promotion_enabled':False,'message':f'Ember completed a safe {state} discovery batch.'}
+ return {'state':state,'search_run_id':run_id,'companies_seeded':seeded,'companies_skipped':skipped,'companies':companies,'public_search':public_search,'source_resilience':resilience,'enqueued':enqueued,'enrichment':enrichment,'ai':ai,'new_contacts':new_contacts,'pending_review':pending,'cursor':last_index_id,'approved_states':approved_states(),'outreach_enabled':False,'crm_promotion_enabled':False,'message':f'Ember completed a safe {state} discovery batch.'}
