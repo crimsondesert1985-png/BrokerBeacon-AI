@@ -1,0 +1,26 @@
+name: Sprint 51 Simplified Flow Tests
+
+on:
+  pull_request:
+    paths:
+      - 'BrokerBeacon_AI_Phase2/simplified_flow.py'
+      - 'BrokerBeacon_AI_Phase2/test_simplified_flow.py'
+      - 'BrokerBeacon_AI_Phase2/wsgi.py'
+      - '.github/workflows/sprint51-simplified-flow-tests.yml'
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: pip install -r BrokerBeacon_AI_Phase2/requirements.txt
+      - name: Compile simplified flow
+        run: python -m py_compile BrokerBeacon_AI_Phase2/simplified_flow.py BrokerBeacon_AI_Phase2/wsgi.py
+      - name: Run simplified flow tests
+        working-directory: BrokerBeacon_AI_Phase2
+        run: python -m unittest -v test_simplified_flow.py
