@@ -10,6 +10,7 @@ from customer_ready_ux import install_customer_ready_ux
 from discovery_ops_api import install_discovery_ops
 from drip_campaigns import install_drip_campaigns
 from ember_automation_api import install_ember_automation
+from ember_prospects_bridge import install_ember_prospects_bridge
 from ember_queue_api import install_ember_queue_api
 from ember_status_api import install_ember_status_api
 from ember_worker import install_ember_worker
@@ -57,6 +58,7 @@ install_sprint41_drilldown_ux(app)
 install_sprint42_national_ux(app)
 install_simplified_flow(app)
 install_prospect_flow(app, DB)
+install_ember_prospects_bridge(app, DB)
 install_drip_campaigns(app, DB)
 install_scenario_rescue(app, DB)
 install_beaconmatch_foundation(app, DB)
