@@ -96,23 +96,27 @@ def refill_national_queue(
     company_limit: int | None = None,
     contact_limit: int | None = None,
 ) -> list[int]:
-    """Keep a bounded national queue full without repeating recently processed states."""
+    """Keep a bounded national queue full and recycle stale states instead of going idle."""
     initialize(conn)
     _cancel_duplicate_queued_states(conn)
-    target = max(1, min(int(target_depth or os.getenv("EMBER_NATIONAL_QUEUE_DEPTH", "6")), 12))
-    company_limit = max(1, min(int(company_limit or os.getenv("EMBER_COMPANY_LIMIT", "12")), 20))
-    contact_limit = max(25, min(int(contact_limit or os.getenv("EMBER_CONTACT_LIMIT", "500")), 750))
-    cooldown_hours = max(1, min(int(os.getenv("EMBER_STATE_COOLDOWN_HOURS", "12")), 168))
+    target = max(1, min(int(target_depth or os.getenv("EMBER_NATIONAL_QUEUE_DEPTH", "12")), 24))
+    company_limit = max(1, min(int(company_limit or os.getenv("EMBER_COMPANY_LIMIT", "50")), 100))
+    contact_limit = max(25, min(int(contact_limit or os.getenv("EMBER_CONTACT_LIMIT", "1000")), 2000))
+    cooldown_hours = max(1, min(int(os.getenv("EMBER_STATE_COOLDOWN_HOURS", "6")), 168))
 
     active_rows = conn.execute(
         "select state from crawl_jobs where job_type='discovery_cycle' and status in ('Queued','Running')"
     ).fetchall()
     active_states = {str(row["state"] or "").upper() for row in active_rows}
     recent_states = _recent_job_states(conn, cooldown_hours)
-    excluded = active_states | recent_states
     needed = max(0, target - len(active_rows))
     created: list[int] = []
-    candidates = ranked_states(conn, excluded)
+
+    candidates = ranked_states(conn, active_states | recent_states)
+    recycle_mode = False
+    if needed > 0 and not candidates:
+        recycle_mode = True
+        candidates = ranked_states(conn, active_states)
 
     for state in candidates:
         if needed <= 0:
@@ -134,19 +138,22 @@ def refill_national_queue(
             conn,
             "NationalQueueRefilled",
             f"Ember prepared {len(created)} state hunts",
-            detail={"jobs": created, "queue_target": target, "states": len(approved_states()), "cooldown_hours": cooldown_hours},
+            detail={
+                "jobs": created,
+                "queue_target": target,
+                "states": len(approved_states()),
+                "cooldown_hours": cooldown_hours,
+                "company_limit": company_limit,
+                "contact_limit": contact_limit,
+                "recycle_mode": recycle_mode,
+            },
         )
     elif needed > 0:
         emit_event(
             conn,
             "NationalQueuePaused",
-            "Ember paused because every approved state is active or inside its cooldown window",
-            detail={
-                "queue_target": target,
-                "active_states": sorted(active_states),
-                "recent_states": sorted(recent_states),
-                "cooldown_hours": cooldown_hours,
-            },
+            "Ember could not queue another state hunt",
+            detail={"queue_target": target, "active_states": sorted(active_states), "cooldown_hours": cooldown_hours},
         )
     return created
 
