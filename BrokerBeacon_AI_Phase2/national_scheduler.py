@@ -113,13 +113,10 @@ def refill_national_queue(
     needed = max(0, target - len(active_rows))
     created: list[int] = []
     candidates = ranked_states(conn, excluded)
-    if not candidates and needed:
-        candidates = ranked_states(conn, active_states)
+
     for state in candidates:
         if needed <= 0:
             break
-        if state in active_states:
-            continue
         job_id = enqueue(
             conn,
             "discovery_cycle",
@@ -131,12 +128,25 @@ def refill_national_queue(
         created.append(job_id)
         active_states.add(state)
         needed -= 1
+
     if created:
         emit_event(
             conn,
             "NationalQueueRefilled",
             f"Ember prepared {len(created)} state hunts",
             detail={"jobs": created, "queue_target": target, "states": len(approved_states()), "cooldown_hours": cooldown_hours},
+        )
+    elif needed > 0:
+        emit_event(
+            conn,
+            "NationalQueuePaused",
+            "Ember paused because every approved state is active or inside its cooldown window",
+            detail={
+                "queue_target": target,
+                "active_states": sorted(active_states),
+                "recent_states": sorted(recent_states),
+                "cooldown_hours": cooldown_hours,
+            },
         )
     return created
 
