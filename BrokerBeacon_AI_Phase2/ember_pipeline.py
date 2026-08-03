@@ -7,6 +7,7 @@ import urllib.parse
 from broker_company_contacts import is_excluded_retail_lender, sync_company_contacts
 from ember_company_crawler import crawl_and_ingest
 from ember_hunt import launch as launch_hunt
+from national_warehouse import create_import_job, create_source, ingest_companies
 
 
 def _domain(url: str) -> str:
@@ -35,12 +36,10 @@ def _blocked_domain(domain: str) -> bool:
 
 
 def _candidate_rows(conn, run_id: int, state: str) -> list[dict]:
-    """Collect broker website candidates from every durable Ember source."""
     candidates: list[dict] = []
-
     for row in conn.execute(
         """select company_name,person_name,title,snippet,nmls_id,city,state,
-                  source_url,source_domain,candidate_type,run_id,id
+                  source_url,source_domain,candidate_type,run_id,id,phone,public_email
            from public_search_results
            where review_status<>'Rejected'
              and trim(coalesce(source_url,''))<>''
@@ -50,11 +49,10 @@ def _candidate_rows(conn, run_id: int, state: str) -> list[dict]:
         (run_id, state, run_id),
     ).fetchall():
         candidates.append(dict(row))
-
     try:
         for row in conn.execute(
             """select company_name as company,source_url,state,'' as city,'' as nmls_id,
-                      '' as title,'' as person_name,'' as snippet
+                      '' as title,'' as person_name,'' as snippet,'' as phone,'' as public_email
                from ember_company_history
                where upper(state)=? and trim(coalesce(source_url,''))<>''
                order by id desc limit 500""",
@@ -63,11 +61,10 @@ def _candidate_rows(conn, run_id: int, state: str) -> list[dict]:
             candidates.append(dict(row))
     except Exception:
         pass
-
     try:
         for row in conn.execute(
             """select company,source_url,state,coalesce(city,'') city,coalesce(nmls,'') nmls_id,
-                      company as title,'' as person_name,'' as snippet
+                      company as title,'' as person_name,'' as snippet,'' as phone,'' as public_email
                from national_broker_index
                where upper(state)=? and trim(coalesce(source_url,''))<>''
                order by id desc limit 1000""",
@@ -76,16 +73,13 @@ def _candidate_rows(conn, run_id: int, state: str) -> list[dict]:
             candidates.append(dict(row))
     except Exception:
         pass
-
     return candidates
 
 
 def _build_company_seeds(conn, run_id: int, state: str, company_limit: int) -> list[dict]:
-    """Select independent-broker domains and always provide warehouse fallbacks."""
     state = (state or "").strip().upper()[:2]
     seen: set[str] = set()
     seeds: list[dict] = []
-
     for row in _candidate_rows(conn, run_id, state):
         url = str(row.get("source_url") or "").strip()
         domain = _domain(url)
@@ -93,9 +87,7 @@ def _build_company_seeds(conn, run_id: int, state: str, company_limit: int) -> l
             continue
         company = _company_from_row(row)
         context = " ".join((str(row.get("title") or ""), str(row.get("snippet") or "")))
-        if is_excluded_retail_lender(company, url, context):
-            continue
-        if not company:
+        if is_excluded_retail_lender(company, url, context) or not company:
             continue
         seen.add(domain)
         seeds.append({
@@ -112,47 +104,82 @@ def _build_company_seeds(conn, run_id: int, state: str, company_limit: int) -> l
     return seeds
 
 
-def launch(conn, *, state: str = "", company_limit: int = 12, contact_limit: int = 500) -> dict:
-    """Run broker discovery, warehouse brokerage prospects, and attach loan-officer teams."""
-    result = launch_hunt(
+def _persist_seeded_companies(conn, result: dict, state: str) -> dict:
+    """Persist every successfully seeded brokerage even when no website survives crawl filtering."""
+    names = [str(name or "").strip() for name in (result.get("companies") or []) if str(name or "").strip()]
+    if not names:
+        return {"received": 0, "created": 0, "updated": 0, "rejected": 0}
+    source_id = create_source(
         conn,
-        state=state,
-        company_limit=company_limit,
-        contact_limit=contact_limit,
+        "Ember seeded broker companies",
+        "Discovery fallback",
+        "Public search or broker index company record; review required",
+        "",
     )
+    job_id = create_import_job(conn, source_id, state)
+    records = []
+    seen = set()
+    for name in names:
+        key = re.sub(r"[^a-z0-9]+", " ", name.lower()).strip()
+        if not key or key in seen or is_excluded_retail_lender(name, "", ""):
+            continue
+        seen.add(key)
+        row = conn.execute(
+            """select company,coalesce(nmls,''),coalesce(city,''),coalesce(source_url,'')
+               from national_broker_index where upper(state)=? and lower(company)=lower(?)
+               order by id desc limit 1""",
+            (state, name),
+        ).fetchone()
+        records.append({
+            "legal_name": name,
+            "nmls_id": str(row[1] if row else ""),
+            "website": str(row[3] if row else ""),
+            "phone": "",
+            "public_email": "",
+            "city": str(row[2] if row else ""),
+            "state": state,
+            "postal_code": "",
+            "source_record_id": f"seed:{state}:{key}",
+            "verification_status": "Needs review - seeded by Ember",
+        })
+    return ingest_companies(conn, job_id, source_id, records) if records else {
+        "received": 0, "created": 0, "updated": 0, "rejected": 0
+    }
+
+
+def launch(conn, *, state: str = "", company_limit: int = 12, contact_limit: int = 500) -> dict:
+    result = launch_hunt(conn, state=state, company_limit=company_limit, contact_limit=contact_limit)
     run_id = int(result.get("search_run_id") or 0)
     resolved_state = str(result.get("state") or state).upper()
     seeds = _build_company_seeds(conn, run_id, resolved_state, company_limit)
     result["broker_domains_selected"] = len(seeds)
     result["broker_seed_domains"] = [_domain(seed.get("source_url", "")) for seed in seeds]
-
     try:
-        result["company_crawl"] = crawl_and_ingest(
-            conn,
-            seeds,
-            state=resolved_state,
-            max_pages=7,
-        ) if seeds else {
-            "attempted": 0,
-            "completed": 0,
-            "failed": 0,
-            "fallbacks": 0,
-            "pages_fetched": 0,
+        crawl = crawl_and_ingest(conn, seeds, state=resolved_state, max_pages=7) if seeds else {
+            "attempted": 0, "completed": 0, "failed": 0, "fallbacks": 0, "pages_fetched": 0,
             "warehouse": {"received": 0, "created": 0, "updated": 0, "rejected": 0},
             "failures": [{"company": "", "reason": "No eligible broker-owned domains found"}],
         }
     except Exception as exc:
-        result["company_crawl"] = {
-            "attempted": len(seeds),
-            "completed": 0,
-            "failed": len(seeds),
-            "fallbacks": 0,
+        crawl = {
+            "attempted": len(seeds), "completed": 0, "failed": len(seeds), "fallbacks": 0,
             "pages_fetched": 0,
             "warehouse": {"received": 0, "created": 0, "updated": 0, "rejected": 0},
-            "failures": [{"company": "", "reason": str(exc)[:500]}],
-            "status": "Failed safely",
+            "failures": [{"company": "", "reason": str(exc)[:500]}], "status": "Failed safely",
         }
-
+    warehouse = crawl.get("warehouse") or {}
+    if int(warehouse.get("created", 0)) + int(warehouse.get("updated", 0)) == 0:
+        fallback = _persist_seeded_companies(conn, result, resolved_state)
+        crawl["seed_fallback_warehouse"] = fallback
+        crawl["warehouse"] = {
+            "received": int(warehouse.get("received", 0)) + int(fallback.get("received", 0)),
+            "created": int(warehouse.get("created", 0)) + int(fallback.get("created", 0)),
+            "updated": int(warehouse.get("updated", 0)) + int(fallback.get("updated", 0)),
+            "rejected": int(warehouse.get("rejected", 0)) + int(fallback.get("rejected", 0)),
+        }
+        if fallback.get("received", 0):
+            crawl["completed"] = max(int(crawl.get("completed", 0)), int(fallback.get("received", 0)))
+    result["company_crawl"] = crawl
     result["company_contact_sync"] = sync_company_contacts(conn, state=resolved_state)
     result["message"] = (
         f"Ember completed {resolved_state} mortgage-broker discovery, brokerage prospect creation, "
