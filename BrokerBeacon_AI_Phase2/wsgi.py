@@ -14,6 +14,7 @@ from ember_status_api import install_ember_status_api
 from ember_worker import install_ember_worker
 from founder_briefing import install_founder_briefing
 from help_layer import install_help_layer
+from interaction_drilldowns import install_interaction_drilldowns
 from national_autopilot_api import install_national_autopilot_api
 from national_data_center import install_national_data_center
 from national_warehouse_api import install_national_warehouse
@@ -55,6 +56,7 @@ install_scenario_rescue(app, DB)
 install_beaconmatch_foundation(app, DB)
 install_workspace_consolidation(app)
 install_help_layer(app)
+install_interaction_drilldowns(app, DB)
 install_ember_worker(app, DB)
 install_customer_ready_ux(app)
 
