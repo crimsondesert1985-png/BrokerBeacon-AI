@@ -5,6 +5,7 @@ from app import app, DB
 from ai_ops_api import install_ai_ops
 from beaconmatch_foundation import install_beaconmatch_foundation
 from control_tower_ux import install_control_tower_ux
+from customer_ready_ux import install_customer_ready_ux
 from discovery_ops_api import install_discovery_ops
 from drip_campaigns import install_drip_campaigns
 from ember_automation_api import install_ember_automation
@@ -55,6 +56,7 @@ install_beaconmatch_foundation(app, DB)
 install_workspace_consolidation(app)
 install_help_layer(app)
 install_ember_worker(app, DB)
+install_customer_ready_ux(app)
 
 
 @app.before_request

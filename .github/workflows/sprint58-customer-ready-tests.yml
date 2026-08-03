@@ -1,0 +1,24 @@
+name: Sprint 58 Customer-Ready Tests
+
+on:
+  pull_request:
+    paths:
+      - 'BrokerBeacon_AI_Phase2/customer_ready_ux.py'
+      - 'BrokerBeacon_AI_Phase2/test_customer_ready_ux.py'
+      - 'BrokerBeacon_AI_Phase2/wsgi.py'
+      - '.github/workflows/sprint58-customer-ready-tests.yml'
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: BrokerBeacon_AI_Phase2
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements.txt pytest
+      - run: pytest -q test_customer_ready_ux.py
