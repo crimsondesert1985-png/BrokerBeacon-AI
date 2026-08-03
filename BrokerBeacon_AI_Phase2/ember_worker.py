@@ -6,7 +6,7 @@ import sqlite3
 import threading
 import time
 
-from ember_hunt import launch
+from ember_pipeline import launch
 from ember_jobs import claim_next, complete, emit_event, fail, heartbeat, initialize, now_iso
 from intelligence_flow import advance_intelligence
 from national_scheduler import refill_national_queue
@@ -81,15 +81,20 @@ def _process_one(app, db_path):
             graph = advance_intelligence(conn, state=result.get("state", ""))
             refill_national_queue(conn)
             public_search = result.get("public_search") or {}
+            company_crawl = result.get("company_crawl") or {}
             emit_event(
                 conn,
                 "PipelineAdvanced",
-                f"{result.get('state', '')} flowed from discovery through intelligence and review",
+                f"{result.get('state', '')} flowed from discovery through company crawling, intelligence, and review",
                 worker_key=WORKER_KEY,
                 job_id=int(job["id"]),
                 state=result.get("state", ""),
                 detail={
                     "companies": result.get("companies_seeded", 0),
+                    "companies_crawled": company_crawl.get("completed", 0),
+                    "warehouse_created": (company_crawl.get("warehouse") or {}).get("created", 0),
+                    "warehouse_updated": (company_crawl.get("warehouse") or {}).get("updated", 0),
+                    "pages_fetched": company_crawl.get("pages_fetched", 0),
                     "contacts": result.get("new_contacts", 0),
                     "pending_review": result.get("pending_review", 0),
                     "public_search_status": public_search.get("status", "Not needed"),
@@ -104,11 +109,12 @@ def _process_one(app, db_path):
             )
             heartbeat(conn, WORKER_KEY, status="Idle", jobs_completed_today=1)
             app.logger.warning(
-                "EMBER_QUEUE completed job_id=%s state=%s companies=%s contacts=%s search=%s indexed=%s reason=%s graph=%s",
+                "EMBER_QUEUE completed job_id=%s state=%s seeded=%s crawled=%s warehouse_created=%s contacts=%s search=%s indexed=%s graph=%s",
                 job["id"], result.get("state", ""), result.get("companies_seeded", 0),
+                company_crawl.get("completed", 0), (company_crawl.get("warehouse") or {}).get("created", 0),
                 (result.get("enrichment") or {}).get("contacts_found", 0),
                 public_search.get("status", "Not needed"), public_search.get("indexed", 0),
-                public_search.get("reason", ""), graph.get("status", "Deferred"),
+                graph.get("status", "Deferred"),
             )
             return True
         except Exception as exc:
