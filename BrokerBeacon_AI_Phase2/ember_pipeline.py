@@ -17,7 +17,7 @@ def _domain(url: str) -> str:
 
 
 def _company_from_row(row: dict) -> str:
-    value = str(row.get("company_name") or "").strip()
+    value = str(row.get("company_name") or row.get("company") or "").strip()
     if value:
         return value
     title = str(row.get("title") or row.get("person_name") or "").strip()
@@ -25,59 +25,87 @@ def _company_from_row(row: dict) -> str:
     return title or _domain(str(row.get("source_url") or "")).split(".")[0].replace("-", " ").title()
 
 
-def _build_company_seeds(conn, run_id: int, state: str, company_limit: int) -> list[dict]:
-    """Select recent accepted broker-owned domains, not regulator seed URLs.
-
-    The hunt's returned run can be the national-index seed run. That run often
-    contains NMLS/regulator URLs, while the immediately preceding public-search
-    run contains the actual brokerage websites. Search the current run first,
-    then recent accepted results for the same state and deduplicate by domain.
-    """
-    state = (state or "").strip().upper()[:2]
-    rows = conn.execute(
-        """select company_name,person_name,title,snippet,nmls_id,city,state,
-                  source_url,source_domain,candidate_type,run_id,id
-           from public_search_results
-           where review_status='Pending review'
-             and trim(coalesce(source_url,''))<>''
-             and (run_id=? or state=?)
-           order by case when run_id=? then 0 else 1 end,
-                    case when candidate_type='Company' then 0 else 1 end,
-                    id desc
-           limit 750""",
-        (run_id, state, run_id),
-    ).fetchall()
-    blocked_domains = {
+def _blocked_domain(domain: str) -> bool:
+    blocked = {
         "nmlsconsumeraccess.org", "consumerfinance.gov", "hud.gov", "freddiemac.com",
         "fanniemae.com", "linkedin.com", "facebook.com", "instagram.com", "youtube.com",
         "bankrate.com", "nerdwallet.com", "investopedia.com", "forbes.com", "wikipedia.org",
     }
+    return not domain or domain in blocked or any(domain.endswith("." + item) for item in blocked)
+
+
+def _candidate_rows(conn, run_id: int, state: str) -> list[dict]:
+    """Collect broker website candidates from every durable Ember source."""
+    candidates: list[dict] = []
+
+    for row in conn.execute(
+        """select company_name,person_name,title,snippet,nmls_id,city,state,
+                  source_url,source_domain,candidate_type,run_id,id
+           from public_search_results
+           where review_status<>'Rejected'
+             and trim(coalesce(source_url,''))<>''
+             and (run_id=? or state=?)
+           order by case when run_id=? then 0 else 1 end,id desc
+           limit 1000""",
+        (run_id, state, run_id),
+    ).fetchall():
+        candidates.append(dict(row))
+
+    try:
+        for row in conn.execute(
+            """select company_name as company,source_url,state,'' as city,'' as nmls_id,
+                      '' as title,'' as person_name,'' as snippet
+               from ember_company_history
+               where upper(state)=? and trim(coalesce(source_url,''))<>''
+               order by id desc limit 500""",
+            (state,),
+        ).fetchall():
+            candidates.append(dict(row))
+    except Exception:
+        pass
+
+    try:
+        for row in conn.execute(
+            """select company,source_url,state,coalesce(city,'') city,coalesce(nmls,'') nmls_id,
+                      company as title,'' as person_name,'' as snippet
+               from national_broker_index
+               where upper(state)=? and trim(coalesce(source_url,''))<>''
+               order by id desc limit 1000""",
+            (state,),
+        ).fetchall():
+            candidates.append(dict(row))
+    except Exception:
+        pass
+
+    return candidates
+
+
+def _build_company_seeds(conn, run_id: int, state: str, company_limit: int) -> list[dict]:
+    """Select independent-broker domains and always provide warehouse fallbacks."""
+    state = (state or "").strip().upper()[:2]
     seen: set[str] = set()
     seeds: list[dict] = []
-    for raw in rows:
-        row = dict(raw)
+
+    for row in _candidate_rows(conn, run_id, state):
         url = str(row.get("source_url") or "").strip()
         domain = _domain(url)
-        if not domain or domain in blocked_domains or any(domain.endswith("." + blocked) for blocked in blocked_domains):
-            continue
-        if is_excluded_retail_lender(
-            str(row.get("company_name") or row.get("title") or ""),
-            url,
-            str(row.get("snippet") or ""),
-        ):
-            continue
-        if domain in seen:
+        if _blocked_domain(domain) or domain in seen:
             continue
         company = _company_from_row(row)
+        context = " ".join((str(row.get("title") or ""), str(row.get("snippet") or "")))
+        if is_excluded_retail_lender(company, url, context):
+            continue
         if not company:
             continue
         seen.add(domain)
         seeds.append({
             "company": company,
-            "nmls": str(row.get("nmls_id") or ""),
+            "nmls": str(row.get("nmls_id") or row.get("nmls") or ""),
             "city": str(row.get("city") or ""),
             "state": state or str(row.get("state") or ""),
             "source_url": url,
+            "phone": str(row.get("phone") or ""),
+            "public_email": str(row.get("public_email") or ""),
         })
         if len(seeds) >= max(1, min(int(company_limit), 25)):
             break
@@ -85,7 +113,7 @@ def _build_company_seeds(conn, run_id: int, state: str, company_limit: int) -> l
 
 
 def launch(conn, *, state: str = "", company_limit: int = 12, contact_limit: int = 500) -> dict:
-    """Run broker discovery, build brokerage prospects, and attach public loan-officer teams."""
+    """Run broker discovery, warehouse brokerage prospects, and attach loan-officer teams."""
     result = launch_hunt(
         conn,
         state=state,
@@ -94,8 +122,10 @@ def launch(conn, *, state: str = "", company_limit: int = 12, contact_limit: int
     )
     run_id = int(result.get("search_run_id") or 0)
     resolved_state = str(result.get("state") or state).upper()
-    seeds = _build_company_seeds(conn, run_id, resolved_state, company_limit) if run_id else []
+    seeds = _build_company_seeds(conn, run_id, resolved_state, company_limit)
     result["broker_domains_selected"] = len(seeds)
+    result["broker_seed_domains"] = [_domain(seed.get("source_url", "")) for seed in seeds]
+
     try:
         result["company_crawl"] = crawl_and_ingest(
             conn,
@@ -109,7 +139,7 @@ def launch(conn, *, state: str = "", company_limit: int = 12, contact_limit: int
             "fallbacks": 0,
             "pages_fetched": 0,
             "warehouse": {"received": 0, "created": 0, "updated": 0, "rejected": 0},
-            "failures": [],
+            "failures": [{"company": "", "reason": "No eligible broker-owned domains found"}],
         }
     except Exception as exc:
         result["company_crawl"] = {
@@ -122,6 +152,7 @@ def launch(conn, *, state: str = "", company_limit: int = 12, contact_limit: int
             "failures": [{"company": "", "reason": str(exc)[:500]}],
             "status": "Failed safely",
         }
+
     result["company_contact_sync"] = sync_company_contacts(conn, state=resolved_state)
     result["message"] = (
         f"Ember completed {resolved_state} mortgage-broker discovery, brokerage prospect creation, "
