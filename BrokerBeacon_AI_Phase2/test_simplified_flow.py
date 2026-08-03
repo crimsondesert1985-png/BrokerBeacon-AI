@@ -1,3 +1,5 @@
+import unittest
+
 from flask import Flask, g
 
 from simplified_flow import install_simplified_flow
@@ -27,37 +29,34 @@ def make_app(authenticated=True):
     return app
 
 
-def test_authenticated_pages_receive_start_here_flow():
-    response = make_app().test_client().get("/")
-    body = response.get_data(as_text=True)
-    assert response.status_code == 200
-    assert "Start here" in body
-    assert "Find prospects" in body
-    assert "Review matches" in body
-    assert "Contact" in body
-    assert "Follow up" in body
-    assert "Manage access" in body
+class SimplifiedFlowTests(unittest.TestCase):
+    def test_authenticated_pages_receive_start_here_flow(self):
+        response = make_app().test_client().get("/")
+        body = response.get_data(as_text=True)
+        self.assertEqual(200, response.status_code)
+        for phrase in ("Start here", "Find prospects", "Review matches", "Contact", "Follow up", "Manage access"):
+            self.assertIn(phrase, body)
+
+    def test_flow_explains_or_activates_visible_controls(self):
+        body = make_app().test_client().get("/").get_data(as_text=True)
+        self.assertIn("explainButtons", body)
+        self.assertIn("aria-disabled", body)
+        self.assertIn("This tool is unavailable", body)
+
+    def test_navigation_uses_progressive_disclosure(self):
+        body = make_app().test_client().get("/").get_data(as_text=True)
+        self.assertIn("More tools", body)
+        self.assertIn("bb-nav-more", body)
+        self.assertIn("primaryTerms", body)
+
+    def test_public_auth_pages_are_not_modified(self):
+        response = make_app().test_client().get("/login")
+        self.assertNotIn("brokerbeacon-simple-flow", response.get_data(as_text=True))
+
+    def test_unauthenticated_pages_are_not_modified(self):
+        response = make_app(authenticated=False).test_client().get("/")
+        self.assertNotIn("brokerbeacon-simple-flow", response.get_data(as_text=True))
 
 
-def test_flow_explains_or_activates_visible_controls():
-    body = make_app().test_client().get("/").get_data(as_text=True)
-    assert "explainButtons" in body
-    assert "aria-disabled" in body
-    assert "This tool is unavailable" in body
-
-
-def test_navigation_uses_progressive_disclosure():
-    body = make_app().test_client().get("/").get_data(as_text=True)
-    assert "More tools" in body
-    assert "bb-nav-more" in body
-    assert "primaryTerms" in body
-
-
-def test_public_auth_pages_are_not_modified():
-    response = make_app().test_client().get("/login")
-    assert "brokerbeacon-simple-flow" not in response.get_data(as_text=True)
-
-
-def test_unauthenticated_pages_are_not_modified():
-    response = make_app(authenticated=False).test_client().get("/")
-    assert "brokerbeacon-simple-flow" not in response.get_data(as_text=True)
+if __name__ == "__main__":
+    unittest.main()
