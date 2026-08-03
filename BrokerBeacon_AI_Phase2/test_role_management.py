@@ -44,10 +44,6 @@ class RoleManagementTests(unittest.TestCase):
                 ],
             )
             conn.executemany(
-                "insert into saas_memberships(id,workspace_id,user_id,role) values(1,1,?,?)",
-                [],
-            )
-            conn.executemany(
                 "insert into saas_memberships(id,workspace_id,user_id,role) values(?,?,?,?)",
                 [
                     (1, 1, 1, "Owner"),
@@ -99,13 +95,21 @@ class RoleManagementTests(unittest.TestCase):
         self.assertEqual(403, response.status_code)
         self.assertIn("platform owner", response.get_json()["error"].lower())
 
-    def test_team_page_is_simple_and_informative(self):
+    def test_team_page_has_guided_invitation_flow(self):
         response = self.client.get("/workspace/team")
         self.assertEqual(200, response.status_code)
         body = response.get_data(as_text=True)
-        self.assertIn("Team & Access", body)
-        self.assertIn("Choose a clear role", body)
-        self.assertIn("Least-privilege access", body)
+        self.assertIn("Invite people. Keep control.", body)
+        self.assertIn("Send secure invitation", body)
+        self.assertIn("Pending invitations", body)
+        self.assertIn("Passwords stay private", body)
+        self.assertIn("/api/saas/invitations", body)
+        self.assertIn("/api/saas/members/", body)
+
+    def test_non_manager_cannot_open_team_page(self):
+        self.context.update(user_id=4, role="AE")
+        response = self.client.get("/workspace/team")
+        self.assertEqual(403, response.status_code)
 
 
 if __name__ == "__main__":
