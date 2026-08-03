@@ -17,7 +17,7 @@ from national_data_center import install_national_data_center
 from national_warehouse_api import install_national_warehouse
 from prospect_flow import install_prospect_flow
 from role_management import install_role_management
-from scenario_rescue import install_scenario_rescue
+from scenario_rescue_engine import install_scenario_rescue
 from simplified_flow import install_simplified_flow
 from sprint38_api import install_sprint38_api
 from sprint39_api import install_sprint39_api
