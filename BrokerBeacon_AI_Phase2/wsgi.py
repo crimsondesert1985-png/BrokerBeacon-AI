@@ -11,6 +11,7 @@ from ember_queue_api import install_ember_queue_api
 from ember_status_api import install_ember_status_api
 from ember_worker import install_ember_worker
 from founder_briefing import install_founder_briefing
+from help_layer import install_help_layer
 from national_autopilot_api import install_national_autopilot_api
 from national_data_center import install_national_data_center
 from national_warehouse_api import install_national_warehouse
@@ -48,6 +49,7 @@ install_simplified_flow(app)
 install_prospect_flow(app, DB)
 install_drip_campaigns(app, DB)
 install_workspace_consolidation(app)
+install_help_layer(app)
 install_ember_worker(app, DB)
 
 
