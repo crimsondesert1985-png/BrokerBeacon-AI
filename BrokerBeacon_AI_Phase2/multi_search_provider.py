@@ -1,12 +1,10 @@
-"""Multi-provider public search orchestration for Sprint 37.
-
-Runs the same discovery query across multiple configured search APIs, merges
-results by canonical URL, records provider provenance, and measures unique yield.
-"""
+"""Multi-provider public search orchestration with a no-key fallback provider."""
 from __future__ import annotations
 
+import html
 import json
 import os
+import re
 import sqlite3
 import urllib.parse
 import urllib.request
@@ -27,8 +25,7 @@ create table if not exists search_provider_runs(
     latency_ms integer not null default 0,
     error text default '',
     created_at text not null,
-    finished_at text default '',
-    foreign key(public_search_run_id) references public_search_runs(id)
+    finished_at text default ''
 );
 create table if not exists search_result_providers(
     id integer primary key,
@@ -72,6 +69,8 @@ def configured_providers() -> list[str]:
         providers.append("serpapi")
     if os.getenv("GOOGLE_CSE_API_KEY", "").strip() and os.getenv("GOOGLE_CSE_ID", "").strip():
         providers.append("google_cse")
+    # Always retain a no-key fallback so one expired API key cannot stop Ember discovery.
+    providers.append("duckduckgo")
     return providers
 
 
@@ -80,6 +79,7 @@ def _json_request(url: str, *, method: str = "GET", headers: dict | None = None,
     data = json.dumps(payload).encode("utf-8") if payload is not None else None
     req = urllib.request.Request(url, data=data, method=method)
     req.add_header("Accept", "application/json")
+    req.add_header("User-Agent", "Mozilla/5.0 BrokerBeacon/1.0")
     if payload is not None:
         req.add_header("Content-Type", "application/json")
     for key, value in (headers or {}).items():
@@ -91,8 +91,7 @@ def _json_request(url: str, *, method: str = "GET", headers: dict | None = None,
 def _brave(query: str, limit: int) -> list[dict]:
     key = os.environ["BRAVE_SEARCH_API_KEY"]
     results = []
-    pages = min(10, max(1, (limit + 19) // 20))
-    for offset in range(pages):
+    for offset in range(min(10, max(1, (limit + 19) // 20))):
         params = urllib.parse.urlencode({"q": query, "count": min(20, limit - len(results)), "offset": offset,
                                          "country": "US", "search_lang": "en", "safesearch": "moderate"})
         payload = _json_request("https://api.search.brave.com/res/v1/web/search?" + params,
@@ -143,17 +142,43 @@ def _google_cse(query: str, limit: int) -> list[dict]:
     return results[:limit]
 
 
+def _duckduckgo(query: str, limit: int) -> list[dict]:
+    data = urllib.parse.urlencode({"q": query, "kl": "us-en"}).encode("utf-8")
+    req = urllib.request.Request("https://html.duckduckgo.com/html/", data=data, method="POST")
+    req.add_header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+    req.add_header("Content-Type", "application/x-www-form-urlencoded")
+    with urllib.request.urlopen(req, timeout=25) as response:
+        body = response.read().decode("utf-8", "ignore")
+    anchors = re.findall(r'<a[^>]+class="[^"]*result__a[^"]*"[^>]+href="([^"]+)"[^>]*>(.*?)</a>', body, re.I | re.S)
+    snippets = re.findall(r'<(?:a|div)[^>]+class="[^"]*result__snippet[^"]*"[^>]*>(.*?)</(?:a|div)>', body, re.I | re.S)
+    results = []
+    for index, (href, title_html) in enumerate(anchors):
+        href = html.unescape(href)
+        parsed = urllib.parse.urlparse(href)
+        if "duckduckgo.com" in parsed.netloc and parsed.path.startswith("/l/"):
+            href = urllib.parse.parse_qs(parsed.query).get("uddg", [href])[0]
+        title = html.unescape(re.sub(r"<[^>]+>", " ", title_html))
+        snippet_html = snippets[index] if index < len(snippets) else ""
+        snippet = html.unescape(re.sub(r"<[^>]+>", " ", snippet_html))
+        if href.startswith(("http://", "https://")):
+            results.append({"title": re.sub(r"\s+", " ", title).strip(),
+                            "description": re.sub(r"\s+", " ", snippet).strip(), "url": href})
+        if len(results) >= limit:
+            break
+    return results
+
+
 PROVIDERS = {
     "brave": _brave,
     "tavily": _tavily,
     "firecrawl": _firecrawl,
     "serpapi": _serpapi,
     "google_cse": _google_cse,
+    "duckduckgo": _duckduckgo,
 }
 
 
-def search_all(query: str, *, limit_per_provider: int = 20,
-               providers: list[str] | None = None) -> dict:
+def search_all(query: str, *, limit_per_provider: int = 20, providers: list[str] | None = None) -> dict:
     providers = providers or configured_providers()
     merged: dict[str, dict] = {}
     stats = {}
@@ -174,21 +199,16 @@ def search_all(query: str, *, limit_per_provider: int = 20,
                     merged[url]["providers"].append({"provider": provider, "rank": rank})
                 else:
                     unique += 1
-                    merged[url] = {
-                        "url": url,
-                        "title": str(item.get("title") or ""),
-                        "description": str(item.get("description") or ""),
-                        "providers": [{"provider": provider, "rank": rank}],
-                    }
-            stats[provider] = {
-                "status": "Completed", "results": len(raw), "unique": unique, "duplicates": duplicates,
-                "latency_ms": int((datetime.now() - started).total_seconds() * 1000),
-            }
+                    merged[url] = {"url": url, "title": str(item.get("title") or ""),
+                                   "description": str(item.get("description") or ""),
+                                   "providers": [{"provider": provider, "rank": rank}]}
+            stats[provider] = {"status": "Completed", "results": len(raw), "unique": unique,
+                               "duplicates": duplicates,
+                               "latency_ms": int((datetime.now() - started).total_seconds() * 1000)}
         except Exception as exc:
-            stats[provider] = {
-                "status": "Failed", "results": 0, "unique": 0, "duplicates": 0,
-                "latency_ms": int((datetime.now() - started).total_seconds() * 1000), "error": str(exc)[:500],
-            }
+            stats[provider] = {"status": "Failed", "results": 0, "unique": 0, "duplicates": 0,
+                               "latency_ms": int((datetime.now() - started).total_seconds() * 1000),
+                               "error": str(exc)[:500]}
     ordered = sorted(merged.values(), key=lambda x: (-len(x["providers"]), min(p["rank"] for p in x["providers"])))
     return {"query": query, "providers": providers, "results": ordered, "provider_stats": stats,
             "total_unique": len(ordered)}
