@@ -11,6 +11,7 @@ from contextlib import closing
 from ember_pipeline import launch
 from ember_jobs import claim_next, complete, emit_event, fail, heartbeat, initialize, now_iso
 from intelligence_flow import advance_intelligence
+from national_scheduler import refill_national_queue
 
 _started = False
 _start_lock = threading.Lock()
@@ -50,9 +51,23 @@ def _reset_stale_discovery_backlog(conn):
     return len(rows)
 
 
+def _ensure_national_queue(conn) -> int:
+    """Keep Ember moving automatically whenever the queue is low or empty."""
+    created = refill_national_queue(conn)
+    if created:
+        emit_event(
+            conn,
+            "AutomaticHuntsQueued",
+            f"Ember automatically queued {len(created)} mortgage-broker state hunts",
+            worker_key=WORKER_KEY,
+            detail={"jobs": created},
+        )
+    return len(created)
+
 
 def _process_one(app, db_path):
     with closing(_connect(db_path)) as conn:
+        _ensure_national_queue(conn)
         job = claim_next(conn, WORKER_KEY, lease_seconds=1200)
         if not job:
             heartbeat(conn, WORKER_KEY, status="Idle")
@@ -63,8 +78,8 @@ def _process_one(app, db_path):
             result = launch(
                 conn,
                 state=str(payload.get("state") or job.get("state") or "").strip().upper(),
-                company_limit=min(max(int(payload.get("company_limit", 8)), 1), 25),
-                contact_limit=min(max(int(payload.get("contact_limit", 350)), 1), 1000),
+                company_limit=min(max(int(payload.get("company_limit", 12)), 1), 25),
+                contact_limit=min(max(int(payload.get("contact_limit", 500)), 1), 1000),
             )
             complete(conn, int(job["id"]), WORKER_KEY, detail=result)
             graph = advance_intelligence(conn, state=result.get("state", ""))
@@ -73,7 +88,7 @@ def _process_one(app, db_path):
             emit_event(
                 conn,
                 "PipelineAdvanced",
-                f"{result.get('state', '')} flowed from discovery through company crawling, intelligence, and review",
+                f"{result.get('state', '')} flowed from mortgage-broker discovery through company crawling, intelligence, and review",
                 worker_key=WORKER_KEY,
                 job_id=int(job["id"]),
                 state=result.get("state", ""),
@@ -96,6 +111,7 @@ def _process_one(app, db_path):
                 },
             )
             heartbeat(conn, WORKER_KEY, status="Idle", jobs_completed_today=1)
+            _ensure_national_queue(conn)
             app.logger.warning(
                 "EMBER_QUEUE completed job_id=%s state=%s seeded=%s crawled=%s warehouse_created=%s contacts=%s search=%s indexed=%s graph=%s",
                 job["id"], result.get("state", ""), result.get("companies_seeded", 0),
@@ -139,19 +155,20 @@ def install_ember_worker(app, db_path):
             return
         _started = True
 
-    idle_interval = max(int(os.getenv("EMBER_IDLE_SECONDS", "60")), 30)
-    startup_delay = max(int(os.getenv("EMBER_STARTUP_DELAY_SECONDS", "10")), 0)
-    burst_jobs = max(1, min(int(os.getenv("EMBER_BURST_JOBS", "1")), 6))
-    between_jobs = max(0, min(int(os.getenv("EMBER_BETWEEN_JOBS_SECONDS", "5")), 30))
+    idle_interval = max(int(os.getenv("EMBER_IDLE_SECONDS", "30")), 15)
+    startup_delay = max(int(os.getenv("EMBER_STARTUP_DELAY_SECONDS", "0")), 0)
+    burst_jobs = max(1, min(int(os.getenv("EMBER_BURST_JOBS", "2")), 6))
+    between_jobs = max(0, min(int(os.getenv("EMBER_BETWEEN_JOBS_SECONDS", "3")), 30))
 
     def loop():
         with closing(_connect(db_path)) as conn:
             initialize(conn)
             cancelled = _reset_stale_discovery_backlog(conn)
+            queued = _ensure_national_queue(conn)
             heartbeat(conn, WORKER_KEY, status="Starting")
         app.logger.warning(
-            "EMBER_QUEUE worker started idle=%ss burst=%s between=%ss reset=%s queue_mode=scheduled",
-            idle_interval, burst_jobs, between_jobs, cancelled,
+            "EMBER_QUEUE worker started idle=%ss burst=%s between=%ss reset=%s auto_queued=%s queue_mode=automatic-national",
+            idle_interval, burst_jobs, between_jobs, cancelled, queued,
         )
         time.sleep(startup_delay)
         while True:
