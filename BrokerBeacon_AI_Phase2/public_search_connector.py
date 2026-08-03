@@ -7,6 +7,7 @@ import time
 import urllib.parse
 from datetime import datetime
 
+from broker_company_contacts import is_excluded_retail_lender
 from multi_search_provider import configured_providers, search_all
 
 NOW = lambda: datetime.now().isoformat(timespec="seconds")
@@ -57,20 +58,26 @@ STATE_NAMES = {
     'AL':'Alabama','AK':'Alaska','AZ':'Arizona','AR':'Arkansas','CA':'California','CO':'Colorado','CT':'Connecticut','DE':'Delaware','FL':'Florida','GA':'Georgia','HI':'Hawaii','ID':'Idaho','IL':'Illinois','IN':'Indiana','IA':'Iowa','KS':'Kansas','KY':'Kentucky','LA':'Louisiana','ME':'Maine','MD':'Maryland','MA':'Massachusetts','MI':'Michigan','MN':'Minnesota','MS':'Mississippi','MO':'Missouri','MT':'Montana','NE':'Nebraska','NV':'Nevada','NH':'New Hampshire','NJ':'New Jersey','NM':'New Mexico','NY':'New York','NC':'North Carolina','ND':'North Dakota','OH':'Ohio','OK':'Oklahoma','OR':'Oregon','PA':'Pennsylvania','RI':'Rhode Island','SC':'South Carolina','SD':'South Dakota','TN':'Tennessee','TX':'Texas','UT':'Utah','VT':'Vermont','VA':'Virginia','WA':'Washington','WV':'West Virginia','WI':'Wisconsin','WY':'Wyoming'
 }
 
+BANK_EXCLUSIONS = (
+    '-bank -"credit union" -"Bank of America" -"Wells Fargo" -Chase -Citibank '
+    '-Truist -PNC -"U.S. Bank" -"Capital One" -KeyBank -"Fifth Third"'
+)
+
 SEARCH_TEMPLATES = (
-    'independent mortgage broker {state_name} NMLS contact -wholesale -TPO',
-    'mortgage brokerage in {state_name} loan officers -wholesale lender',
-    'licensed mortgage broker company {state_name} NMLS',
-    'mortgage broker directory {state_name}',
-    'mortgage loan officer team {state_name} brokerage',
-    'mortgage broker owner {state_name} contact',
-    'site:nmlsconsumeraccess.org mortgage broker {state_name}',
+    'independent mortgage broker {state_name} NMLS contact -wholesale -TPO {bank_exclusions}',
+    'mortgage brokerage in {state_name} loan officers -wholesale lender {bank_exclusions}',
+    'licensed non-depository mortgage broker company {state_name} NMLS {bank_exclusions}',
+    'independent mortgage broker directory {state_name} {bank_exclusions}',
+    'mortgage loan officer team {state_name} independent brokerage {bank_exclusions}',
+    'mortgage broker owner {state_name} contact {bank_exclusions}',
+    'site:nmlsconsumeraccess.org mortgage broker {state_name} {bank_exclusions}',
 )
 
 BROKER_SIGNALS = (
     'mortgage broker','mortgage brokerage','broker owner','broker-owner',
     'independent mortgage','loan officer','mortgage loan originator','nmls',
     'mortgage licensee','mortgage company','home loan','mortgage advisor',
+    'non-depository mortgage','independent brokerage',
 )
 
 NON_BROKER_SIGNALS = (
@@ -78,6 +85,8 @@ NON_BROKER_SIGNALS = (
     'wholesale mortgages available','what is wholesale mortgage',
     'become an approved broker','broker portal','third-party originator',
     'tpo lending','correspondent lending','our broker partners',
+    'consumer banking','personal banking','checking account','savings account',
+    'member fdic','national bank','credit union',
 )
 
 EDITORIAL_DOMAINS = {
@@ -98,7 +107,7 @@ def build_queries(state: str, metro: str = "") -> list[str]:
     metro = (metro or "").strip()
     if state not in STATE_NAMES:
         raise ValueError("A valid two-letter state is required")
-    values = {'state': state, 'state_name': STATE_NAMES[state]}
+    values = {'state': state, 'state_name': STATE_NAMES[state], 'bank_exclusions': BANK_EXCLUSIONS}
     suffix = f" {metro}" if metro else ""
     return [template.format(**values) + suffix for template in SEARCH_TEMPLATES]
 
@@ -130,13 +139,18 @@ def is_broker_candidate(title: str, snippet: str, url: str) -> bool:
     domain = _domain(url)
     if domain in EDITORIAL_DOMAINS:
         return False
+    if is_excluded_retail_lender(title, url, snippet):
+        return False
     has_broker = any(term in combined for term in BROKER_SIGNALS)
     has_non_broker = any(term in combined for term in NON_BROKER_SIGNALS)
     official = (
         'nmlsconsumeraccess.org' in domain or domain.endswith('.gov')
         or 'search mortgage licensees' in combined or 'mortgage licensee' in combined
     )
-    explicit_broker = any(term in combined for term in ('mortgage broker','mortgage brokerage','loan officer','mortgage loan originator'))
+    explicit_broker = any(term in combined for term in (
+        'mortgage broker','mortgage brokerage','broker owner','independent mortgage broker',
+        'non-depository mortgage','independent brokerage'
+    ))
     if has_non_broker and not explicit_broker:
         return False
     return has_broker or official
@@ -148,8 +162,6 @@ def classify_result(title: str, snippet: str, url: str) -> dict:
     person_page = any(term in lower for term in ('loan officer','mortgage loan originator','mortgage advisor',' mlo '))
     title_clean = re.sub(r"\s*[-|·].*$", "", title or "").strip()
     domain_name = _domain(url).split('.')[0].replace('-', ' ').title()
-    # Keep useful LO/team pages eligible as company-domain seeds. Website
-    # enrichment extracts the individual people later with source evidence.
     return {
         "candidate_type": "Company",
         "company_name": title_clean or domain_name,
