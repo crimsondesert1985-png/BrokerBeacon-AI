@@ -23,6 +23,7 @@ from sprint41_ux import install_sprint41_ux
 from sprint41_drilldown_ux import install_sprint41_drilldown_ux
 from sprint42_national_ux import install_sprint42_national_ux
 from state_connector_api import install_state_connectors
+from workspace_consolidation import install_workspace_consolidation
 
 install_national_warehouse(app, DB)
 install_state_connectors(app, DB)
@@ -44,6 +45,7 @@ install_sprint41_drilldown_ux(app)
 install_sprint42_national_ux(app)
 install_simplified_flow(app)
 install_prospect_flow(app, DB)
+install_workspace_consolidation(app)
 install_ember_worker(app, DB)
 
 
