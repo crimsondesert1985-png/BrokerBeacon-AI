@@ -1,0 +1,25 @@
+name: Sprint 55 Scenario Rescue Tests
+
+on:
+  pull_request:
+    paths:
+      - 'BrokerBeacon_AI_Phase2/scenario_rescue.py'
+      - 'BrokerBeacon_AI_Phase2/scenario_rescue_engine.py'
+      - 'BrokerBeacon_AI_Phase2/test_scenario_rescue.py'
+      - 'BrokerBeacon_AI_Phase2/wsgi.py'
+      - '.github/workflows/sprint55-scenario-rescue-tests.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: BrokerBeacon_AI_Phase2
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install Flask
+      - run: python -m py_compile scenario_rescue.py scenario_rescue_engine.py wsgi.py
+      - run: python -m unittest -v test_scenario_rescue.py
