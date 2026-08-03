@@ -53,12 +53,50 @@ create index if not exists idx_public_search_runs_state on public_search_runs(st
 create index if not exists idx_public_search_results_review on public_search_results(review_status,state,id desc);
 """
 
+# Ember is a broker-prospecting crawler. These queries intentionally avoid
+# wholesale lender/product language, which previously polluted the queue.
 SEARCH_TEMPLATES = (
-    'mortgage broker {state} NMLS',
-    'mortgage company {state} loan officers',
-    'wholesale mortgage broker {state} contact',
-    'site:nmlsconsumeraccess.org mortgage {state}',
+    'independent mortgage broker {state} NMLS contact',
+    'mortgage brokerage {state} loan officers',
+    'licensed mortgage broker company {state}',
+    'site:nmlsconsumeraccess.org mortgage broker {state}',
 )
+
+BROKER_SIGNALS = (
+    'mortgage broker',
+    'mortgage brokerage',
+    'broker owner',
+    'broker-owner',
+    'independent mortgage',
+    'loan officer',
+    'mortgage loan originator',
+    'nmls',
+    'mortgage licensee',
+    'mortgage company',
+)
+
+# Results dominated by these phrases are lender/product/editorial pages rather
+# than independent mortgage-broker prospects.
+NON_BROKER_SIGNALS = (
+    'wholesale mortgage lender',
+    'wholesale lender',
+    'wholesale lending',
+    'wholesale mortgages available',
+    'what is wholesale mortgage',
+    'become an approved broker',
+    'broker portal',
+    'third-party originator',
+    'tpo lending',
+    'correspondent lending',
+)
+
+EDITORIAL_DOMAINS = {
+    'bankrate.com',
+    'investopedia.com',
+    'nerdwallet.com',
+    'forbes.com',
+    'wikipedia.org',
+}
 
 
 def initialize(conn: sqlite3.Connection) -> None:
@@ -98,6 +136,34 @@ def _extract_email(text: str) -> str:
 def _extract_phone(text: str) -> str:
     match = re.search(r"(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]\d{3}[-.\s]\d{4}", text or "")
     return re.sub(r"\D+", "", match.group(0))[-10:] if match else ""
+
+
+def is_broker_candidate(title: str, snippet: str, url: str) -> bool:
+    """Return True only when a result is useful for mortgage-broker prospecting."""
+    combined = " ".join((title or "", snippet or "", url or "")).lower()
+    domain = _domain(url)
+
+    if domain in EDITORIAL_DOMAINS:
+        return False
+
+    has_broker_signal = any(term in combined for term in BROKER_SIGNALS)
+    has_non_broker_signal = any(term in combined for term in NON_BROKER_SIGNALS)
+
+    # NMLS/state-regulator pages remain useful as verification or seed sources.
+    official_license_source = (
+        'nmlsconsumeraccess.org' in domain
+        or domain.endswith('.gov')
+        or 'search mortgage licensees' in combined
+        or 'mortgage licensee' in combined
+    )
+
+    # A page explicitly describing a mortgage broker may contain the word
+    # wholesale, but lender-only and product pages must be rejected.
+    explicit_broker = 'mortgage broker' in combined or 'mortgage brokerage' in combined
+    if has_non_broker_signal and not explicit_broker:
+        return False
+
+    return has_broker_signal or official_license_source
 
 
 def classify_result(title: str, snippet: str, url: str) -> dict:
@@ -151,11 +217,14 @@ def run_public_search(conn: sqlite3.Connection, *, connector_id: int | None,
                 if not url.startswith(("http://", "https://")):
                     rejected += 1
                     continue
+                title = str(item.get("title") or "")
+                snippet = str(item.get("description") or "")
+                if not is_broker_candidate(title, snippet, url):
+                    rejected += 1
+                    continue
                 providers = [str(p.get("provider") or "") for p in item.get("providers", []) if p.get("provider")]
                 used_providers.update(providers)
                 provider_name = ",".join(providers)
-                title = str(item.get("title") or "")
-                snippet = str(item.get("description") or "")
                 parsed = classify_result(title, snippet, url)
                 conn.execute(
                     """insert or ignore into public_search_results(
