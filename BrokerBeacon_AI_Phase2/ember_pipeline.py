@@ -3,11 +3,15 @@ from __future__ import annotations
 
 import re
 import urllib.parse
+from datetime import datetime
 
 from broker_company_contacts import is_excluded_retail_lender, sync_company_contacts
 from ember_company_crawler import crawl_and_ingest
 from ember_hunt import launch as launch_hunt
 from national_warehouse import create_import_job, create_source, ingest_companies
+from public_search_connector import initialize as initialize_public_search
+
+NOW = lambda: datetime.now().isoformat(timespec="seconds")
 
 
 def _domain(url: str) -> str:
@@ -104,6 +108,79 @@ def _build_company_seeds(conn, run_id: int, state: str, company_limit: int) -> l
     return seeds
 
 
+def _stage_seed_prospects(conn, seeds: list[dict], state: str, run_id: int) -> dict:
+    """Guarantee every eligible seed reaches public_search_results and discovered_contacts."""
+    initialize_public_search(conn)
+    state = (state or "").strip().upper()[:2]
+    synthetic_run_id = int(run_id or 0)
+    if synthetic_run_id <= 0 or not conn.execute(
+        "select 1 from public_search_runs where id=?", (synthetic_run_id,)
+    ).fetchone():
+        now = NOW()
+        synthetic_run_id = int(conn.execute(
+            """insert into public_search_runs(state,query_count,result_count,accepted_count,rejected_count,
+               status,created_at,started_at,finished_at)
+               values(?,0,0,0,0,'Completed',?,?,?)""",
+            (state, now, now, now),
+        ).lastrowid)
+
+    staged = updated = rejected = 0
+    for rank, seed in enumerate(seeds, start=1):
+        company = str(seed.get("company") or "").strip()
+        url = str(seed.get("source_url") or "").strip()
+        domain = _domain(url)
+        if not company or not domain or is_excluded_retail_lender(company, url, ""):
+            rejected += 1
+            continue
+        existing = conn.execute(
+            """select id from public_search_results
+               where upper(state)=? and source_domain=? and review_status<>'Rejected'
+               order by id desc limit 1""",
+            (state, domain),
+        ).fetchone()
+        if existing:
+            conn.execute(
+                """update public_search_results set
+                   company_name=case when trim(coalesce(company_name,''))='' then ? else company_name end,
+                   city=case when trim(coalesce(city,''))='' then ? else city end,
+                   nmls_id=case when trim(coalesce(nmls_id,''))='' then ? else nmls_id end,
+                   phone=case when trim(coalesce(phone,''))='' then ? else phone end,
+                   public_email=case when trim(coalesce(public_email,''))='' then ? else public_email end
+                   where id=?""",
+                (company, str(seed.get("city") or ""), str(seed.get("nmls") or ""),
+                 str(seed.get("phone") or ""), str(seed.get("public_email") or ""), existing["id"]),
+            )
+            updated += 1
+            continue
+        cur = conn.execute(
+            """insert or ignore into public_search_results(
+               run_id,query_text,result_rank,title,snippet,source_url,source_domain,candidate_type,
+               company_name,person_name,city,state,nmls_id,phone,public_email,provider_name,
+               review_status,created_at)
+               values(?,?,?,?,?,?,?,?,?,'',?,?,?,?,?,'Ember seed','Pending review',?)""",
+            (synthetic_run_id, "Ember guaranteed seed staging", rank, company,
+             "Brokerage selected by Ember from public search or the national broker index.",
+             url, domain, "Company", company, str(seed.get("city") or ""), state,
+             str(seed.get("nmls") or ""), str(seed.get("phone") or ""),
+             str(seed.get("public_email") or ""), NOW()),
+        )
+        staged += int(cur.rowcount > 0)
+    conn.execute(
+        """update public_search_runs set result_count=result_count+?,accepted_count=accepted_count+?
+           where id=?""",
+        (staged, staged, synthetic_run_id),
+    )
+    conn.commit()
+    contact_sync = sync_company_contacts(conn, state=state)
+    return {
+        "staged": staged,
+        "updated": updated,
+        "rejected": rejected,
+        "run_id": synthetic_run_id,
+        **contact_sync,
+    }
+
+
 def _persist_seeded_companies(conn, result: dict, state: str) -> dict:
     """Persist every successfully seeded brokerage even when no website survives crawl filtering."""
     names = [str(name or "").strip() for name in (result.get("companies") or []) if str(name or "").strip()]
@@ -154,6 +231,7 @@ def launch(conn, *, state: str = "", company_limit: int = 50, contact_limit: int
     seeds = _build_company_seeds(conn, run_id, resolved_state, company_limit)
     result["broker_domains_selected"] = len(seeds)
     result["broker_seed_domains"] = [_domain(seed.get("source_url", "")) for seed in seeds]
+    result["seed_prospect_staging"] = _stage_seed_prospects(conn, seeds, resolved_state, run_id)
     try:
         crawl = crawl_and_ingest(conn, seeds, state=resolved_state, max_pages=7) if seeds else {
             "attempted": 0, "completed": 0, "failed": 0, "fallbacks": 0, "pages_fetched": 0,
