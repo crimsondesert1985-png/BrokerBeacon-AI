@@ -12,7 +12,7 @@ import time
 from datetime import date
 from typing import Any, Callable
 
-from ember_hunt import launch
+from ember_pipeline import launch
 from ember_jobs import claim_next, complete, fail, heartbeat, initialize
 
 
