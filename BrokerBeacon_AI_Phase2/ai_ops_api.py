@@ -9,7 +9,7 @@ from flask import Blueprint, g, jsonify, request, session
 from ai_intelligence import initialize as initialize_ai_intelligence
 from ai_orchestrator import dashboard as agent_dashboard, learn_from_approved_feedback
 from autonomy_engine import dashboard as autonomy_dashboard, update_policy
-from ember_hunt import launch as launch_ember_hunt
+from ember_pipeline import launch as launch_ember_hunt
 from growth_mission import dashboard as growth_dashboard
 
 
@@ -75,14 +75,14 @@ def install_ai_ops(app, db_path):
     @bp.post("/api/platform/ai-ops/run-cycle")
     @owner_required
     def execute_cycle():
-        """Launch one bounded Ember hunt; never promote to CRM or initiate outreach."""
+        """Launch one bounded Ember crawl; never promote to CRM or initiate outreach."""
         payload = request.get_json(silent=True) or {}
         state = str(payload.get("state") or "NC").strip().upper()
         company_limit = min(max(int(payload.get("company_limit") or 10), 1), 25)
         contact_limit = min(max(int(payload.get("contact_limit") or 200), 1), 500)
         with connect() as conn:
             initialize_ai_intelligence(conn)
-            # Force the approved pilot guardrails before the hunt begins.
+            # Force review-gated guardrails before discovery and crawling begins.
             update_policy(conn, "default", {
                 "enabled": True,
                 "approved_states": [state],
@@ -137,5 +137,5 @@ def _briefing(conn: sqlite3.Connection) -> dict:
         "high_opportunity": high_value,
         "pending_duplicates": duplicates,
         "last_autonomy_run": dict(last_run) if last_run else None,
-        "recommended_focus": "Launch Ember's bounded North Carolina hunt, then review every discovered contact before any CRM promotion or outreach.",
+        "recommended_focus": "Let Ember build the state-by-state company warehouse, then review discovered contacts before any CRM promotion or outreach.",
     }
