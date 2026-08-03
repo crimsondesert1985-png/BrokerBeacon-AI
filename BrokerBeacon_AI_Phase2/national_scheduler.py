@@ -33,11 +33,24 @@ def _state_rows(conn: sqlite3.Connection) -> dict[str, dict]:
         return {}
 
 
-def ranked_states(conn: sqlite3.Connection) -> list[str]:
+def _recent_job_states(conn: sqlite3.Connection, cooldown_hours: int) -> set[str]:
+    cutoff = (datetime.now() - timedelta(hours=max(1, cooldown_hours))).isoformat(timespec="seconds")
+    rows = conn.execute(
+        """select distinct upper(coalesce(state,'')) state from crawl_jobs
+           where job_type='discovery_cycle'
+             and status in ('Queued','Running','Completed')
+             and coalesce(completed_at,updated_at,created_at)>=?""",
+        (cutoff,),
+    ).fetchall()
+    return {str(row["state"] or "").upper() for row in rows if row["state"]}
+
+
+def ranked_states(conn: sqlite3.Connection, exclude_states: set[str] | None = None) -> list[str]:
     """Prioritize never-run states, then the stalest and least-processed states."""
     rows = _state_rows(conn)
+    excluded = {str(state).upper() for state in (exclude_states or set())}
     return sorted(
-        approved_states(),
+        [state for state in approved_states() if state not in excluded],
         key=lambda state: (
             0 if not rows.get(state, {}).get("last_run_at") else 1,
             rows.get(state, {}).get("last_run_at", ""),
@@ -48,7 +61,6 @@ def ranked_states(conn: sqlite3.Connection) -> list[str]:
 
 
 def _cancel_duplicate_queued_states(conn: sqlite3.Connection) -> int:
-    """Retire duplicate queued state jobs while preserving running and oldest jobs."""
     rows = conn.execute(
         """select id,state,status from crawl_jobs
            where job_type='discovery_cycle' and status in ('Queued','Running')
@@ -73,12 +85,7 @@ def _cancel_duplicate_queued_states(conn: sqlite3.Connection) -> int:
         (stamp, stamp, *duplicate_ids),
     )
     conn.commit()
-    emit_event(
-        conn,
-        "NationalQueueDeduplicated",
-        f"Retired {len(duplicate_ids)} duplicate state hunts",
-        detail={"jobs": duplicate_ids},
-    )
+    emit_event(conn, "NationalQueueDeduplicated", f"Retired {len(duplicate_ids)} duplicate state hunts", detail={"jobs": duplicate_ids})
     return len(duplicate_ids)
 
 
@@ -89,20 +96,26 @@ def refill_national_queue(
     company_limit: int | None = None,
     contact_limit: int | None = None,
 ) -> list[int]:
-    """Keep a bounded national queue full without duplicating active state jobs."""
+    """Keep a bounded national queue full without repeating recently processed states."""
     initialize(conn)
     _cancel_duplicate_queued_states(conn)
     target = max(1, min(int(target_depth or os.getenv("EMBER_NATIONAL_QUEUE_DEPTH", "6")), 12))
-    company_limit = max(1, min(int(company_limit or os.getenv("EMBER_COMPANY_LIMIT", "8")), 12))
-    contact_limit = max(25, min(int(contact_limit or os.getenv("EMBER_CONTACT_LIMIT", "350")), 500))
+    company_limit = max(1, min(int(company_limit or os.getenv("EMBER_COMPANY_LIMIT", "12")), 20))
+    contact_limit = max(25, min(int(contact_limit or os.getenv("EMBER_CONTACT_LIMIT", "500")), 750))
+    cooldown_hours = max(1, min(int(os.getenv("EMBER_STATE_COOLDOWN_HOURS", "12")), 168))
 
     active_rows = conn.execute(
         "select state from crawl_jobs where job_type='discovery_cycle' and status in ('Queued','Running')"
     ).fetchall()
     active_states = {str(row["state"] or "").upper() for row in active_rows}
+    recent_states = _recent_job_states(conn, cooldown_hours)
+    excluded = active_states | recent_states
     needed = max(0, target - len(active_rows))
     created: list[int] = []
-    for state in ranked_states(conn):
+    candidates = ranked_states(conn, excluded)
+    if not candidates and needed:
+        candidates = ranked_states(conn, active_states)
+    for state in candidates:
         if needed <= 0:
             break
         if state in active_states:
@@ -123,7 +136,7 @@ def refill_national_queue(
             conn,
             "NationalQueueRefilled",
             f"Ember prepared {len(created)} state hunts",
-            detail={"jobs": created, "queue_target": target, "states": len(approved_states())},
+            detail={"jobs": created, "queue_target": target, "states": len(approved_states()), "cooldown_hours": cooldown_hours},
         )
     return created
 
