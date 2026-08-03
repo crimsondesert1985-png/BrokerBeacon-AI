@@ -273,7 +273,7 @@ def ingest_companies(conn: sqlite3.Connection, job_id: int, source_id: int,
             cur = conn.execute(
                 """insert into warehouse_companies(canonical_key,legal_name,normalized_name,nmls_id,website,phone,
                    public_email,city,state,postal_code,source_count,first_seen_at,last_seen_at,created_at,updated_at)
-                   values(?,?,?,?,?,?,?,?,?,?,1,?,?,?,?,?)""",
+                   values(?,?,?,?,?,?,?,?,?,?,1,?,?,?,?)""",
                 (key,) + values[:9] + (now, now, now, now),
             )
             company_id = int(cur.lastrowid)
