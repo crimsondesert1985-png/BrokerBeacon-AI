@@ -4,6 +4,7 @@ from __future__ import annotations
 import re
 import urllib.parse
 
+from broker_company_contacts import is_excluded_retail_lender, sync_company_contacts
 from ember_company_crawler import crawl_and_ingest
 from ember_hunt import launch as launch_hunt
 
@@ -25,9 +26,9 @@ def _company_from_row(row: dict) -> str:
 
 
 def _build_company_seeds(conn, run_id: int, company_limit: int) -> list[dict]:
-    """Use every accepted broker-domain result, not only rows classified as Company."""
+    """Use accepted independent-broker domains, excluding retail banks and wholesale lenders."""
     rows = conn.execute(
-        """select company_name,person_name,title,nmls_id,city,state,source_url,source_domain,candidate_type
+        """select company_name,person_name,title,snippet,nmls_id,city,state,source_url,source_domain,candidate_type
            from public_search_results
            where run_id=? and review_status='Pending review'
              and trim(coalesce(source_url,''))<>''
@@ -45,6 +46,12 @@ def _build_company_seeds(conn, run_id: int, company_limit: int) -> list[dict]:
         domain = _domain(str(row.get("source_url") or ""))
         if not domain or domain in blocked_domains or any(domain.endswith("." + blocked) for blocked in blocked_domains):
             continue
+        if is_excluded_retail_lender(
+            str(row.get("company_name") or row.get("title") or ""),
+            str(row.get("source_url") or ""),
+            str(row.get("snippet") or ""),
+        ):
+            continue
         if domain in seen:
             continue
         seen.add(domain)
@@ -61,7 +68,7 @@ def _build_company_seeds(conn, run_id: int, company_limit: int) -> list[dict]:
 
 
 def launch(conn, *, state: str = "", company_limit: int = 12, contact_limit: int = 500) -> dict:
-    """Run the guarded broker hunt, then crawl and warehouse valid broker domains."""
+    """Run broker discovery, build brokerage prospects, and attach public loan-officer teams."""
     result = launch_hunt(
         conn,
         state=state,
@@ -95,8 +102,12 @@ def launch(conn, *, state: str = "", company_limit: int = 12, contact_limit: int
             "failures": [{"company": "", "reason": str(exc)[:500]}],
             "status": "Failed safely",
         }
+    result["company_contact_sync"] = sync_company_contacts(
+        conn,
+        state=str(result.get("state") or state).upper(),
+    )
     result["message"] = (
-        f"Ember completed {result.get('state','')} mortgage-broker discovery, public website crawling, "
-        "warehouse deduplication, contact extraction, and review preparation."
+        f"Ember completed {result.get('state','')} mortgage-broker discovery, brokerage prospect creation, "
+        "loan-officer team attachment, website crawling, warehouse deduplication, and review preparation."
     )
     return result
