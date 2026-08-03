@@ -69,7 +69,8 @@ def _refresh_index_from_public_search(conn:sqlite3.Connection,state:str,company_
          detail='Configure Google CSE, Brave, Tavily, Firecrawl, or SerpAPI to expand national discovery.',severity='warning')
   return {'status':'Blocked','reason':'No public search provider is configured','indexed':0,'providers':[]}
  try:
-  result=run_public_search(conn,connector_id=None,state=state,results_per_query=min(max(company_limit,3),10),delay_seconds=0.2)
+  per_query=min(max(company_limit,10),50)
+  result=run_public_search(conn,connector_id=None,state=state,results_per_query=per_query,delay_seconds=0.2)
   indexed=_promote_public_results(conn,int(result['run_id']),state)
   names=result.get('providers') or providers
   record(conn,'public_search_completed',f'Indexed {indexed} public company sources for {state}',state=state,
@@ -79,18 +80,18 @@ def _refresh_index_from_public_search(conn:sqlite3.Connection,state:str,company_
   record(conn,'public_search_failed',f'Public search failed for {state}',state=state,detail=str(exc)[:500],severity='warning')
   return {'status':'Failed','reason':str(exc)[:500],'indexed':0,'providers':providers}
 
-def launch(conn:sqlite3.Connection,*,state:str='',company_limit:int=6,contact_limit:int=250)->dict:
+def launch(conn:sqlite3.Connection,*,state:str='',company_limit:int=50,contact_limit:int=1000)->dict:
  init_public(conn);init_enrichment(conn);init_ai(conn);init_activity(conn);init_resilience(conn)
- state=(state or choose_state(conn)).upper();company_limit=min(max(int(company_limit),1),12);contact_limit=min(max(int(contact_limit),1),500)
+ state=(state or choose_state(conn)).upper();company_limit=min(max(int(company_limit),1),100);contact_limit=min(max(int(contact_limit),1),2000)
  if state not in approved_states(): raise ValueError(f'State {state} is not enabled for Ember discovery')
  cursor=conn.execute("select * from ember_state_cursors where state=?",(state,)).fetchone();after_id=int(cursor['last_index_id'] if cursor else 0)
- seed_rows=list(_seed_rows(conn,state,after_id,company_limit*8));public_search={'status':'Not needed','indexed':0,'providers':[]}
- if not seed_rows:
+ seed_rows=list(_seed_rows(conn,state,after_id,company_limit*20));public_search={'status':'Not needed','indexed':0,'providers':[]}
+ if len(seed_rows)<company_limit:
   public_search=_refresh_index_from_public_search(conn,state,company_limit)
-  seed_rows=list(_seed_rows(conn,state,after_id,company_limit*8))
+  seed_rows=list(_seed_rows(conn,state,after_id,company_limit*20))
  now=NOW();run_id=int(conn.execute("insert into public_search_runs(state,status,created_at,started_at) values(?,'Running',?,?)",(state,now,now)).lastrowid)
  seeded=skipped=0;seen=set();last_index_id=after_id;companies=[]
- record(conn,'hunt_started',f'Ember started a {state} hunt',state=state,detail=f'Beginning after broker index record {after_id}.')
+ record(conn,'hunt_started',f'Ember started a {state} hunt',state=state,detail=f'Targeting up to {company_limit} broker companies after index record {after_id}.')
  for rank,row in enumerate(seed_rows,start=1):
   last_index_id=max(last_index_id,int(row['id']))
   url=str(row['source_url'] or '').strip();domain=_domain(url) if _valid_public_url(url) else ''
@@ -105,8 +106,8 @@ def launch(conn:sqlite3.Connection,*,state:str='',company_limit:int=6,contact_li
   if seeded>=company_limit:break
  conn.execute("update public_search_runs set status='Completed',query_count=1,result_count=?,accepted_count=?,rejected_count=?,finished_at=? where id=?",(seeded+skipped,seeded,skipped,NOW(),run_id));conn.commit()
  before=int(conn.execute("select count(*) from discovered_contacts where state=?",(state,)).fetchone()[0])
- enqueued=enqueue_search_results(conn,state=state,limit=max(company_limit,1))
- enrichment=run_batch(conn,state=state,batch_size=min(company_limit,6),per_domain_limit=2,delay_seconds=0.0) if enqueued else {'claimed':0,'processed':0,'contacts_found':0,'pages_fetched':0}
+ enqueued=enqueue_search_results(conn,state=state,limit=max(company_limit*4,200))
+ enrichment=run_batch(conn,state=state,batch_size=min(company_limit,50),per_domain_limit=3,delay_seconds=0.0) if enqueued else {'claimed':0,'processed':0,'contacts_found':0,'pages_fetched':0}
  ai=process_ai_batch(conn,limit=contact_limit)
  after=int(conn.execute("select count(*) from discovered_contacts where state=?",(state,)).fetchone()[0]);new_contacts=max(0,after-before)
  conn.execute("""insert into ember_state_cursors(state,last_index_id,companies_processed,contacts_found,last_run_at,updated_at) values(?,?,?,?,?,?) on conflict(state) do update set last_index_id=excluded.last_index_id,companies_processed=ember_state_cursors.companies_processed+excluded.companies_processed,contacts_found=ember_state_cursors.contacts_found+excluded.contacts_found,last_run_at=excluded.last_run_at,updated_at=excluded.updated_at""",(state,last_index_id,seeded,new_contacts,NOW(),NOW()))
@@ -116,6 +117,6 @@ def launch(conn:sqlite3.Connection,*,state:str='',company_limit:int=6,contact_li
  if resilience.get('paused'):
   record(conn,'state_source_paused',f'{state} paused after repeated zero-yield hunts',state=state,
          detail=f"Automatic retry after {resilience.get('paused_until','')}",severity='warning')
- record(conn,'hunt_completed',f'Ember completed {state}: {new_contacts} new contacts',state=state,detail=f'{seeded} companies checked; {after} contacts waiting in state inventory.',severity='success' if seeded or new_contacts else 'warning')
+ record(conn,'hunt_completed',f'Ember completed {state}: {new_contacts} new contacts',state=state,detail=f'{seeded} companies checked toward a target of {company_limit}; {after} contacts waiting in state inventory.',severity='success' if seeded or new_contacts else 'warning')
  pending=int(conn.execute("select count(*) from discovered_contacts where review_status='Pending review'").fetchone()[0])
- return {'state':state,'search_run_id':run_id,'companies_seeded':seeded,'companies_skipped':skipped,'companies':companies,'public_search':public_search,'source_resilience':resilience,'enqueued':enqueued,'enrichment':enrichment,'ai':ai,'new_contacts':new_contacts,'pending_review':pending,'cursor':last_index_id,'approved_states':approved_states(),'outreach_enabled':False,'crm_promotion_enabled':False,'message':f'Ember completed a safe {state} discovery batch.'}
+ return {'state':state,'search_run_id':run_id,'company_target':company_limit,'companies_seeded':seeded,'companies_skipped':skipped,'companies':companies,'public_search':public_search,'source_resilience':resilience,'enqueued':enqueued,'enrichment':enrichment,'ai':ai,'new_contacts':new_contacts,'pending_review':pending,'cursor':last_index_id,'approved_states':approved_states(),'outreach_enabled':False,'crm_promotion_enabled':False,'message':f'Ember completed a safe {state} discovery batch.'}
