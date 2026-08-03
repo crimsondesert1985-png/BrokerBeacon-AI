@@ -17,6 +17,7 @@ from national_data_center import install_national_data_center
 from national_warehouse_api import install_national_warehouse
 from prospect_flow import install_prospect_flow
 from role_management import install_role_management
+from scenario_rescue import install_scenario_rescue
 from simplified_flow import install_simplified_flow
 from sprint38_api import install_sprint38_api
 from sprint39_api import install_sprint39_api
@@ -48,6 +49,7 @@ install_sprint42_national_ux(app)
 install_simplified_flow(app)
 install_prospect_flow(app, DB)
 install_drip_campaigns(app, DB)
+install_scenario_rescue(app, DB)
 install_workspace_consolidation(app)
 install_help_layer(app)
 install_ember_worker(app, DB)
@@ -75,7 +77,7 @@ def add_role_aware_navigation(response):
         return response
     if "brokerbeacon-role-aware-navigation" in body or "</body>" not in body.lower():
         return response
-    enhancement = f'''<script id="brokerbeacon-role-aware-navigation">(function(){{function add(){{const nav=document.querySelector('aside nav')||document.querySelector('aside');if(!nav)return;const make=(id,label,title,path,badge)=>{{if(document.getElementById(id))return;const b=document.createElement('button');b.id=id;b.type='button';b.innerHTML=label+(badge?'<span style="float:right;font-size:10px;opacity:.75">'+badge+'</span>':'');b.title=title;b.onclick=()=>window.location.href=path;nav.appendChild(b)}};{'''make('ember-control-tower-button','🔥 Ember Control Tower','Open national discovery, live activity, review queue, and prospect controls.','/platform/control-tower','ALWAYS ON');''' if is_platform_owner else ''}{'''make('team-access-button','👥 Team & Access','Invite users and control what each person can see and change.','/workspace/team','SIMPLE');''' if can_manage_team else ''}{'''if(!document.getElementById('platform-owner-badge')){const badge=document.createElement('div');badge.id='platform-owner-badge';badge.textContent='Platform Owner';badge.style.cssText='margin:10px 12px;padding:6px 8px;border-radius:999px;background:#43dfa715;color:#137a55;font-size:10px;font-weight:800;text-align:center';nav.appendChild(badge)}''' if is_platform_owner else ''}}}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',add);else add()}})();</script>'''
+    enhancement = f'''<script id="brokerbeacon-role-aware-navigation">(function(){{function add(){{const nav=document.querySelector('aside nav')||document.querySelector('aside');if(!nav)return;const make=(id,label,title,path,badge)=>{{if(document.getElementById(id))return;const b=document.createElement('button');b.id=id;b.type='button';b.innerHTML=label+(badge?'<span style="float:right;font-size:10px;opacity:.75">'+badge+'</span>':'');b.title=title;b.onclick=()=>window.location.href=path;nav.appendChild(b)}};{'''make('ember-control-tower-button','🔥 Ember Control Tower','Open national discovery, live activity, review queue, and prospect controls.','/platform/control-tower','ALWAYS ON');''' if is_platform_owner else ''}{'''make('team-access-button','👥 Team & Access','Invite users and control what each person can see and change.','/workspace/team','SIMPLE');''' if can_manage_team else ''}{'''make('beaconmatch-button','🧭 BeaconMatch','Analyze difficult loan scenarios, identify missing information, and rank potential paths.','/intelligence/scenario-rescue','NEW');'''}{'''if(!document.getElementById('platform-owner-badge')){const badge=document.createElement('div');badge.id='platform-owner-badge';badge.textContent='Platform Owner';badge.style.cssText='margin:10px 12px;padding:6px 8px;border-radius:999px;background:#43dfa715;color:#137a55;font-size:10px;font-weight:800;text-align:center';nav.appendChild(badge)}''' if is_platform_owner else ''}}}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',add);else add()}})();</script>'''
     pos = body.lower().rfind("</body>")
     body = body[:pos] + enhancement + body[pos:]
     response.set_data(body)
