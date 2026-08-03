@@ -45,7 +45,7 @@ def _candidate_rows(conn, run_id: int, state: str) -> list[dict]:
              and trim(coalesce(source_url,''))<>''
              and (run_id=? or state=?)
            order by case when run_id=? then 0 else 1 end,id desc
-           limit 1000""",
+           limit 2000""",
         (run_id, state, run_id),
     ).fetchall():
         candidates.append(dict(row))
@@ -55,7 +55,7 @@ def _candidate_rows(conn, run_id: int, state: str) -> list[dict]:
                       '' as title,'' as person_name,'' as snippet,'' as phone,'' as public_email
                from ember_company_history
                where upper(state)=? and trim(coalesce(source_url,''))<>''
-               order by id desc limit 500""",
+               order by id desc limit 1000""",
             (state,),
         ).fetchall():
             candidates.append(dict(row))
@@ -67,7 +67,7 @@ def _candidate_rows(conn, run_id: int, state: str) -> list[dict]:
                       company as title,'' as person_name,'' as snippet,'' as phone,'' as public_email
                from national_broker_index
                where upper(state)=? and trim(coalesce(source_url,''))<>''
-               order by id desc limit 1000""",
+               order by id desc limit 2000""",
             (state,),
         ).fetchall():
             candidates.append(dict(row))
@@ -99,7 +99,7 @@ def _build_company_seeds(conn, run_id: int, state: str, company_limit: int) -> l
             "phone": str(row.get("phone") or ""),
             "public_email": str(row.get("public_email") or ""),
         })
-        if len(seeds) >= max(1, min(int(company_limit), 25)):
+        if len(seeds) >= max(1, min(int(company_limit), 100)):
             break
     return seeds
 
@@ -147,7 +147,7 @@ def _persist_seeded_companies(conn, result: dict, state: str) -> dict:
     }
 
 
-def launch(conn, *, state: str = "", company_limit: int = 12, contact_limit: int = 500) -> dict:
+def launch(conn, *, state: str = "", company_limit: int = 50, contact_limit: int = 1000) -> dict:
     result = launch_hunt(conn, state=state, company_limit=company_limit, contact_limit=contact_limit)
     run_id = int(result.get("search_run_id") or 0)
     resolved_state = str(result.get("state") or state).upper()
