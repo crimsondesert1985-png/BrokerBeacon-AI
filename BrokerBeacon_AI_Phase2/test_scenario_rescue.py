@@ -4,7 +4,7 @@ from pathlib import Path
 
 from flask import Flask, g
 
-from scenario_rescue import build_analysis, extract_facts, install_scenario_rescue
+from scenario_rescue_engine import build_analysis, extract_facts, install_scenario_rescue
 
 
 class ScenarioRescueLogicTests(unittest.TestCase):
@@ -16,6 +16,7 @@ class ScenarioRescueLogicTests(unittest.TestCase):
         self.assertEqual(facts["state"], "NC")
         self.assertEqual(facts["income_type"], "self_employed")
         self.assertEqual(facts["occupancy"], "primary")
+        self.assertEqual(facts["employment_years"], 3)
 
     def test_analysis_is_not_approval(self):
         analysis = build_analysis("612 FICO, self-employed, recent mortgage late, $325,000 purchase, 5% down, primary residence in NC")
@@ -28,6 +29,10 @@ class ScenarioRescueLogicTests(unittest.TestCase):
         clean = build_analysis("700 FICO, $325,000 purchase, 5% down, primary residence in NC, W2 salary")
         late = build_analysis("700 FICO, recent mortgage late, $325,000 purchase, 5% down, primary residence in NC, W2 salary")
         self.assertLess(late["paths"][0]["confidence"], clean["paths"][0]["confidence"])
+
+    def test_punctuation_is_not_parsed_as_money(self):
+        facts = extract_facts("Purchase, primary residence in NC with 700 FICO")
+        self.assertNotIn("purchase_price", facts)
 
 
 class ScenarioRescueApiTests(unittest.TestCase):
