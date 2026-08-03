@@ -78,8 +78,8 @@ def _process_one(app, db_path):
             result = launch(
                 conn,
                 state=str(payload.get("state") or job.get("state") or "").strip().upper(),
-                company_limit=min(max(int(payload.get("company_limit", 12)), 1), 25),
-                contact_limit=min(max(int(payload.get("contact_limit", 500)), 1), 1000),
+                company_limit=min(max(int(payload.get("company_limit", 50)), 50), 100),
+                contact_limit=min(max(int(payload.get("contact_limit", 1000)), 500), 2000),
             )
             complete(conn, int(job["id"]), WORKER_KEY, detail=result)
             graph = advance_intelligence(conn, state=result.get("state", ""))
