@@ -1,15 +1,16 @@
 """Always-on, review-gated Ember queue worker for BrokerBeacon."""
 from __future__ import annotations
 
+import gc
 import os
 import sqlite3
 import threading
 import time
+from contextlib import closing
 
 from ember_hunt import launch
 from ember_jobs import claim_next, complete, emit_event, fail, heartbeat, initialize, now_iso
 from intelligence_flow import advance_intelligence
-from national_scheduler import refill_national_queue
 
 _started = False
 _start_lock = threading.Lock()
@@ -49,21 +50,9 @@ def _reset_stale_discovery_backlog(conn):
     return len(rows)
 
 
-def _seed_if_idle(conn):
-    """Keep a bounded national backlog while preserving explicit/manual job priority."""
-    initialize(conn)
-    active = conn.execute(
-        "select id from crawl_jobs where job_type='discovery_cycle' and status in ('Queued','Running') order by priority,id limit 1"
-    ).fetchone()
-    if active:
-        return None
-    created = refill_national_queue(conn)
-    return created[0] if created else None
-
 
 def _process_one(app, db_path):
-    with _connect(db_path) as conn:
-        refill_national_queue(conn)
+    with closing(_connect(db_path)) as conn:
         job = claim_next(conn, WORKER_KEY, lease_seconds=1200)
         if not job:
             heartbeat(conn, WORKER_KEY, status="Idle")
@@ -79,7 +68,6 @@ def _process_one(app, db_path):
             )
             complete(conn, int(job["id"]), WORKER_KEY, detail=result)
             graph = advance_intelligence(conn, state=result.get("state", ""))
-            refill_national_queue(conn)
             public_search = result.get("public_search") or {}
             emit_event(
                 conn,
@@ -113,7 +101,6 @@ def _process_one(app, db_path):
             return True
         except Exception as exc:
             fail(conn, int(job["id"]), WORKER_KEY, str(exc), retry_delay_seconds=120)
-            refill_national_queue(conn)
             heartbeat(conn, WORKER_KEY, status="Failed", current_job_id=None, last_error=str(exc))
             app.logger.exception("EMBER_QUEUE job failed safely")
             return False
@@ -123,11 +110,14 @@ def _run_burst(app, db_path, max_jobs: int, between_jobs: int) -> int:
     """Process a bounded burst so the queue flows without blocking forever."""
     completed = 0
     for index in range(max(1, max_jobs)):
-        if not _process_one(app, db_path):
-            break
-        completed += 1
-        if index + 1 < max_jobs and between_jobs:
-            time.sleep(between_jobs)
+        try:
+            if not _process_one(app, db_path):
+                break
+            completed += 1
+            if index + 1 < max_jobs and between_jobs:
+                time.sleep(between_jobs)
+        finally:
+            gc.collect()
     return completed
 
 
@@ -145,18 +135,17 @@ def install_ember_worker(app, db_path):
 
     idle_interval = max(int(os.getenv("EMBER_IDLE_SECONDS", "60")), 30)
     startup_delay = max(int(os.getenv("EMBER_STARTUP_DELAY_SECONDS", "10")), 0)
-    burst_jobs = max(1, min(int(os.getenv("EMBER_BURST_JOBS", "3")), 6))
+    burst_jobs = max(1, min(int(os.getenv("EMBER_BURST_JOBS", "1")), 6))
     between_jobs = max(0, min(int(os.getenv("EMBER_BETWEEN_JOBS_SECONDS", "5")), 30))
 
     def loop():
-        with _connect(db_path) as conn:
+        with closing(_connect(db_path)) as conn:
             initialize(conn)
             cancelled = _reset_stale_discovery_backlog(conn)
-            created = refill_national_queue(conn)
             heartbeat(conn, WORKER_KEY, status="Starting")
         app.logger.warning(
-            "EMBER_QUEUE worker started idle=%ss burst=%s between=%ss reset=%s queued=%s",
-            idle_interval, burst_jobs, between_jobs, cancelled, len(created),
+            "EMBER_QUEUE worker started idle=%ss burst=%s between=%ss reset=%s queue_mode=scheduled",
+            idle_interval, burst_jobs, between_jobs, cancelled,
         )
         time.sleep(startup_delay)
         while True:
@@ -167,8 +156,7 @@ def install_ember_worker(app, db_path):
             except Exception as exc:
                 app.logger.exception("EMBER_QUEUE loop recovered from unexpected error")
                 try:
-                    with _connect(db_path) as conn:
-                        refill_national_queue(conn)
+                    with closing(_connect(db_path)) as conn:
                         heartbeat(conn, WORKER_KEY, status="Failed", last_error=str(exc))
                 except Exception:
                     app.logger.exception("EMBER_QUEUE could not persist recovery state")
