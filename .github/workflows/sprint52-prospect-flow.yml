@@ -1,0 +1,26 @@
+name: Sprint 52 One-Click Prospect Flow Tests
+
+on:
+  pull_request:
+    paths:
+      - 'BrokerBeacon_AI_Phase2/prospect_flow.py'
+      - 'BrokerBeacon_AI_Phase2/test_prospect_flow.py'
+      - 'BrokerBeacon_AI_Phase2/wsgi.py'
+      - '.github/workflows/sprint52-prospect-flow.yml'
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: pip install -r BrokerBeacon_AI_Phase2/requirements.txt
+      - name: Compile prospect workflow
+        run: python -m py_compile BrokerBeacon_AI_Phase2/prospect_flow.py BrokerBeacon_AI_Phase2/wsgi.py
+      - name: Run prospect workflow tests
+        working-directory: BrokerBeacon_AI_Phase2
+        run: python -m unittest -v test_prospect_flow.py
