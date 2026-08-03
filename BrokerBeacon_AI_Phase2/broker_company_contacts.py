@@ -71,7 +71,12 @@ def reject_excluded_retail_lenders(conn: sqlite3.Connection, state: str = "") ->
 
 
 def sync_company_contacts(conn: sqlite3.Connection, state: str = "") -> dict:
-    """Create one top-level brokerage prospect per domain; people remain attached team rows."""
+    """Create one top-level brokerage prospect per domain; people remain attached team rows.
+
+    This routine is intentionally idempotent. Existing company contacts are only
+    updated on non-key fields so a restart cannot violate discovered_contacts'
+    composite uniqueness constraint.
+    """
     state = (state or "").strip().upper()
     rejected = reject_excluded_retail_lenders(conn, state)
     rows = conn.execute(
@@ -110,15 +115,14 @@ def sync_company_contacts(conn: sqlite3.Connection, state: str = "") -> dict:
         ).fetchone()
         if existing:
             conn.execute(
-                """update discovered_contacts set company_name=?,phone=case when trim(phone)='' then ? else phone end,
-                   public_email=case when trim(public_email)='' then ? else public_email end,
-                   nmls_id=case when trim(nmls_id)='' then ? else nmls_id end,
-                   source_url=?,confidence=max(confidence,80) where id=?""",
-                (company, phone, email, nmls, row["source_url"], existing["id"]),
+                """update discovered_contacts set company_name=?,
+                   nmls_id=case when trim(coalesce(nmls_id,''))='' then ? else nmls_id end,
+                   confidence=max(confidence,80) where id=?""",
+                (company, nmls, existing["id"]),
             )
             updated += 1
         else:
-            conn.execute(
+            cur = conn.execute(
                 """insert or ignore into discovered_contacts
                    (search_result_id,company_name,person_name,role,phone,public_email,city,state,nmls_id,
                     source_url,source_domain,confidence,review_status,created_at)
@@ -126,7 +130,7 @@ def sync_company_contacts(conn: sqlite3.Connection, state: str = "") -> dict:
                 (row["id"], company, phone, email, str(row["city"] or ""), key[0], nmls,
                  row["source_url"], domain, NOW()),
             )
-            created += 1
+            created += int(cur.rowcount > 0)
     conn.commit()
     return {"company_contacts_created": created, "company_contacts_updated": updated, "retail_lenders_rejected": rejected}
 
