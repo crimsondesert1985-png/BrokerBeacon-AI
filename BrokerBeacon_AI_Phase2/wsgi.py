@@ -5,11 +5,13 @@ from app import app, DB
 from ai_ops_api import install_ai_ops
 from control_tower_ux import install_control_tower_ux
 from discovery_ops_api import install_discovery_ops
+from drip_campaigns import install_drip_campaigns
 from ember_automation_api import install_ember_automation
 from ember_queue_api import install_ember_queue_api
 from ember_status_api import install_ember_status_api
 from ember_worker import install_ember_worker
 from founder_briefing import install_founder_briefing
+from help_layer import install_help_layer
 from national_autopilot_api import install_national_autopilot_api
 from national_data_center import install_national_data_center
 from national_warehouse_api import install_national_warehouse
@@ -45,7 +47,9 @@ install_sprint41_drilldown_ux(app)
 install_sprint42_national_ux(app)
 install_simplified_flow(app)
 install_prospect_flow(app, DB)
+install_drip_campaigns(app, DB)
 install_workspace_consolidation(app)
+install_help_layer(app)
 install_ember_worker(app, DB)
 
 
