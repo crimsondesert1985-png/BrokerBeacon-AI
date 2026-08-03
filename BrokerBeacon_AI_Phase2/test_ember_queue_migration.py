@@ -39,18 +39,16 @@ class ScoutQueueMigrationTests(unittest.TestCase):
             conn.row_factory = sqlite3.Row
             return conn.execute(sql).fetchall()
 
-    def test_seed_if_idle_creates_bounded_national_backlog_once(self):
+    def test_reset_cancels_stale_discovery_backlog_without_refilling(self):
         with ember_worker._connect(self.db_path) as conn:
-            first = ember_worker._seed_if_idle(conn)
-            second = ember_worker._seed_if_idle(conn)
-        self.assertIsNotNone(first)
-        self.assertIsNone(second)
+            enqueue(conn, "discovery_cycle", state="VA", payload={"state": "VA"})
+            enqueue(conn, "discovery_cycle", state="FL", payload={"state": "FL"})
+            cancelled = ember_worker._reset_stale_discovery_backlog(conn)
+        self.assertEqual(2, cancelled)
         active = self.rows("select state from crawl_jobs where status in ('Queued','Running') order by id")
-        self.assertGreaterEqual(len(active), 1)
-        self.assertLessEqual(len(active), 6)
-        self.assertEqual(len(active), len({row["state"] for row in active}))
+        self.assertEqual([], active)
 
-    def test_process_one_completes_explicit_job_and_refills_national_queue(self):
+    def test_process_one_completes_explicit_job_without_refilling_queue(self):
         result = {
             "state": "NC",
             "companies_seeded": 2,
@@ -76,8 +74,7 @@ class ScoutQueueMigrationTests(unittest.TestCase):
         )[0]
         self.assertIn('"next_stage": "Human review"', pipeline["detail_json"])
         active = self.rows("select state from crawl_jobs where status in ('Queued','Running')")
-        self.assertGreaterEqual(len(active), 1)
-        self.assertLessEqual(len(active), 6)
+        self.assertEqual([], active)
 
 
 if __name__ == "__main__":
