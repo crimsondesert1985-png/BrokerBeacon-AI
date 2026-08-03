@@ -13,6 +13,7 @@ from founder_briefing import install_founder_briefing
 from national_autopilot_api import install_national_autopilot_api
 from national_data_center import install_national_data_center
 from national_warehouse_api import install_national_warehouse
+from prospect_flow import install_prospect_flow
 from role_management import install_role_management
 from simplified_flow import install_simplified_flow
 from sprint38_api import install_sprint38_api
@@ -42,6 +43,7 @@ install_sprint41_ux(app)
 install_sprint41_drilldown_ux(app)
 install_sprint42_national_ux(app)
 install_simplified_flow(app)
+install_prospect_flow(app, DB)
 install_ember_worker(app, DB)
 
 
