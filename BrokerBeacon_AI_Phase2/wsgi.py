@@ -30,10 +30,12 @@ from sprint41_ux import install_sprint41_ux
 from sprint41_drilldown_ux import install_sprint41_drilldown_ux
 from sprint42_national_ux import install_sprint42_national_ux
 from state_connector_api import install_state_connectors
+from state_hunt_picker import install_state_hunt_picker
 from workspace_consolidation import install_workspace_consolidation
 
-# Register first so Flask runs this after_request handler last and its script
-# appears after every other Control Tower enhancement.
+# Register first so Flask runs these after_request handlers last and their scripts
+# appear after every other Control Tower enhancement.
+install_state_hunt_picker(app)
 install_control_tower_recovery(app)
 install_national_warehouse(app, DB)
 install_state_connectors(app, DB)
