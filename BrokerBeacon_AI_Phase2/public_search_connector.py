@@ -53,49 +53,35 @@ create index if not exists idx_public_search_runs_state on public_search_runs(st
 create index if not exists idx_public_search_results_review on public_search_results(review_status,state,id desc);
 """
 
-# Ember is a broker-prospecting crawler. These queries intentionally avoid
-# wholesale lender/product language, which previously polluted the queue.
+STATE_NAMES = {
+    'AL':'Alabama','AK':'Alaska','AZ':'Arizona','AR':'Arkansas','CA':'California','CO':'Colorado','CT':'Connecticut','DE':'Delaware','FL':'Florida','GA':'Georgia','HI':'Hawaii','ID':'Idaho','IL':'Illinois','IN':'Indiana','IA':'Iowa','KS':'Kansas','KY':'Kentucky','LA':'Louisiana','ME':'Maine','MD':'Maryland','MA':'Massachusetts','MI':'Michigan','MN':'Minnesota','MS':'Mississippi','MO':'Missouri','MT':'Montana','NE':'Nebraska','NV':'Nevada','NH':'New Hampshire','NJ':'New Jersey','NM':'New Mexico','NY':'New York','NC':'North Carolina','ND':'North Dakota','OH':'Ohio','OK':'Oklahoma','OR':'Oregon','PA':'Pennsylvania','RI':'Rhode Island','SC':'South Carolina','SD':'South Dakota','TN':'Tennessee','TX':'Texas','UT':'Utah','VT':'Vermont','VA':'Virginia','WA':'Washington','WV':'West Virginia','WI':'Wisconsin','WY':'Wyoming'
+}
+
 SEARCH_TEMPLATES = (
-    'independent mortgage broker {state} NMLS contact',
-    'mortgage brokerage {state} loan officers',
-    'licensed mortgage broker company {state}',
-    'site:nmlsconsumeraccess.org mortgage broker {state}',
+    'independent mortgage broker {state_name} NMLS contact -wholesale -TPO',
+    'mortgage brokerage in {state_name} loan officers -wholesale lender',
+    'licensed mortgage broker company {state_name} NMLS',
+    'mortgage broker directory {state_name}',
+    'mortgage loan officer team {state_name} brokerage',
+    'mortgage broker owner {state_name} contact',
+    'site:nmlsconsumeraccess.org mortgage broker {state_name}',
 )
 
 BROKER_SIGNALS = (
-    'mortgage broker',
-    'mortgage brokerage',
-    'broker owner',
-    'broker-owner',
-    'independent mortgage',
-    'loan officer',
-    'mortgage loan originator',
-    'nmls',
-    'mortgage licensee',
-    'mortgage company',
+    'mortgage broker','mortgage brokerage','broker owner','broker-owner',
+    'independent mortgage','loan officer','mortgage loan originator','nmls',
+    'mortgage licensee','mortgage company','home loan','mortgage advisor',
 )
 
-# Results dominated by these phrases are lender/product/editorial pages rather
-# than independent mortgage-broker prospects.
 NON_BROKER_SIGNALS = (
-    'wholesale mortgage lender',
-    'wholesale lender',
-    'wholesale lending',
-    'wholesale mortgages available',
-    'what is wholesale mortgage',
-    'become an approved broker',
-    'broker portal',
-    'third-party originator',
-    'tpo lending',
-    'correspondent lending',
+    'wholesale mortgage lender','wholesale lender','wholesale lending',
+    'wholesale mortgages available','what is wholesale mortgage',
+    'become an approved broker','broker portal','third-party originator',
+    'tpo lending','correspondent lending','our broker partners',
 )
 
 EDITORIAL_DOMAINS = {
-    'bankrate.com',
-    'investopedia.com',
-    'nerdwallet.com',
-    'forbes.com',
-    'wikipedia.org',
+    'bankrate.com','investopedia.com','nerdwallet.com','forbes.com','wikipedia.org',
 }
 
 
@@ -110,10 +96,11 @@ def initialize(conn: sqlite3.Connection) -> None:
 def build_queries(state: str, metro: str = "") -> list[str]:
     state = (state or "").strip().upper()
     metro = (metro or "").strip()
-    if len(state) != 2 or not state.isalpha():
+    if state not in STATE_NAMES:
         raise ValueError("A valid two-letter state is required")
+    values = {'state': state, 'state_name': STATE_NAMES[state]}
     suffix = f" {metro}" if metro else ""
-    return [template.format(state=state) + suffix for template in SEARCH_TEMPLATES]
+    return [template.format(**values) + suffix for template in SEARCH_TEMPLATES]
 
 
 def _domain(url: str) -> str:
@@ -139,50 +126,41 @@ def _extract_phone(text: str) -> str:
 
 
 def is_broker_candidate(title: str, snippet: str, url: str) -> bool:
-    """Return True only when a result is useful for mortgage-broker prospecting."""
     combined = " ".join((title or "", snippet or "", url or "")).lower()
     domain = _domain(url)
-
     if domain in EDITORIAL_DOMAINS:
         return False
-
-    has_broker_signal = any(term in combined for term in BROKER_SIGNALS)
-    has_non_broker_signal = any(term in combined for term in NON_BROKER_SIGNALS)
-
-    # NMLS/state-regulator pages remain useful as verification or seed sources.
-    official_license_source = (
-        'nmlsconsumeraccess.org' in domain
-        or domain.endswith('.gov')
-        or 'search mortgage licensees' in combined
-        or 'mortgage licensee' in combined
+    has_broker = any(term in combined for term in BROKER_SIGNALS)
+    has_non_broker = any(term in combined for term in NON_BROKER_SIGNALS)
+    official = (
+        'nmlsconsumeraccess.org' in domain or domain.endswith('.gov')
+        or 'search mortgage licensees' in combined or 'mortgage licensee' in combined
     )
-
-    # A page explicitly describing a mortgage broker may contain the word
-    # wholesale, but lender-only and product pages must be rejected.
-    explicit_broker = 'mortgage broker' in combined or 'mortgage brokerage' in combined
-    if has_non_broker_signal and not explicit_broker:
+    explicit_broker = any(term in combined for term in ('mortgage broker','mortgage brokerage','loan officer','mortgage loan originator'))
+    if has_non_broker and not explicit_broker:
         return False
-
-    return has_broker_signal or official_license_source
+    return has_broker or official
 
 
 def classify_result(title: str, snippet: str, url: str) -> dict:
     combined = " ".join([title or "", snippet or "", url or ""])
     lower = combined.lower()
-    candidate_type = "Loan officer" if any(term in lower for term in ("loan officer", "mortgage loan originator", "mlo")) else "Company"
+    person_page = any(term in lower for term in ('loan officer','mortgage loan originator','mortgage advisor',' mlo '))
     title_clean = re.sub(r"\s*[-|·].*$", "", title or "").strip()
+    domain_name = _domain(url).split('.')[0].replace('-', ' ').title()
+    # Keep useful LO/team pages eligible as company-domain seeds. Website
+    # enrichment extracts the individual people later with source evidence.
     return {
-        "candidate_type": candidate_type,
-        "company_name": "" if candidate_type == "Loan officer" else title_clean,
-        "person_name": title_clean if candidate_type == "Loan officer" else "",
+        "candidate_type": "Company",
+        "company_name": title_clean or domain_name,
+        "person_name": title_clean if person_page else "",
         "nmls_id": _extract_nmls(combined),
         "phone": _extract_phone(combined),
         "public_email": _extract_email(combined),
     }
 
 
-def search_provider(query: str, *, count: int = 10) -> dict:
-    """Search all configured providers and return merged, provenance-tagged results."""
+def search_provider(query: str, *, count: int = 20) -> dict:
     providers = configured_providers()
     if not providers:
         raise RuntimeError("No public search provider is configured")
@@ -195,7 +173,7 @@ def search_provider(query: str, *, count: int = 10) -> dict:
 
 
 def run_public_search(conn: sqlite3.Connection, *, connector_id: int | None,
-                      state: str, metro: str = "", results_per_query: int = 10,
+                      state: str, metro: str = "", results_per_query: int = 20,
                       delay_seconds: float = 0.25) -> dict:
     initialize(conn)
     queries = build_queries(state, metro)
@@ -208,6 +186,7 @@ def run_public_search(conn: sqlite3.Connection, *, connector_id: int | None,
     accepted = rejected = total = 0
     used_providers: set[str] = set()
     provider_stats: dict[str, dict] = {}
+    seen_domains: set[str] = set()
     try:
         for query in queries:
             response = search_provider(query, count=results_per_query)
@@ -222,18 +201,22 @@ def run_public_search(conn: sqlite3.Connection, *, connector_id: int | None,
                 if not is_broker_candidate(title, snippet, url):
                     rejected += 1
                     continue
+                domain = _domain(url)
+                canonical_key = domain + urllib.parse.urlparse(url).path.rstrip('/').lower()
+                if canonical_key in seen_domains:
+                    continue
+                seen_domains.add(canonical_key)
                 providers = [str(p.get("provider") or "") for p in item.get("providers", []) if p.get("provider")]
                 used_providers.update(providers)
-                provider_name = ",".join(providers)
                 parsed = classify_result(title, snippet, url)
                 conn.execute(
                     """insert or ignore into public_search_results(
                        run_id,query_text,result_rank,title,snippet,source_url,source_domain,
                        candidate_type,company_name,person_name,state,nmls_id,phone,public_email,provider_name,created_at
                        ) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
-                    (run_id, query, rank, title, snippet, url, _domain(url),
+                    (run_id, query, rank, title, snippet, url, domain,
                      parsed["candidate_type"], parsed["company_name"], parsed["person_name"],
-                     state.upper(), parsed["nmls_id"], parsed["phone"], parsed["public_email"], provider_name, NOW()),
+                     state.upper(), parsed["nmls_id"], parsed["phone"], parsed["public_email"], ",".join(providers), NOW()),
                 )
                 total += 1
                 accepted += 1
