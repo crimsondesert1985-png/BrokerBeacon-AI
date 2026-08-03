@@ -4,6 +4,7 @@ from flask import g, session
 from app import app, DB
 from ai_ops_api import install_ai_ops
 from beaconmatch_foundation import install_beaconmatch_foundation
+from control_tower_recovery import install_control_tower_recovery
 from control_tower_ux import install_control_tower_ux
 from customer_ready_ux import install_customer_ready_ux
 from discovery_ops_api import install_discovery_ops
@@ -30,6 +31,9 @@ from sprint42_national_ux import install_sprint42_national_ux
 from state_connector_api import install_state_connectors
 from workspace_consolidation import install_workspace_consolidation
 
+# Register first so Flask runs this after_request handler last and its script
+# appears after every other Control Tower enhancement.
+install_control_tower_recovery(app)
 install_national_warehouse(app, DB)
 install_state_connectors(app, DB)
 install_discovery_ops(app, DB)
