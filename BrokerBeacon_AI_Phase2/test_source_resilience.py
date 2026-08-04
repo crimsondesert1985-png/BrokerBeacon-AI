@@ -34,7 +34,7 @@ class SourceResilienceTests(unittest.TestCase):
         conn = self.connect()
         with patch.dict(os.environ, {"BRAVE_SEARCH_API_KEY": "secret"}, clear=True):
             health = source_health(conn)
-        self.assertEqual(health["configured_providers"], ["brave"])
+        self.assertEqual(health["configured_providers"], ["brave", "duckduckgo"])
         self.assertTrue(health["search_ready"])
         self.assertNotIn("secret", str(health))
 
@@ -59,3 +59,4 @@ class SourceResilienceTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
