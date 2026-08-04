@@ -4,6 +4,7 @@ from __future__ import annotations
 import re
 import sqlite3
 import urllib.parse
+from contextlib import closing
 from flask import jsonify, request
 
 STATE_CODES = (
@@ -79,7 +80,7 @@ def install_ember_prospects_bridge(app, db_path):
         query = str(request.args.get("q") or "").strip()[:120]
         limit = min(max(int(request.args.get("limit") or 1000), 1), 5000)
         like = f"%{query.lower()}%"
-        with connect() as conn:
+        with closing(connect()) as conn:
             rows = conn.execute(
                 """select id,legal_name,nmls_id,website,phone,public_email,city,upper(trim(state)) state,
                           verification_status,created_at,updated_at
@@ -144,16 +145,17 @@ def install_ember_prospects_bridge(app, db_path):
 const CODES='AL AK AZ AR CA CO CT DE FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY'.split(' '),STATES=new Set(CODES),HOURLY=3600000;
 const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const text=e=>(e?.textContent||'').replace(/\s+/g,' ').trim();
-function root(){return [...document.querySelectorAll('.view,main,section')].find(x=>x.offsetParent!==null&&/^Prospects$/i.test(text(x.querySelector('h1,h2'))))||document.querySelector('main')}
-function searchBox(r){return r?.querySelector('input[placeholder*="company" i],input[placeholder*="search" i]')}
-function tbody(r){return r?.querySelector('table tbody')}
-function ensureStateControl(){const r=root(),q=searchBox(r);if(!r||!q)return null;let own=r.querySelector('#ember-state-filter');if(own)return own;const selects=[...r.querySelectorAll('select')],qr=q.getBoundingClientRect();const original=selects.filter(s=>{const x=s.getBoundingClientRect();return x.left>qr.right-10&&Math.abs(x.top-qr.top)<40}).sort((a,b)=>a.getBoundingClientRect().left-b.getBoundingClientRect().left)[0];if(!original)return null;own=document.createElement('select');own.id='ember-state-filter';own.className=original.className;own.innerHTML='<option value="">All States</option>'+CODES.map(s=>`<option value="${s}">${s}</option>`).join('');const current=(original.value||'').toUpperCase();own.value=STATES.has(current)?current:'';original.style.display='none';original.dataset.emberReplaced='1';original.insertAdjacentElement('afterend',own);own.addEventListener('change',()=>load(true));return own}
+function root(){return document.querySelector('#prospects')}
+function searchBox(r){return r?.querySelector('#search')}
+function tbody(r){return r?.querySelector('#rows')}
+function ensureStateControl(){const r=root(),state=r?.querySelector('#state');if(!state)return null;if(!state.dataset.emberAuthoritative){const current=(state.value||'').toUpperCase();state.innerHTML='<option value="">All States</option>'+CODES.map(s=>`<option value="${s}">${s}</option>`).join('');state.value=STATES.has(current)?current:'';state.dataset.emberAuthoritative='1';state.setAttribute('aria-label','Prospect state');state.onchange=null;state.addEventListener('change',()=>loadEmber(true))}return state}
 function selectedState(){const s=ensureStateControl();return STATES.has((s?.value||'').toUpperCase())?s.value.toUpperCase():''}
-function row(x){const phone=x.phone||'',email=x.public_email||'',contact=x.primary_contact||'Primary contact not named',lo=Number(x.loan_officer_count||0),loc=[x.city,x.state].filter(Boolean).join(', '),score=x.opportunity_score||75;return `<tr data-ember-prospect="1" data-state="${esc(x.state||'')}"><td><strong>${esc(x.company_name)}</strong><span class="ember-badge">EMBER</span><span class="ember-sub">${lo} loan officer${lo===1?'':'s'} attached${x.nmls_id?` · NMLS ${esc(x.nmls_id)}`:''}</span></td><td>${phone?`<a href="tel:${esc(phone)}">${esc(phone)}</a>`:''}${email?`<a href="mailto:${esc(email)}">${esc(email)}</a>`:''}<span class="ember-sub">${esc(contact)}</span><div class="contact-actions">${phone?`<a class="btn smallbtn" href="tel:${esc(phone)}">☎ Call</a>`:''}${email?`<a class="btn smallbtn" href="mailto:${esc(email)}">✉ Email</a>`:''}${x.source_url?`<a class="btn smallbtn" target="_blank" rel="noopener" href="${esc(x.source_url)}">↗ Website</a>`:''}</div></td><td><span class="pill">Validated brokerage</span></td><td>${esc(loc)}</td><td><span class="pill">Broker</span></td><td class="score">${score}</td><td><span class="pill">${esc(x.review_status||'Needs review')}</span></td><td>Pending review</td><td><button class="btn smallbtn" onclick="location.href='/platform/details/contacts?q=${encodeURIComponent(x.company_name)}&state=${encodeURIComponent(x.state||'')}'">Intelligence</button></td></tr>`}
+function row(x){const phone=x.phone||'',email=x.public_email||'',contact=x.primary_contact||'Primary contact not named',lo=Number(x.loan_officer_count||0),loc=[x.city,x.state].filter(Boolean).join(', '),score=x.opportunity_score||75;return `<tr data-ember-prospect="1" data-state="${esc(x.state||'')}"><td><strong>${esc(x.company_name)}</strong><span class="ember-badge">EMBER</span><span class="ember-sub">${lo} loan officer${lo===1?'':'s'} attached${x.nmls_id?` Â· NMLS ${esc(x.nmls_id)}`:''}</span></td><td>${phone?`<a href="tel:${esc(phone)}">${esc(phone)}</a>`:''}${email?`<a href="mailto:${esc(email)}">${esc(email)}</a>`:''}<span class="ember-sub">${esc(contact)}</span><div class="contact-actions">${phone?`<a class="btn smallbtn" href="tel:${esc(phone)}">â˜Ž Call</a>`:''}${email?`<a class="btn smallbtn" href="mailto:${esc(email)}">âœ‰ Email</a>`:''}${x.source_url?`<a class="btn smallbtn" target="_blank" rel="noopener" href="${esc(x.source_url)}">â†— Website</a>`:''}</div></td><td><span class="pill">Validated brokerage</span></td><td>${esc(loc)}</td><td><span class="pill">Broker</span></td><td class="score">${score}</td><td><span class="pill">${esc(x.review_status||'Needs review')}</span></td><td>Pending review</td><td><button class="btn smallbtn" onclick="location.href='/platform/details/contacts?q=${encodeURIComponent(x.company_name)}&state=${encodeURIComponent(x.state||'')}'">Intelligence</button></td></tr>`}
 let seq=0,ctl=null,timer=0,lastKey='';
-async function load(force=false){const r=root(),body=tbody(r),q=searchBox(r),sel=ensureStateControl();if(!r||!body||!sel)return;const state=selectedState(),term=q?.value||'',key=state+'|'+term;if(!force&&key===lastKey)return;lastKey=key;const id=++seq;ctl?.abort();ctl=new AbortController();body.innerHTML='<tr class="ember-empty"><td colspan="9">Loading selected state…</td></tr>';try{const res=await fetch('/api/ember/main-prospects?limit=5000&state='+encodeURIComponent(state)+'&q='+encodeURIComponent(term),{signal:ctl.signal,cache:'no-store'}),data=await res.json();if(id!==seq||String(data.selected_state||'')!==state||selectedState()!==state)return;const items=(data.items||[]).filter(x=>!state||String(x.state||'').toUpperCase()===state);body.innerHTML=items.length?items.map(row).join(''):'<tr class="ember-empty"><td colspan="9">No validated mortgage brokerages found for this state yet.</td></tr>'}catch(e){if(e.name!=='AbortError')body.innerHTML='<tr class="ember-empty"><td colspan="9">Unable to load validated brokerages.</td></tr>'}}
-function wire(){const r=root(),q=searchBox(r);if(!r||!q||!tbody(r))return;ensureStateControl();if(!q.dataset.emberSearchBound){q.dataset.emberSearchBound='1';q.addEventListener('input',()=>{clearTimeout(timer);timer=setTimeout(()=>load(true),250)})}load(true)}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',wire);else wire();new MutationObserver(()=>{if(!root()?.querySelector('#ember-state-filter'))wire()}).observe(document.documentElement,{childList:true,subtree:true});setInterval(()=>load(true),HOURLY);
+async function load(force=false){const r=root(),body=tbody(r),q=searchBox(r),sel=ensureStateControl();if(!r||!body||!sel)return;const state=selectedState(),term=q?.value||'',key=state+'|'+term;if(!force&&key===lastKey)return;lastKey=key;const id=++seq;ctl?.abort();ctl=new AbortController();body.innerHTML='<tr class="ember-empty"><td colspan="9">Loading selected stateâ€¦</td></tr>';try{const res=await fetch('/api/ember/main-prospects?limit=5000&state='+encodeURIComponent(state)+'&q='+encodeURIComponent(term),{signal:ctl.signal,cache:'no-store'}),data=await res.json();if(id!==seq||String(data.selected_state||'')!==state||selectedState()!==state)return;const items=(data.items||[]).filter(x=>!state||String(x.state||'').toUpperCase()===state);body.innerHTML=items.length?items.map(row).join(''):'<tr class="ember-empty"><td colspan="9">No validated mortgage brokerages found for this state yet.</td></tr>'}catch(e){if(e.name!=='AbortError')body.innerHTML='<tr class="ember-empty"><td colspan="9">Unable to load validated brokerages.</td></tr>'}}
+const loadEmber=load;
+function wire(){const r=root(),q=searchBox(r);if(!r||!q||!tbody(r))return;ensureStateControl();if(!q.dataset.emberSearchBound){q.dataset.emberSearchBound='1';q.oninput=null;q.addEventListener('input',()=>{clearTimeout(timer);timer=setTimeout(()=>loadEmber(true),250)})}window.load=loadEmber;loadEmber(true)}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',wire);else wire();setInterval(()=>loadEmber(true),HOURLY);
 })();</script>'''
         pos = page.lower().rfind("</body>")
         page = page[:pos] + script + page[pos:]
@@ -165,3 +167,4 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
 
 __all__ = ["install_ember_prospects_bridge"]
+
