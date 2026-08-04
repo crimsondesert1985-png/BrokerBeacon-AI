@@ -143,14 +143,33 @@ def _google_cse(query: str, limit: int) -> list[dict]:
 
 
 def _duckduckgo(query: str, limit: int) -> list[dict]:
-    data = urllib.parse.urlencode({"q": query, "kl": "us-en"}).encode("utf-8")
-    req = urllib.request.Request("https://html.duckduckgo.com/html/", data=data, method="POST")
-    req.add_header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
-    req.add_header("Content-Type", "application/x-www-form-urlencoded")
-    with urllib.request.urlopen(req, timeout=25) as response:
-        body = response.read().decode("utf-8", "ignore")
-    anchors = re.findall(r'<a[^>]+class="[^"]*result__a[^"]*"[^>]+href="([^"]+)"[^>]*>(.*?)</a>', body, re.I | re.S)
-    snippets = re.findall(r'<(?:a|div)[^>]+class="[^"]*result__snippet[^"]*"[^>]*>(.*?)</(?:a|div)>', body, re.I | re.S)
+    params = urllib.parse.urlencode({"q": query, "kl": "us-en"})
+    attempts = (
+        ("https://html.duckduckgo.com/html/?" + params, None),
+        ("https://html.duckduckgo.com/html/", params.encode("utf-8")),
+        ("https://lite.duckduckgo.com/lite/?" + params, None),
+    )
+    bodies, errors = [], []
+    for url, data in attempts:
+        req = urllib.request.Request(url, data=data, method="POST" if data else "GET")
+        req.add_header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36")
+        req.add_header("Accept", "text/html,application/xhtml+xml")
+        if data:
+            req.add_header("Content-Type", "application/x-www-form-urlencoded")
+        try:
+            with urllib.request.urlopen(req, timeout=18) as response:
+                body = response.read().decode("utf-8", "ignore")
+            if body:
+                bodies.append(body)
+            if "result__a" in body or "result-link" in body:
+                break
+        except Exception as exc:
+            errors.append(str(exc))
+    if not bodies:
+        raise RuntimeError("DuckDuckGo fallback failed: " + "; ".join(errors[-2:]))
+    body = bodies[-1]
+    anchors = re.findall(r'<a[^>]+class="[^"]*(?:result__a|result-link)[^"]*"[^>]+href="([^"]+)"[^>]*>(.*?)</a>', body, re.I | re.S)
+    snippets = re.findall(r'<(?:a|div|td)[^>]+class="[^"]*(?:result__snippet|result-snippet)[^"]*"[^>]*>(.*?)</(?:a|div|td)>', body, re.I | re.S)
     results = []
     for index, (href, title_html) in enumerate(anchors):
         href = html.unescape(href)
@@ -223,3 +242,4 @@ def provider_leaderboard(conn: sqlite3.Connection) -> list[dict]:
            from search_provider_runs group by provider order by unique_results desc,failures,avg_latency_ms"""
     ).fetchall()
     return [dict(row) for row in rows]
+
