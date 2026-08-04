@@ -70,6 +70,8 @@ class Sprint31OnboardingTests(unittest.TestCase):
         })
         self.assertEqual(invited.status_code, 201)
         self.assertTrue(invited.get_json()["email_delivered"])
+        self.assertIn("/invite/", invited.get_json()["accept_url"])
+        self.assertEqual(invited.headers["Cache-Control"], "no-store")
         email = self.app.extensions["security_outbox"][-1]
         self.assertEqual(email["to"], "teammate@example.com")
         self.assertIn("/invite/", email["text"])
