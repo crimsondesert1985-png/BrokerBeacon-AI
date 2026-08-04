@@ -841,10 +841,22 @@ def install_saas(app, db_path, build_version):
         delivered = deliver_security_email(email, "You’re invited to BrokerBeacon",
             "Your BrokerBeacon workspace owner invited you to join as "+role+".\n\n"+
             accept_url+"\n\nThis invitation expires in seven days.")
-        response = {"ok": True, "email_delivered": delivered, "expires_in_days": 7}
+        response = {
+            "ok": True,
+            "email_delivered": delivered,
+            "expires_in_days": 7,
+            "accept_url": accept_url,
+            "message": (
+                "Invitation sent by email."
+                if delivered else
+                "Invitation created. Copy and share the secure link below."
+            ),
+        }
         if app.config.get("TESTING"):
-            response.update(invitation_token=token, accept_url=accept_url)
-        return jsonify(response), 201
+            response.update(invitation_token=token)
+        result = jsonify(response)
+        result.headers["Cache-Control"] = "no-store"
+        return result, 201
 
     @bp.get("/api/saas/members")
     @require_role("Manager")
