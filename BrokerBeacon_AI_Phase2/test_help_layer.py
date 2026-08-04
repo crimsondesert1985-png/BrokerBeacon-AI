@@ -39,6 +39,12 @@ class HelpLayerTests(unittest.TestCase):
         self.assertIn("Turn tips off", HELP_LAYER)
         self.assertIn("focusin", HELP_LAYER)
 
+    def test_defers_to_the_main_site_tooltip_and_avoids_container_noise(self):
+        self.assertIn("siteOwnsTooltips", HELP_LAYER)
+        self.assertIn("typeof window.showSiteTooltip==='function'", HELP_LAYER)
+        self.assertIn("closest('button,a,input,select,textarea')", HELP_LAYER)
+        self.assertNotIn(".card,.panel,.metric,th,td", HELP_LAYER)
+
 
 if __name__ == "__main__":
     unittest.main()
