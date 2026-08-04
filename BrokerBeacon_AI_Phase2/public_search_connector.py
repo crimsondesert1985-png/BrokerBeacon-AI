@@ -160,7 +160,7 @@ def classify_result(title: str, snippet: str, url: str) -> dict:
     combined = " ".join([title or "", snippet or "", url or ""])
     lower = combined.lower()
     person_page = any(term in lower for term in ('loan officer','mortgage loan originator','mortgage advisor',' mlo '))
-    title_clean = re.sub(r"\s*[-|·].*$", "", title or "").strip()
+    title_clean = re.sub(r"\s*[-|Â·].*$", "", title or "").strip()
     domain_name = _domain(url).split('.')[0].replace('-', ' ').title()
     return {
         "candidate_type": "Company",
@@ -199,9 +199,16 @@ def run_public_search(conn: sqlite3.Connection, *, connector_id: int | None,
     used_providers: set[str] = set()
     provider_stats: dict[str, dict] = {}
     seen_domains: set[str] = set()
+    query_errors: list[dict] = []
+    completed_queries = 0
     try:
         for query in queries:
-            response = search_provider(query, count=results_per_query)
+            try:
+                response = search_provider(query, count=results_per_query)
+                completed_queries += 1
+            except Exception as exc:
+                query_errors.append({"query": query, "error": str(exc)[:500]})
+                continue
             provider_stats.update(response.get("provider_stats", {}))
             for rank, item in enumerate(response.get("results", []), start=1):
                 url = str(item.get("url") or "").strip()
@@ -235,13 +242,17 @@ def run_public_search(conn: sqlite3.Connection, *, connector_id: int | None,
             conn.commit()
             if delay_seconds:
                 time.sleep(delay_seconds)
+        if not completed_queries:
+            errors = "; ".join(item["error"] for item in query_errors[:3])
+            raise RuntimeError(errors or "All public search queries failed")
         conn.execute(
             """update public_search_runs set status='Completed',query_count=?,result_count=?,
                accepted_count=?,rejected_count=?,finished_at=? where id=?""",
-            (len(queries), total, accepted, rejected, NOW(), run_id),
+            (completed_queries, total, accepted, rejected, NOW(), run_id),
         )
         conn.commit()
-        return {"run_id": run_id, "queries": len(queries), "results": total, "accepted": accepted,
+        return {"run_id": run_id, "queries": completed_queries, "queries_attempted": len(queries),
+                "query_failures": query_errors, "results": total, "accepted": accepted,
                 "rejected": rejected, "providers": sorted(used_providers), "provider_stats": provider_stats}
     except Exception as exc:
         conn.execute("update public_search_runs set status='Failed',error=?,finished_at=? where id=?",
@@ -259,3 +270,4 @@ def pending_results(conn: sqlite3.Connection, state: str = "", limit: int = 200)
         (state, state, min(max(int(limit), 1), 1000)),
     ).fetchall()
     return [dict(row) for row in rows]
+
