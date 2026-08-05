@@ -28,7 +28,6 @@ def _connect(db_path):
 
 
 def _reset_stale_discovery_backlog(conn):
-    """Cancel queued discovery jobs left by older scheduler versions and rebuild fairly."""
     initialize(conn)
     stamp = now_iso()
     rows = conn.execute(
@@ -42,27 +41,14 @@ def _reset_stale_discovery_backlog(conn):
         (stamp, stamp),
     )
     conn.commit()
-    emit_event(
-        conn,
-        "NationalQueueReset",
-        f"Ember cleared {len(rows)} stale discovery jobs before rebuilding national coverage",
-        worker_key=WORKER_KEY,
-        detail={"cancelled_jobs": len(rows), "states": sorted({str(row['state'] or '') for row in rows})},
-    )
+    emit_event(conn,"NationalQueueReset",f"Ember cleared {len(rows)} stale discovery jobs before rebuilding national coverage",worker_key=WORKER_KEY,detail={"cancelled_jobs":len(rows),"states":sorted({str(row['state'] or '') for row in rows})})
     return len(rows)
 
 
 def _ensure_national_queue(conn) -> int:
-    """Keep Ember moving automatically whenever the queue is low or empty."""
     created = refill_national_queue(conn)
     if created:
-        emit_event(
-            conn,
-            "AutomaticHuntsQueued",
-            f"Ember automatically queued {len(created)} mortgage-broker state hunts",
-            worker_key=WORKER_KEY,
-            detail={"jobs": created},
-        )
+        emit_event(conn,"AutomaticHuntsQueued",f"Ember automatically queued {len(created)} mortgage-broker state hunts",worker_key=WORKER_KEY,detail={"jobs":created})
     return len(created)
 
 
@@ -83,55 +69,40 @@ def _process_one(app, db_path):
                 contact_limit=min(max(int(payload.get("contact_limit", 1000)), 500), 2000),
             )
             resolved_state = str(result.get("state") or "").strip().upper()
+            # Matchup national queries can surface a company outside the initial hunt
+            # state. Promote every proven Matchup record; the parsed profile controls
+            # the prospect's actual state.
             promotion = promote_warehouse_companies(
                 conn,
-                state=resolved_state,
-                limit=min(max(int(os.getenv("EMBER_PROMOTION_LIMIT", "100")), 25), 500),
-                minimum_score=min(max(int(os.getenv("EMBER_PROMOTION_MIN_SCORE", "50")), 35), 90),
+                state="",
+                limit=min(max(int(os.getenv("EMBER_PROMOTION_LIMIT", "500")), 100), 1000),
+                minimum_score=min(max(int(os.getenv("EMBER_PROMOTION_MIN_SCORE", "80")), 50), 95),
             )
             result["autonomous_prospecting"] = promotion
             complete(conn, int(job["id"]), WORKER_KEY, detail=result)
             graph = advance_intelligence(conn, state=resolved_state)
             public_search = result.get("public_search") or {}
             company_crawl = result.get("company_crawl") or {}
-            emit_event(
-                conn,
-                "PipelineAdvanced",
-                f"{resolved_state} flowed from mortgage-broker discovery through crawling, warehouse, prospect creation, intelligence, and review",
-                worker_key=WORKER_KEY,
-                job_id=int(job["id"]),
-                state=resolved_state,
-                detail={
-                    "companies": result.get("companies_seeded", 0),
-                    "companies_crawled": company_crawl.get("completed", 0),
-                    "warehouse_created": (company_crawl.get("warehouse") or {}).get("created", 0),
-                    "warehouse_updated": (company_crawl.get("warehouse") or {}).get("updated", 0),
-                    "prospects_created": promotion.get("prospects_created", 0),
-                    "prospects_updated": promotion.get("prospects_updated", 0),
-                    "contacts_created": promotion.get("contacts_created", 0),
-                    "duplicates_skipped": promotion.get("duplicates_skipped", 0),
-                    "pages_fetched": company_crawl.get("pages_fetched", 0),
-                    "contacts": result.get("new_contacts", 0),
-                    "pending_review": result.get("pending_review", 0),
-                    "public_search_status": public_search.get("status", "Not needed"),
-                    "public_search_indexed": public_search.get("indexed", 0),
-                    "public_search_reason": public_search.get("reason", ""),
-                    "company_nodes": graph.get("company_nodes", 0),
-                    "person_nodes": graph.get("person_nodes", 0),
-                    "relationships": graph.get("relationships", 0),
-                    "graph_status": graph.get("status", "Deferred"),
-                    "next_stage": "Human verification before outreach",
-                },
-            )
+            emit_event(conn,"PipelineAdvanced",f"{resolved_state} flowed through Mortgage Matchup discovery, warehouse, prospect creation, intelligence, and review",worker_key=WORKER_KEY,job_id=int(job["id"]),state=resolved_state,detail={
+                "companies":result.get("companies_seeded",0),"companies_crawled":company_crawl.get("completed",0),
+                "warehouse_created":(company_crawl.get("warehouse") or {}).get("created",0),
+                "warehouse_updated":(company_crawl.get("warehouse") or {}).get("updated",0),
+                "prospects_created":promotion.get("prospects_created",0),"prospects_updated":promotion.get("prospects_updated",0),
+                "contacts_created":promotion.get("contacts_created",0),"duplicates_skipped":promotion.get("duplicates_skipped",0),
+                "pages_fetched":company_crawl.get("pages_fetched",0),"contacts":result.get("new_contacts",0),
+                "pending_review":result.get("pending_review",0),"public_search_status":public_search.get("status","Not needed"),
+                "public_search_indexed":public_search.get("indexed",0),"public_search_reason":public_search.get("reason",""),
+                "company_nodes":graph.get("company_nodes",0),"person_nodes":graph.get("person_nodes",0),
+                "relationships":graph.get("relationships",0),"graph_status":graph.get("status","Deferred"),
+                "next_stage":"Human verification before outreach"})
             heartbeat(conn, WORKER_KEY, status="Idle", jobs_completed_today=1)
             _ensure_national_queue(conn)
             app.logger.warning(
                 "EMBER_QUEUE completed job_id=%s state=%s seeded=%s crawled=%s warehouse_created=%s prospects_created=%s prospects_updated=%s contacts_created=%s search=%s indexed=%s graph=%s",
-                job["id"], resolved_state, result.get("companies_seeded", 0),
-                company_crawl.get("completed", 0), (company_crawl.get("warehouse") or {}).get("created", 0),
-                promotion.get("prospects_created", 0), promotion.get("prospects_updated", 0),
-                promotion.get("contacts_created", 0), public_search.get("status", "Not needed"),
-                public_search.get("indexed", 0), graph.get("status", "Deferred"),
+                job["id"], resolved_state, result.get("companies_seeded", 0), company_crawl.get("completed", 0),
+                (company_crawl.get("warehouse") or {}).get("created", 0), promotion.get("prospects_created", 0),
+                promotion.get("prospects_updated", 0), promotion.get("contacts_created", 0),
+                public_search.get("status", "Not needed"), public_search.get("indexed", 0), graph.get("status", "Deferred"),
             )
             return True
         except Exception as exc:
@@ -142,7 +113,6 @@ def _process_one(app, db_path):
 
 
 def _run_burst(app, db_path, max_jobs: int, between_jobs: int) -> int:
-    """Process a bounded burst so the queue flows without blocking forever."""
     completed = 0
     try:
         for index in range(max(1, max_jobs)):
@@ -157,7 +127,6 @@ def _run_burst(app, db_path, max_jobs: int, between_jobs: int) -> int:
 
 
 def install_ember_worker(app, db_path):
-    """Start one queue-backed daemon loop per Gunicorn worker process."""
     global _started
     enabled = os.getenv("EMBER_ALWAYS_ON", "1").strip().lower() not in {"0", "false", "no"}
     if not enabled:
@@ -167,22 +136,17 @@ def install_ember_worker(app, db_path):
         if _started:
             return
         _started = True
-
     idle_interval = max(int(os.getenv("EMBER_IDLE_SECONDS", "30")), 15)
     startup_delay = max(int(os.getenv("EMBER_STARTUP_DELAY_SECONDS", "0")), 0)
     burst_jobs = max(1, min(int(os.getenv("EMBER_BURST_JOBS", "2")), 6))
     between_jobs = max(0, min(int(os.getenv("EMBER_BETWEEN_JOBS_SECONDS", "3")), 30))
-
     def loop():
         with closing(_connect(db_path)) as conn:
             initialize(conn)
             cancelled = _reset_stale_discovery_backlog(conn)
             queued = _ensure_national_queue(conn)
             heartbeat(conn, WORKER_KEY, status="Starting")
-        app.logger.warning(
-            "EMBER_QUEUE worker started idle=%ss burst=%s between=%ss reset=%s auto_queued=%s queue_mode=automatic-national promotion=enabled",
-            idle_interval, burst_jobs, between_jobs, cancelled, queued,
-        )
+        app.logger.warning("EMBER_QUEUE worker started idle=%ss burst=%s between=%ss reset=%s auto_queued=%s queue_mode=automatic-national promotion=matchup-provenance",idle_interval,burst_jobs,between_jobs,cancelled,queued)
         time.sleep(startup_delay)
         while True:
             try:
@@ -197,5 +161,4 @@ def install_ember_worker(app, db_path):
                 except Exception:
                     app.logger.exception("EMBER_QUEUE could not persist recovery state")
             time.sleep(idle_interval)
-
     threading.Thread(target=loop, name="ember-queue-worker", daemon=True).start()
