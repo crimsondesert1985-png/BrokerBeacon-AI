@@ -1,4 +1,4 @@
-"""Run an idempotent warehouse-to-CRM backfill after each production start."""
+"""Run an idempotent Mortgage Matchup warehouse-to-CRM backfill after startup."""
 from __future__ import annotations
 
 import sqlite3
@@ -6,7 +6,7 @@ import threading
 import time
 from contextlib import closing
 
-from autonomous_prospecting import promote_warehouse_companies
+from autonomous_prospecting import purge_invalid_ember_prospects, promote_warehouse_companies
 
 _started = False
 _lock = threading.Lock()
@@ -28,36 +28,28 @@ def install_prospect_backfill_boot(app, db_path):
         _started = True
 
     def run():
-        time.sleep(8)
-        totals = {
-            "warehouse_examined": 0,
-            "prospects_created": 0,
-            "prospects_updated": 0,
-            "contacts_created": 0,
-            "duplicates_skipped": 0,
-            "rejected": 0,
-        }
+        time.sleep(12)
         try:
             with closing(_connect(db_path)) as conn:
-                for state in [""]:
-                    result = promote_warehouse_companies(
-                        conn,
-                        state=state,
-                        limit=500,
-                        minimum_score=35,
-                    )
-                    for key in totals:
-                        totals[key] += int(result.get(key, 0) or 0)
-                visible = int(conn.execute("select count(*) from prospects").fetchone()[0])
-                linked = int(conn.execute("select count(*) from autonomous_prospect_links").fetchone()[0])
+                removed_before = purge_invalid_ember_prospects(conn)
+                result = promote_warehouse_companies(conn, state="", limit=1000, minimum_score=80)
+                removed_after = purge_invalid_ember_prospects(conn)
+                visible = int(conn.execute(
+                    """select count(distinct p.id)
+                       from prospects p
+                       join autonomous_prospect_links l on l.prospect_id=p.id
+                       join warehouse_source_records wr on wr.entity_type='company' and wr.entity_id=l.warehouse_company_id
+                       join warehouse_sources s on s.id=wr.source_id
+                       where s.name='Mortgage Matchup'"""
+                ).fetchone()[0])
             app.logger.warning(
-                "EMBER_PROSPECT_BACKFILL completed examined=%s created=%s updated=%s contacts=%s duplicates=%s rejected=%s visible_prospects=%s linked=%s",
-                totals["warehouse_examined"], totals["prospects_created"], totals["prospects_updated"],
-                totals["contacts_created"], totals["duplicates_skipped"], totals["rejected"],
-                visible, linked,
+                "EMBER_PROSPECT_BACKFILL matchup_only removed_before=%s examined=%s created=%s updated=%s contacts=%s duplicates=%s rejected=%s removed_after=%s visible=%s",
+                removed_before, result.get("warehouse_examined", 0), result.get("prospects_created", 0),
+                result.get("prospects_updated", 0), result.get("contacts_created", 0),
+                result.get("duplicates_skipped", 0), result.get("rejected", 0), removed_after, visible,
             )
         except Exception:
-            app.logger.exception("EMBER_PROSPECT_BACKFILL failed")
+            app.logger.exception("EMBER_PROSPECT_BACKFILL matchup-only run failed")
 
     threading.Thread(target=run, name="ember-prospect-backfill", daemon=True).start()
     return app
