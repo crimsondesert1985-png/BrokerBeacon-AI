@@ -8,6 +8,7 @@ import threading
 import time
 from contextlib import closing
 
+from autonomous_prospecting import promote_warehouse_companies
 from ember_pipeline import launch
 from ember_jobs import claim_next, complete, emit_event, fail, heartbeat, initialize, now_iso
 from intelligence_flow import advance_intelligence
@@ -81,22 +82,34 @@ def _process_one(app, db_path):
                 company_limit=min(max(int(payload.get("company_limit", 50)), 50), 100),
                 contact_limit=min(max(int(payload.get("contact_limit", 1000)), 500), 2000),
             )
+            resolved_state = str(result.get("state") or "").strip().upper()
+            promotion = promote_warehouse_companies(
+                conn,
+                state=resolved_state,
+                limit=min(max(int(os.getenv("EMBER_PROMOTION_LIMIT", "100")), 25), 500),
+                minimum_score=min(max(int(os.getenv("EMBER_PROMOTION_MIN_SCORE", "50")), 35), 90),
+            )
+            result["autonomous_prospecting"] = promotion
             complete(conn, int(job["id"]), WORKER_KEY, detail=result)
-            graph = advance_intelligence(conn, state=result.get("state", ""))
+            graph = advance_intelligence(conn, state=resolved_state)
             public_search = result.get("public_search") or {}
             company_crawl = result.get("company_crawl") or {}
             emit_event(
                 conn,
                 "PipelineAdvanced",
-                f"{result.get('state', '')} flowed from mortgage-broker discovery through company crawling, intelligence, and review",
+                f"{resolved_state} flowed from mortgage-broker discovery through crawling, warehouse, prospect creation, intelligence, and review",
                 worker_key=WORKER_KEY,
                 job_id=int(job["id"]),
-                state=result.get("state", ""),
+                state=resolved_state,
                 detail={
                     "companies": result.get("companies_seeded", 0),
                     "companies_crawled": company_crawl.get("completed", 0),
                     "warehouse_created": (company_crawl.get("warehouse") or {}).get("created", 0),
                     "warehouse_updated": (company_crawl.get("warehouse") or {}).get("updated", 0),
+                    "prospects_created": promotion.get("prospects_created", 0),
+                    "prospects_updated": promotion.get("prospects_updated", 0),
+                    "contacts_created": promotion.get("contacts_created", 0),
+                    "duplicates_skipped": promotion.get("duplicates_skipped", 0),
                     "pages_fetched": company_crawl.get("pages_fetched", 0),
                     "contacts": result.get("new_contacts", 0),
                     "pending_review": result.get("pending_review", 0),
@@ -107,18 +120,18 @@ def _process_one(app, db_path):
                     "person_nodes": graph.get("person_nodes", 0),
                     "relationships": graph.get("relationships", 0),
                     "graph_status": graph.get("status", "Deferred"),
-                    "next_stage": "Human review",
+                    "next_stage": "Human verification before outreach",
                 },
             )
             heartbeat(conn, WORKER_KEY, status="Idle", jobs_completed_today=1)
             _ensure_national_queue(conn)
             app.logger.warning(
-                "EMBER_QUEUE completed job_id=%s state=%s seeded=%s crawled=%s warehouse_created=%s contacts=%s search=%s indexed=%s graph=%s",
-                job["id"], result.get("state", ""), result.get("companies_seeded", 0),
+                "EMBER_QUEUE completed job_id=%s state=%s seeded=%s crawled=%s warehouse_created=%s prospects_created=%s prospects_updated=%s contacts_created=%s search=%s indexed=%s graph=%s",
+                job["id"], resolved_state, result.get("companies_seeded", 0),
                 company_crawl.get("completed", 0), (company_crawl.get("warehouse") or {}).get("created", 0),
-                (result.get("enrichment") or {}).get("contacts_found", 0),
-                public_search.get("status", "Not needed"), public_search.get("indexed", 0),
-                graph.get("status", "Deferred"),
+                promotion.get("prospects_created", 0), promotion.get("prospects_updated", 0),
+                promotion.get("contacts_created", 0), public_search.get("status", "Not needed"),
+                public_search.get("indexed", 0), graph.get("status", "Deferred"),
             )
             return True
         except Exception as exc:
@@ -167,7 +180,7 @@ def install_ember_worker(app, db_path):
             queued = _ensure_national_queue(conn)
             heartbeat(conn, WORKER_KEY, status="Starting")
         app.logger.warning(
-            "EMBER_QUEUE worker started idle=%ss burst=%s between=%ss reset=%s auto_queued=%s queue_mode=automatic-national",
+            "EMBER_QUEUE worker started idle=%ss burst=%s between=%ss reset=%s auto_queued=%s queue_mode=automatic-national promotion=enabled",
             idle_interval, burst_jobs, between_jobs, cancelled, queued,
         )
         time.sleep(startup_delay)
