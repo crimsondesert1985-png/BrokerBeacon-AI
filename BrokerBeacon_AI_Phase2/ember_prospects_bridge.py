@@ -1,4 +1,4 @@
-"""Expose credible mortgage brokerage companies on the main Prospects screen."""
+"""Expose Ember-created CRM prospects reliably on the main Prospects screen."""
 from __future__ import annotations
 
 import re
@@ -7,29 +7,12 @@ import urllib.parse
 from contextlib import closing
 from flask import jsonify, request
 
-STATE_CODES = (
-    "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA","KS","KY","LA","ME","MD",
-    "MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ","NM","NY","NC","ND","OH","OK","OR","PA","RI","SC",
-    "SD","TN","TX","UT","VT","VA","WA","WV","WI","WY",
-)
+STATE_CODES = tuple("AL AK AZ AR CA CO CT DE FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY".split())
 STATE_SET = set(STATE_CODES)
-BROKER_MARKERS = ("mortgage", "home loan", "home loans", "lending", "funding", "financial", "capital", "finance")
-ENTITY_SUFFIXES = ("llc", "inc", "incorporated", "corp", "corporation", "company", "co", "group", "partners", "services", "associates")
-BAD_MARKERS = (
-    "license guide", "licensing guide", "get a license", "license requirements", "license search", "license lookup",
-    "mortgage broker license", "mortgage licensing", "search for mortgage", "state licensing", "directory",
-    "best mortgage", "best local", "top loan officers", "mortgage lenders and loan officers", "search results",
-    "privacy policy", "terms of use", "customer service", "customer support", "contact us", "about us",
-    "wholesale mortgage", "wholesale lending", "wholesale mortgages", "mortgages available", "loans available",
-    "become a broker", "broker portal", "third party originator", "training", "school", "course",
-    "home builder", "title company", "title services", "realtor", "realty", "insurance agency",
-    "department of", "division of", "commissioner of banks", "regulator", "government",
-)
-BAD_PREFIXES = ("find ", "best ", "top ", "state ", "customer ", "how to ", "what is ", "learn ", "online ", "directory ", "search ")
 BLOCKED_DOMAINS = {
-    "nmlsconsumeraccess.org", "consumerfinance.gov", "hud.gov", "nc.gov", "nccob.gov", "linkedin.com",
-    "facebook.com", "instagram.com", "youtube.com", "bankrate.com", "nerdwallet.com", "investopedia.com",
-    "forbes.com", "wikipedia.org", "indeed.com", "yelp.com", "bbb.org",
+    "nmlsconsumeraccess.org", "consumerfinance.gov", "hud.gov", "linkedin.com",
+    "facebook.com", "instagram.com", "youtube.com", "bankrate.com", "nerdwallet.com",
+    "investopedia.com", "forbes.com", "wikipedia.org", "indeed.com", "yelp.com",
 }
 
 
@@ -44,26 +27,27 @@ def _normalize(value: str) -> str:
     return re.sub(r"[^a-z0-9]+", " ", (value or "").lower()).strip()
 
 
-def _blocked_domain(domain: str) -> bool:
-    return bool(domain and (domain.endswith((".gov", ".edu")) or domain in BLOCKED_DOMAINS or any(domain.endswith("." + d) for d in BLOCKED_DOMAINS)))
+def _columns(conn: sqlite3.Connection, table: str) -> set[str]:
+    return {str(row[1]) for row in conn.execute(f"pragma table_info({table})")}
 
 
-def _looks_like_company(name: str, website: str, nmls_id: str) -> bool:
+def _value(row, key, default=""):
+    try:
+        return row[key] if key in row.keys() and row[key] is not None else default
+    except Exception:
+        return default
+
+
+def _safe_company(name: str, website: str = "") -> bool:
     name = (name or "").strip()
     normalized = _normalize(name)
-    words = normalized.split()
     domain = _domain(website)
-    if len(name) < 4 or len(words) > 8 or normalized.startswith(BAD_PREFIXES):
+    if len(name) < 3 or len(normalized.split()) > 14:
         return False
-    if any(marker in normalized for marker in BAD_MARKERS) or _blocked_domain(domain):
+    if domain in BLOCKED_DOMAINS or any(domain.endswith("." + d) for d in BLOCKED_DOMAINS):
         return False
-    if re.search(r"\b(in|near|serving|available|guide|license|licensing|requirements|search)\b", normalized):
-        return False
-    industry = any(marker in normalized for marker in BROKER_MARKERS)
-    entity = any(re.search(rf"\b{re.escape(suffix)}\b", normalized) for suffix in ENTITY_SUFFIXES)
-    valid_nmls = bool(re.fullmatch(r"\d{4,12}", re.sub(r"\D+", "", nmls_id or "")))
-    real_domain = bool(domain and "." in domain and not _blocked_domain(domain))
-    return industry and (entity or (real_domain and valid_nmls))
+    bad = ("privacy policy", "terms of use", "license guide", "search results", "customer support")
+    return not any(term in normalized for term in bad)
 
 
 def install_ember_prospects_bridge(app, db_path):
@@ -80,54 +64,94 @@ def install_ember_prospects_bridge(app, db_path):
         query = str(request.args.get("q") or "").strip()[:120]
         limit = min(max(int(request.args.get("limit") or 1000), 1), 5000)
         like = f"%{query.lower()}%"
+        items, seen = [], set()
         with closing(connect()) as conn:
-            rows = conn.execute(
-                """select id,legal_name,nmls_id,website,phone,public_email,city,upper(trim(state)) state,
-                          verification_status,created_at,updated_at
-                   from warehouse_companies
-                   where trim(coalesce(legal_name,''))<>''
-                     and (?='' or upper(trim(state))=?)
-                     and (?='' or lower(legal_name) like ? or lower(city) like ? or lower(nmls_id) like ?)
-                   order by updated_at desc,id desc limit ?""",
-                (state, state, query, like, like, like, limit * 8),
-            ).fetchall()
-            items, seen = [], set()
-            for row in rows:
-                company = str(row["legal_name"] or "").strip()
-                website = str(row["website"] or "").strip()
-                nmls = str(row["nmls_id"] or "").strip()
-                if not _looks_like_company(company, website, nmls):
-                    continue
-                domain = _domain(website)
-                key = (str(row["state"] or ""), domain or _normalize(company))
-                if key in seen:
-                    continue
-                seen.add(key)
-                contacts = conn.execute(
-                    """select person_name,phone,public_email,source_url,source_domain,confidence
-                       from discovered_contacts
-                       where review_status<>'Rejected' and upper(trim(coalesce(state,'')))=?
-                         and ((?<>'' and lower(trim(coalesce(source_domain,'')))=?)
-                              or lower(trim(coalesce(company_name,'')))=lower(?))
-                       order by confidence desc,id desc""",
-                    (row["state"], domain, domain, company),
+            prospect_cols = _columns(conn, "prospects")
+            if prospect_cols:
+                rows = conn.execute(
+                    """select * from prospects
+                       where (?='' or upper(trim(coalesce(state,'')))=?)
+                         and (?='' or lower(coalesce(company,'')) like ? or lower(coalesce(city,'')) like ?
+                              or lower(coalesce(nmls,'')) like ?)
+                       order by coalesce(updated_at,created_at,'') desc,id desc limit ?""",
+                    (state, state, query, like, like, like, limit * 3),
                 ).fetchall()
-                named = [c for c in contacts if str(c["person_name"] or "").strip()]
-                best = contacts[0] if contacts else None
-                phone = str(row["phone"] or (best["phone"] if best else "") or "")
-                email = str(row["public_email"] or (best["public_email"] if best else "") or "")
-                source_url = website or str((best["source_url"] if best else "") or "")
-                score = (90 if nmls else 75) + (5 if phone or email else 0)
-                items.append({
-                    "id": row["id"], "company_name": company, "nmls_id": nmls, "source_url": source_url,
-                    "source_domain": domain, "phone": phone, "public_email": email, "city": row["city"],
-                    "state": row["state"], "review_status": row["verification_status"] or "Needs review",
-                    "confidence": score, "opportunity_score": score, "loan_officer_count": len(named),
-                    "primary_contact": str(named[0]["person_name"] if named else ""),
-                })
-                if len(items) >= limit:
-                    break
-        return jsonify(items=items, states=list(STATE_CODES), count=len(items), selected_state=state, source="credible_warehouse_brokerages")
+                for row in rows:
+                    company = str(_value(row, "company")).strip()
+                    website = str(_value(row, "website") or _value(row, "source_url")).strip()
+                    if not _safe_company(company, website):
+                        continue
+                    row_state = str(_value(row, "state")).strip().upper()
+                    nmls = str(_value(row, "nmls")).strip()
+                    key = ("crm", int(_value(row, "id", 0)))
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    contact_count = conn.execute("select count(*) from contacts where prospect_id=?", (row["id"],)).fetchone()[0] if _columns(conn, "contacts") else 0
+                    primary = conn.execute(
+                        "select name,email,phone from contacts where prospect_id=? order by coalesce(is_primary,0) desc,coalesce(is_decision_maker,0) desc,id limit 1",
+                        (row["id"],),
+                    ).fetchone() if contact_count else None
+                    phone = str(_value(row, "phone") or (primary["phone"] if primary else "") or "")
+                    email = str(_value(row, "email") or (primary["email"] if primary else "") or "")
+                    score = int(_value(row, "score", 0) or 0) or (85 if nmls else 65)
+                    source_name = str(_value(row, "source_name") or _value(row, "signal") or "")
+                    items.append({
+                        "id": row["id"], "crm_prospect_id": row["id"], "company_name": company,
+                        "nmls_id": nmls, "source_url": website, "source_domain": _domain(website),
+                        "phone": phone, "public_email": email, "city": _value(row, "city"),
+                        "state": row_state, "review_status": _value(row, "verification_status", "Needs review"),
+                        "pipeline_status": _value(row, "status", "New"), "confidence": score,
+                        "opportunity_score": score, "loan_officer_count": int(contact_count),
+                        "primary_contact": str(primary["name"] if primary else ""),
+                        "source": source_name or "CRM prospect", "record_type": "crm",
+                    })
+                    if len(items) >= limit:
+                        break
+
+            if len(items) < limit and _columns(conn, "warehouse_companies"):
+                rows = conn.execute(
+                    """select * from warehouse_companies
+                       where trim(coalesce(legal_name,''))<>''
+                         and (?='' or upper(trim(state))=?)
+                         and (?='' or lower(legal_name) like ? or lower(city) like ? or lower(nmls_id) like ?)
+                       order by updated_at desc,id desc limit ?""",
+                    (state, state, query, like, like, like, limit * 4),
+                ).fetchall()
+                for row in rows:
+                    company = str(row["legal_name"] or "").strip()
+                    website = str(row["website"] or "").strip()
+                    if not _safe_company(company, website):
+                        continue
+                    nmls = str(row["nmls_id"] or "").strip()
+                    duplicate = False
+                    for item in items:
+                        if nmls and item.get("nmls_id") == nmls:
+                            duplicate = True
+                            break
+                        if _normalize(item.get("company_name", "")) == _normalize(company) and item.get("state", "") == str(row["state"] or "").upper():
+                            duplicate = True
+                            break
+                    if duplicate:
+                        continue
+                    key = ("warehouse", row["id"])
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    score = 80 if nmls else 55
+                    items.append({
+                        "id": f"w{row['id']}", "warehouse_company_id": row["id"], "company_name": company,
+                        "nmls_id": nmls, "source_url": website, "source_domain": _domain(website),
+                        "phone": row["phone"] or "", "public_email": row["public_email"] or "",
+                        "city": row["city"] or "", "state": str(row["state"] or "").upper(),
+                        "review_status": row["verification_status"] or "Needs review",
+                        "pipeline_status": "New", "confidence": score, "opportunity_score": score,
+                        "loan_officer_count": 0, "primary_contact": "", "source": "Ember warehouse",
+                        "record_type": "warehouse",
+                    })
+                    if len(items) >= limit:
+                        break
+        return jsonify(items=items, states=list(STATE_CODES), count=len(items), selected_state=state, source="crm_first_ember_bridge")
 
     @app.after_request
     def inject_ember_prospects(response):
@@ -137,25 +161,24 @@ def install_ember_prospects_bridge(app, db_path):
             page = response.get_data(as_text=True)
         except Exception:
             return response
-        if "ember-deterministic-prospects" in page or "</body>" not in page.lower():
+        if "ember-crm-prospects" in page or "</body>" not in page.lower():
             return response
-        script = r'''<style id="ember-deterministic-prospects-style">
-#ember-state-filter{min-width:110px}tr[data-ember-prospect="1"] td{background:linear-gradient(90deg,#fff,#f6fbff)}.ember-badge{display:inline-flex;margin-left:7px;padding:3px 6px;border-radius:999px;background:#ff784918;color:#b54b20;font-size:9px;font-weight:900}.ember-sub{display:block;margin-top:4px;color:#637895;font-size:10px}.ember-empty td{text-align:center;padding:34px;color:#637895}
-</style><script id="ember-deterministic-prospects">(function(){
-const CODES='AL AK AZ AR CA CO CT DE FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY'.split(' '),STATES=new Set(CODES),HOURLY=3600000;
+        script = r'''<style id="ember-crm-prospects-style">
+tr[data-ember-prospect="1"] td{background:linear-gradient(90deg,#fff,#f6fbff)}.ember-badge{display:inline-flex;margin-left:7px;padding:3px 6px;border-radius:999px;background:#ff784918;color:#b54b20;font-size:9px;font-weight:900}.ember-sub{display:block;margin-top:4px;color:#637895;font-size:10px}.ember-empty td{text-align:center;padding:34px;color:#637895}
+</style><script id="ember-crm-prospects">(function(){
+const CODES='AL AK AZ AR CA CO CT DE FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY'.split(' '),STATES=new Set(CODES);
 const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-const text=e=>(e?.textContent||'').replace(/\s+/g,' ').trim();
-function root(){return document.querySelector('#prospects')}
-function searchBox(r){return r?.querySelector('#search')}
-function tbody(r){return r?.querySelector('#rows')}
-function ensureStateControl(){const r=root(),state=r?.querySelector('#state');if(!state)return null;if(!state.dataset.emberAuthoritative){const current=(state.value||'').toUpperCase();state.innerHTML='<option value="">All States</option>'+CODES.map(s=>`<option value="${s}">${s}</option>`).join('');state.value=STATES.has(current)?current:'';state.dataset.emberAuthoritative='1';state.setAttribute('aria-label','Prospect state');state.onchange=null;state.addEventListener('change',()=>loadEmber(true))}return state}
-function selectedState(){const s=ensureStateControl();return STATES.has((s?.value||'').toUpperCase())?s.value.toUpperCase():''}
-function row(x){const phone=x.phone||'',email=x.public_email||'',contact=x.primary_contact||'Primary contact not named',lo=Number(x.loan_officer_count||0),loc=[x.city,x.state].filter(Boolean).join(', '),score=x.opportunity_score||75;return `<tr data-ember-prospect="1" data-state="${esc(x.state||'')}"><td><strong>${esc(x.company_name)}</strong><span class="ember-badge">EMBER</span><span class="ember-sub">${lo} loan officer${lo===1?'':'s'} attached${x.nmls_id?` Â· NMLS ${esc(x.nmls_id)}`:''}</span></td><td>${phone?`<a href="tel:${esc(phone)}">${esc(phone)}</a>`:''}${email?`<a href="mailto:${esc(email)}">${esc(email)}</a>`:''}<span class="ember-sub">${esc(contact)}</span><div class="contact-actions">${phone?`<a class="btn smallbtn" href="tel:${esc(phone)}">â˜Ž Call</a>`:''}${email?`<a class="btn smallbtn" href="mailto:${esc(email)}">âœ‰ Email</a>`:''}${x.source_url?`<a class="btn smallbtn" target="_blank" rel="noopener" href="${esc(x.source_url)}">â†— Website</a>`:''}</div></td><td><span class="pill">Validated brokerage</span></td><td>${esc(loc)}</td><td><span class="pill">Broker</span></td><td class="score">${score}</td><td><span class="pill">${esc(x.review_status||'Needs review')}</span></td><td>Pending review</td><td><button class="btn smallbtn" onclick="location.href='/platform/details/contacts?q=${encodeURIComponent(x.company_name)}&state=${encodeURIComponent(x.state||'')}'">Intelligence</button></td></tr>`}
-let seq=0,ctl=null,timer=0,lastKey='';
-async function load(force=false){const r=root(),body=tbody(r),q=searchBox(r),sel=ensureStateControl();if(!r||!body||!sel)return;const state=selectedState(),term=q?.value||'',key=state+'|'+term;if(!force&&key===lastKey)return;lastKey=key;const id=++seq;ctl?.abort();ctl=new AbortController();body.innerHTML='<tr class="ember-empty"><td colspan="9">Loading selected stateâ€¦</td></tr>';try{const res=await fetch('/api/ember/main-prospects?limit=5000&state='+encodeURIComponent(state)+'&q='+encodeURIComponent(term),{signal:ctl.signal,cache:'no-store'}),data=await res.json();if(id!==seq||String(data.selected_state||'')!==state||selectedState()!==state)return;const items=(data.items||[]).filter(x=>!state||String(x.state||'').toUpperCase()===state);body.innerHTML=items.length?items.map(row).join(''):'<tr class="ember-empty"><td colspan="9">No validated mortgage brokerages found for this state yet.</td></tr>'}catch(e){if(e.name!=='AbortError')body.innerHTML='<tr class="ember-empty"><td colspan="9">Unable to load validated brokerages.</td></tr>'}}
-const loadEmber=load;
-function wire(){const r=root(),q=searchBox(r);if(!r||!q||!tbody(r))return;ensureStateControl();if(!q.dataset.emberSearchBound){q.dataset.emberSearchBound='1';q.oninput=null;q.addEventListener('input',()=>{clearTimeout(timer);timer=setTimeout(()=>loadEmber(true),250)})}window.load=loadEmber;loadEmber(true)}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',wire);else wire();setInterval(()=>loadEmber(true),HOURLY);
+function root(){return document.querySelector('#prospects')||document.querySelector('[data-view="prospects"]')||[...document.querySelectorAll('.view,section')].find(x=>/prospect/i.test(x.id||'')||/prospect/i.test(x.querySelector('h1,h2')?.textContent||''))}
+function body(){const r=root();return r?.querySelector('#rows,tbody,[data-prospect-rows]')||document.querySelector('#rows')}
+function search(){const r=root();return r?.querySelector('#search,input[type="search"],[data-prospect-search]')}
+function state(){const r=root();return r?.querySelector('#state,select[data-prospect-state]')}
+function ensureState(){const s=state();if(!s)return null;if(!s.dataset.emberBound){const current=(s.value||'').toUpperCase();s.innerHTML='<option value="">All States</option>'+CODES.map(v=>`<option value="${v}">${v}</option>`).join('');s.value=STATES.has(current)?current:'';s.dataset.emberBound='1';s.addEventListener('change',()=>load(true))}return s}
+function selected(){const s=ensureState();return STATES.has((s?.value||'').toUpperCase())?s.value.toUpperCase():''}
+function row(x){const phone=x.phone||'',email=x.public_email||'',loc=[x.city,x.state].filter(Boolean).join(', '),badge=x.record_type==='crm'?'EMBER CRM':'EMBER';const detail=x.crm_prospect_id?`openProfile(${Number(x.crm_prospect_id)})`:`location.href='/platform/control-tower'`;return `<tr data-ember-prospect="1" data-state="${esc(x.state||'')}"><td><strong>${esc(x.company_name)}</strong><span class="ember-badge">${badge}</span><span class="ember-sub">${Number(x.loan_officer_count||0)} contacts${x.nmls_id?` · NMLS ${esc(x.nmls_id)}`:''}</span></td><td>${phone?`<a href="tel:${esc(phone)}">${esc(phone)}</a>`:''}${email?`<a href="mailto:${esc(email)}">${esc(email)}</a>`:''}<span class="ember-sub">${esc(x.primary_contact||'Contact research pending')}</span></td><td><span class="pill">${esc(x.source||'Ember')}</span></td><td>${esc(loc)}</td><td><span class="pill">Broker</span></td><td class="score">${Number(x.opportunity_score||0)}</td><td><span class="pill">${esc(x.review_status||'Needs review')}</span></td><td>${esc(x.pipeline_status||'New')}</td><td><button class="btn smallbtn" onclick="${detail}">Open</button></td></tr>`}
+let seq=0,timer=0;
+async function load(force=false){const b=body(),q=search(),s=ensureState();if(!b||!s)return;const id=++seq,st=selected(),term=q?.value||'';b.innerHTML='<tr class="ember-empty"><td colspan="9">Loading Ember prospects…</td></tr>';try{const res=await fetch('/api/ember/main-prospects?limit=5000&state='+encodeURIComponent(st)+'&q='+encodeURIComponent(term),{cache:'no-store'}),data=await res.json();if(id!==seq)return;b.innerHTML=(data.items||[]).length?data.items.map(row).join(''):'<tr class="ember-empty"><td colspan="9">No matching prospects yet. Ember is still searching.</td></tr>'}catch(e){b.innerHTML='<tr class="ember-empty"><td colspan="9">Unable to load prospects.</td></tr>'}}
+function wire(){if(!body())return;ensureState();const q=search();if(q&&!q.dataset.emberBound){q.dataset.emberBound='1';q.addEventListener('input',()=>{clearTimeout(timer);timer=setTimeout(()=>load(true),250)})}window.loadEmberProspects=load;load(true)}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',wire);else wire();setInterval(()=>load(true),300000);
 })();</script>'''
         pos = page.lower().rfind("</body>")
         page = page[:pos] + script + page[pos:]
@@ -167,4 +190,3 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
 
 __all__ = ["install_ember_prospects_bridge"]
-
