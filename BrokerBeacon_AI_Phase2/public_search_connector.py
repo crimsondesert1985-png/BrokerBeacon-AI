@@ -43,14 +43,14 @@ def build_queries(state: str, metro: str = "") -> list[str]:
         raise ValueError('A valid two-letter state is required')
     state_name=STATE_NAMES[state]
     place=(metro or state_name).strip()
-    # Profile pages are the reliable public records. They expose the officer,
-    # brokerage, both NMLS identifiers, address, phone, email, and website.
     return [
         f'site:mortgagematchup.com/Profile/ "Licensed In" "{state_name}"',
         f'site:mortgagematchup.com/Profile/ "{place}" "NMLS:"',
         f'site:mortgagematchup.com/Profile/ "{state_name}" mortgage',
-        f'site:mortgagematchup.com/Profile/ "{state}" "NMLS:"',
         f'site:mortgagematchup.com/Company/ "{state_name}" "NMLS"',
+        'site:mortgagematchup.com/Company/ "NMLS #:" "Mortgage Originators"',
+        'site:mortgagematchup.com/Profile/ "NMLS #" mortgage',
+        'site:mortgagematchup.com/Company/ "Contact Information" mortgage',
     ]
 
 
@@ -167,7 +167,7 @@ def run_public_search(conn: sqlite3.Connection, *, connector_id: int | None, sta
             'accepted':accepted,
             'rejected':rejected,
             'providers':sorted(providers),
-            'source':'Mortgage Matchup profiles only',
+            'source':'Mortgage Matchup profiles and companies only',
         }
     except Exception as exc:
         conn.execute(
