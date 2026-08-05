@@ -1,75 +1,275 @@
-"""Promote only Mortgage Matchup-verified warehouse entities into CRM prospects."""
+"""Promote only Mortgage Matchup-proven warehouse companies into CRM prospects."""
 from __future__ import annotations
-import json,re,sqlite3
+
+import json
+import re
+import sqlite3
 from datetime import datetime
-NOW=lambda: datetime.now().isoformat(timespec='seconds')
-SCHEMA="""
-create table if not exists autonomous_prospecting_runs(id integer primary key,state text default '',status text not null default 'Running',warehouse_examined integer not null default 0,prospects_created integer not null default 0,prospects_updated integer not null default 0,contacts_created integer not null default 0,duplicates_skipped integer not null default 0,rejected integer not null default 0,error text default '',started_at text not null,finished_at text default '');
-create table if not exists autonomous_prospect_links(warehouse_company_id integer primary key,prospect_id integer not null,promotion_reason text not null default '',promoted_at text not null,updated_at text not null);
+
+NOW = lambda: datetime.now().isoformat(timespec="seconds")
+MATCHUP_SOURCE = "Mortgage Matchup"
+CRM_SOURCE = "Mortgage Matchup via Ember"
+SCHEMA = """
+create table if not exists autonomous_prospecting_runs(
+ id integer primary key,state text default '',status text not null default 'Running',
+ warehouse_examined integer not null default 0,prospects_created integer not null default 0,
+ prospects_updated integer not null default 0,contacts_created integer not null default 0,
+ duplicates_skipped integer not null default 0,rejected integer not null default 0,
+ error text default '',started_at text not null,finished_at text default '');
+create table if not exists autonomous_prospect_links(
+ warehouse_company_id integer primary key,prospect_id integer not null,
+ promotion_reason text not null default '',promoted_at text not null,updated_at text not null);
 create index if not exists idx_autonomous_runs_state on autonomous_prospecting_runs(state,id desc);
 create index if not exists idx_autonomous_links_prospect on autonomous_prospect_links(prospect_id);
 """
 
-def initialize(conn): conn.executescript(SCHEMA); conn.commit()
-def _cols(conn,t): return {str(r[1]) for r in conn.execute(f'pragma table_info({t}')}
-def _norm(v): return re.sub(r'[^a-z0-9]+',' ',(v or '').lower()).strip()
-def _digits(v): return re.sub(r'\D+','',v or '')
 
-def _insert(conn,table,values):
-    cols={str(r[1]) for r in conn.execute(f'pragma table_info({table})')}; p={k:v for k,v in values.items() if k in cols}
-    names=list(p); cur=conn.execute(f"insert into {table}({','.join(names)}) values({','.join('?' for _ in names)})",tuple(p[n] for n in names)); return int(cur.lastrowid)
+def initialize(conn: sqlite3.Connection) -> None:
+    conn.executescript(SCHEMA)
+    conn.commit()
 
-def _update(conn,table,row_id,values):
-    cols={str(r[1]) for r in conn.execute(f'pragma table_info({table})')}; p={k:v for k,v in values.items() if k in cols and k!='id'}
-    if p: conn.execute(f"update {table} set "+','.join(f'{k}=?' for k in p)+" where id=?",tuple(p[k] for k in p)+(row_id,))
 
-def _find(conn,c):
-    cols={str(r[1]) for r in conn.execute('pragma table_info(prospects)')}; n=_digits(str(c.get('nmls_id') or ''))
-    if n and 'nmls' in cols:
-        r=conn.execute("select * from prospects where replace(replace(coalesce(nmls,''),'-',''),' ','')=? limit 1",(n,)).fetchone()
-        if r:return r
-    name=_norm(str(c.get('legal_name') or '')); state=str(c.get('state') or '').upper()
-    rows=conn.execute("select * from prospects where upper(coalesce(state,''))=?",(state,)).fetchall() if 'state' in cols else conn.execute('select * from prospects').fetchall()
-    return next((r for r in rows if _norm(str(r['company'] or ''))==name),None)
+def _columns(conn: sqlite3.Connection, table: str) -> set[str]:
+    return {str(row[1]) for row in conn.execute(f"pragma table_info({table})")}
 
-def purge_invalid_ember_prospects(conn):
+
+def _normalize(value: str) -> str:
+    return re.sub(r"[^a-z0-9]+", " ", (value or "").lower()).strip()
+
+
+def _digits(value: str) -> str:
+    return re.sub(r"\D+", "", value or "")
+
+
+def _insert_dynamic(conn: sqlite3.Connection, table: str, values: dict) -> int:
+    columns = _columns(conn, table)
+    payload = {key: value for key, value in values.items() if key in columns}
+    if not payload:
+        raise RuntimeError(f"No compatible columns found for {table}")
+    names = list(payload)
+    cursor = conn.execute(
+        f"insert into {table}({','.join(names)}) values({','.join('?' for _ in names)})",
+        tuple(payload[name] for name in names),
+    )
+    return int(cursor.lastrowid)
+
+
+def _update_dynamic(conn: sqlite3.Connection, table: str, row_id: int, values: dict) -> None:
+    columns = _columns(conn, table)
+    payload = {key: value for key, value in values.items() if key in columns and key != "id"}
+    if not payload:
+        return
+    names = list(payload)
+    conn.execute(
+        f"update {table} set " + ",".join(f"{name}=?" for name in names) + " where id=?",
+        tuple(payload[name] for name in names) + (row_id,),
+    )
+
+
+def _has_matchup_provenance(conn: sqlite3.Connection, warehouse_company_id: int) -> bool:
+    return bool(conn.execute(
+        """select 1 from warehouse_source_records record
+           join warehouse_sources source on source.id=record.source_id
+           where record.entity_type='company' and record.entity_id=?
+             and source.name=? limit 1""",
+        (warehouse_company_id, MATCHUP_SOURCE),
+    ).fetchone())
+
+
+def purge_invalid_ember_prospects(conn: sqlite3.Connection) -> int:
+    """Delete every Ember/Matchup CRM row that lacks real Matchup warehouse provenance."""
     initialize(conn)
-    bad=[int(r[0]) for r in conn.execute("""select p.id from prospects p where lower(coalesce(p.source_name,'')) like 'ember%'
-      and not exists(select 1 from autonomous_prospect_links l join warehouse_source_records wr on wr.entity_type='company' and wr.entity_id=l.warehouse_company_id join warehouse_sources s on s.id=wr.source_id where l.prospect_id=p.id and s.name='Mortgage Matchup')""").fetchall()]
-    if bad:
-        marks=','.join('?' for _ in bad)
-        conn.execute(f'delete from contacts where prospect_id in ({marks})',bad)
-        conn.execute(f'delete from autonomous_prospect_links where prospect_id in ({marks})',bad)
-        conn.execute(f'delete from prospects where id in ({marks})',bad)
+    rows = conn.execute(
+        """select p.id
+           from prospects p
+           where lower(trim(coalesce(p.source_name,''))) in (
+                    'ember autonomous prospecting','ember warehouse','mortgage matchup via ember')
+              or lower(coalesce(p.signal,'')) like '%ember%'
+              or lower(coalesce(p.signal,'')) like '%mortgage matchup%'"""
+    ).fetchall()
+    invalid = []
+    for row in rows:
+        prospect_id = int(row[0])
+        links = conn.execute(
+            "select warehouse_company_id from autonomous_prospect_links where prospect_id=?",
+            (prospect_id,),
+        ).fetchall()
+        if not any(_has_matchup_provenance(conn, int(link[0])) for link in links):
+            invalid.append(prospect_id)
+    if invalid:
+        marks = ",".join("?" for _ in invalid)
+        if _columns(conn, "contacts") and "prospect_id" in _columns(conn, "contacts"):
+            conn.execute(f"delete from contacts where prospect_id in ({marks})", tuple(invalid))
+        conn.execute(f"delete from autonomous_prospect_links where prospect_id in ({marks})", tuple(invalid))
+        conn.execute(f"delete from prospects where id in ({marks})", tuple(invalid))
         conn.commit()
-    return len(bad)
+    return len(invalid)
 
-def promote_warehouse_companies(conn,*,state='',limit=100,minimum_score=50):
-    initialize(conn); purge_invalid_ember_prospects(conn); state=(state or '').upper()[:2]; now=NOW()
-    run_id=int(conn.execute('insert into autonomous_prospecting_runs(state,started_at) values(?,?)',(state,now)).lastrowid)
-    counts={'run_id':run_id,'warehouse_examined':0,'prospects_created':0,'prospects_updated':0,'contacts_created':0,'duplicates_skipped':0,'rejected':0}
+
+def _find_prospect(conn: sqlite3.Connection, company: dict) -> sqlite3.Row | None:
+    columns = _columns(conn, "prospects")
+    nmls = _digits(str(company.get("nmls_id") or ""))
+    if nmls and "nmls" in columns:
+        row = conn.execute(
+            "select * from prospects where replace(replace(coalesce(nmls,''),'-',''),' ','')=? order by id limit 1",
+            (nmls,),
+        ).fetchone()
+        if row:
+            return row
+    normalized = _normalize(str(company.get("legal_name") or ""))
+    state = str(company.get("state") or "").upper()
+    rows = conn.execute(
+        "select * from prospects where upper(coalesce(state,''))=?",
+        (state,),
+    ).fetchall() if "state" in columns else conn.execute("select * from prospects").fetchall()
+    return next((row for row in rows if _normalize(str(row["company"] or "")) == normalized), None)
+
+
+def promote_warehouse_companies(
+    conn: sqlite3.Connection,
+    *,
+    state: str = "",
+    limit: int = 100,
+    minimum_score: int = 50,
+) -> dict:
+    initialize(conn)
+    purge_invalid_ember_prospects(conn)
+    state = (state or "").upper()[:2]
+    now = NOW()
+    run_id = int(conn.execute(
+        "insert into autonomous_prospecting_runs(state,started_at) values(?,?)",
+        (state, now),
+    ).lastrowid)
+    counts = {
+        "run_id": run_id,
+        "warehouse_examined": 0,
+        "prospects_created": 0,
+        "prospects_updated": 0,
+        "contacts_created": 0,
+        "duplicates_skipped": 0,
+        "rejected": 0,
+    }
     try:
-        rows=conn.execute("""select distinct c.* from warehouse_companies c join warehouse_source_records wr on wr.entity_type='company' and wr.entity_id=c.id join warehouse_sources s on s.id=wr.source_id and s.name='Mortgage Matchup' where (?='' or upper(c.state)=?) order by c.id desc limit ?""",(state,state,max(1,min(int(limit),500)))).fetchall()
-        pcols={str(r[1]) for r in conn.execute('pragma table_info(prospects)')}; ccols={str(r[1]) for r in conn.execute('pragma table_info(contacts)')}
-        for raw in rows:
-            c=dict(raw); counts['warehouse_examined']+=1
-            if not c.get('legal_name') or not _digits(str(c.get('nmls_id') or '')):
-                counts['rejected']+=1; continue
-            score=90 if c.get('phone') or c.get('public_email') else 80
-            reasons=['Mortgage Matchup company listing','Company NMLS identifier available']
-            existing=_find(conn,c)
-            vals={'company':c['legal_name'],'nmls':c.get('nmls_id',''),'website':c.get('website',''),'phone':c.get('phone',''),'email':c.get('public_email',''),'city':c.get('city',''),'state':c.get('state',''),'status':'New','score':score,'signal':'Mortgage Matchup verified broker listing','source_name':'Mortgage Matchup via Ember','source_url':c.get('source_url','') or 'https://mortgagematchup.com','verification_status':'Verify in NMLS before outreach','ai_summary':'; '.join(reasons),'next_best_action':'Verify licensing and contact details, then review for outreach.','created_at':now,'updated_at':now}
+        companies = conn.execute(
+            """select distinct company.*
+               from warehouse_companies company
+               join warehouse_source_records record
+                 on record.entity_type='company' and record.entity_id=company.id
+               join warehouse_sources source on source.id=record.source_id
+               where source.name=? and (?='' or upper(company.state)=?)
+               order by company.id desc limit ?""",
+            (MATCHUP_SOURCE, state, state, max(1, min(int(limit), 1000))),
+        ).fetchall()
+        prospect_columns = _columns(conn, "prospects")
+        contact_columns = _columns(conn, "contacts")
+        for raw_company in companies:
+            company = dict(raw_company)
+            counts["warehouse_examined"] += 1
+            company_name = str(company.get("legal_name") or "").strip()
+            company_nmls = _digits(str(company.get("nmls_id") or ""))
+            if not company_name or not company_nmls:
+                counts["rejected"] += 1
+                continue
+            score = 95 if company.get("phone") or company.get("public_email") else 90
+            values = {
+                "company": company_name,
+                "nmls": company_nmls,
+                "website": company.get("website", ""),
+                "phone": company.get("phone", ""),
+                "email": company.get("public_email", ""),
+                "city": company.get("city", ""),
+                "state": company.get("state", ""),
+                "status": "New",
+                "score": max(score, int(minimum_score)),
+                "signal": "Verified public Mortgage Matchup brokerage listing",
+                "source_name": CRM_SOURCE,
+                "source_url": "https://mortgagematchup.com",
+                "verification_status": "Verify current licensing in NMLS before outreach",
+                "ai_summary": "Mortgage Matchup brokerage with company NMLS and linked public loan-originator profiles.",
+                "next_best_action": "Review company and loan-officer contact details, then verify licensing before outreach.",
+                "created_at": now,
+                "updated_at": now,
+            }
+            existing = _find_prospect(conn, company)
             if existing:
-                pid=int(existing['id']); improvements={k:v for k,v in vals.items() if k in pcols and k not in {'created_at'} and (k in {'source_name','source_url','signal','verification_status','ai_summary','next_best_action','updated_at'} or not str(existing[k] or '').strip())}; _update(conn,'prospects',pid,improvements); counts['prospects_updated']+=1; counts['duplicates_skipped']+=1
+                prospect_id = int(existing["id"])
+                updates = {
+                    key: value for key, value in values.items()
+                    if key in prospect_columns and key != "created_at" and (
+                        key in {"source_name", "source_url", "signal", "verification_status", "ai_summary", "next_best_action", "updated_at", "score"}
+                        or not str(existing[key] or "").strip()
+                    )
+                }
+                _update_dynamic(conn, "prospects", prospect_id, updates)
+                counts["prospects_updated"] += 1
+                counts["duplicates_skipped"] += 1
             else:
-                pid=_insert(conn,'prospects',vals); counts['prospects_created']+=1
-            conn.execute("insert into autonomous_prospect_links(warehouse_company_id,prospect_id,promotion_reason,promoted_at,updated_at) values(?,?,?,?,?) on conflict(warehouse_company_id) do update set prospect_id=excluded.prospect_id,promotion_reason=excluded.promotion_reason,updated_at=excluded.updated_at",(c['id'],pid,json.dumps(reasons),now,now))
-            for o in conn.execute('select * from warehouse_officers where company_id=? order by id',(c['id'],)).fetchall():
-                o=dict(o); name=str(o.get('full_name') or '').strip()
-                if not name: continue
-                dup=conn.execute("select id from contacts where prospect_id=? and (lower(trim(coalesce(name,'')))=lower(trim(?)) or (?<>'' and replace(replace(coalesce(nmls,''),'-',''),' ','')=?)) limit 1",(pid,name,_digits(str(o.get('nmls_id') or '')),_digits(str(o.get('nmls_id') or '')))).fetchone() if 'prospect_id' in ccols else None
-                if dup: continue
-                _insert(conn,'contacts',{'prospect_id':pid,'name':name,'title':o.get('title') or 'Mortgage Loan Originator','email':o.get('public_email',''),'phone':o.get('phone',''),'nmls':o.get('nmls_id',''),'city':o.get('city',''),'state':o.get('state',''),'roster_status':'Needs review','source_name':'Mortgage Matchup via Ember','created_at':now,'updated_at':now}); counts['contacts_created']+=1
-        conn.execute("update autonomous_prospecting_runs set status='Completed',warehouse_examined=?,prospects_created=?,prospects_updated=?,contacts_created=?,duplicates_skipped=?,rejected=?,finished_at=? where id=?",(counts['warehouse_examined'],counts['prospects_created'],counts['prospects_updated'],counts['contacts_created'],counts['duplicates_skipped'],counts['rejected'],NOW(),run_id)); conn.commit(); return counts
+                prospect_id = _insert_dynamic(conn, "prospects", values)
+                counts["prospects_created"] += 1
+
+            reason = ["Mortgage Matchup company source record", "Company NMLS available"]
+            conn.execute(
+                """insert into autonomous_prospect_links(
+                     warehouse_company_id,prospect_id,promotion_reason,promoted_at,updated_at)
+                   values(?,?,?,?,?)
+                   on conflict(warehouse_company_id) do update set
+                     prospect_id=excluded.prospect_id,
+                     promotion_reason=excluded.promotion_reason,
+                     updated_at=excluded.updated_at""",
+                (company["id"], prospect_id, json.dumps(reason), now, now),
+            )
+
+            officers = conn.execute(
+                "select * from warehouse_officers where company_id=? order by id",
+                (company["id"],),
+            ).fetchall()
+            for raw_officer in officers:
+                officer = dict(raw_officer)
+                name = str(officer.get("full_name") or "").strip()
+                officer_nmls = _digits(str(officer.get("nmls_id") or ""))
+                if not name or not officer_nmls or "prospect_id" not in contact_columns:
+                    continue
+                duplicate = conn.execute(
+                    """select id from contacts where prospect_id=? and (
+                         replace(replace(coalesce(nmls,''),'-',''),' ','')=?
+                         or lower(trim(coalesce(name,'')))=lower(trim(?))) limit 1""",
+                    (prospect_id, officer_nmls, name),
+                ).fetchone()
+                contact_values = {
+                    "prospect_id": prospect_id,
+                    "name": name,
+                    "title": officer.get("title") or "Mortgage Loan Originator",
+                    "email": officer.get("public_email", ""),
+                    "phone": officer.get("phone", ""),
+                    "nmls": officer_nmls,
+                    "city": officer.get("city", ""),
+                    "state": officer.get("state", ""),
+                    "roster_status": "Verify in NMLS",
+                    "source_name": CRM_SOURCE,
+                    "updated_at": now,
+                }
+                if duplicate:
+                    _update_dynamic(conn, "contacts", int(duplicate[0]), contact_values)
+                else:
+                    contact_values["created_at"] = now
+                    _insert_dynamic(conn, "contacts", contact_values)
+                    counts["contacts_created"] += 1
+
+        conn.execute(
+            """update autonomous_prospecting_runs set status='Completed',warehouse_examined=?,
+               prospects_created=?,prospects_updated=?,contacts_created=?,duplicates_skipped=?,
+               rejected=?,finished_at=? where id=?""",
+            (counts["warehouse_examined"], counts["prospects_created"], counts["prospects_updated"],
+             counts["contacts_created"], counts["duplicates_skipped"], counts["rejected"], NOW(), run_id),
+        )
+        conn.commit()
+        return counts
     except Exception as exc:
-        conn.rollback(); initialize(conn); conn.execute("update autonomous_prospecting_runs set status='Failed',error=?,finished_at=? where id=?",(str(exc)[:1000],NOW(),run_id)); conn.commit(); raise
+        conn.rollback()
+        initialize(conn)
+        conn.execute(
+            "update autonomous_prospecting_runs set status='Failed',error=?,finished_at=? where id=?",
+            (str(exc)[:1000], NOW(), run_id),
+        )
+        conn.commit()
+        raise
