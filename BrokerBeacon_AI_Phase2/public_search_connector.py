@@ -63,7 +63,12 @@ BANK_EXCLUSIONS = (
     '-Truist -PNC -"U.S. Bank" -"Capital One" -KeyBank -"Fifth Third"'
 )
 
+# Mortgage Matchup exposes public, indexed company and originator profile pages.
+# Ember discovers those pages through configured search providers rather than
+# bypassing the site's public interface or calling undocumented APIs.
 SEARCH_TEMPLATES = (
+    'site:mortgagematchup.com/Company/ "{state_name}" "NMLS" mortgage broker',
+    'site:mortgagematchup.com/Profile/ "{state_name}" "Licensed In" loan originator',
     'independent mortgage broker {state_name} NMLS contact -wholesale -TPO {bank_exclusions}',
     'mortgage brokerage in {state_name} loan officers -wholesale lender {bank_exclusions}',
     'licensed non-depository mortgage broker company {state_name} NMLS {bank_exclusions}',
@@ -91,6 +96,10 @@ NON_BROKER_SIGNALS = (
 
 EDITORIAL_DOMAINS = {
     'bankrate.com','investopedia.com','nerdwallet.com','forbes.com','wikipedia.org',
+}
+
+TRUSTED_BROKER_DIRECTORIES = {
+    'mortgagematchup.com',
 }
 
 
@@ -141,6 +150,11 @@ def is_broker_candidate(title: str, snippet: str, url: str) -> bool:
         return False
     if is_excluded_retail_lender(title, url, snippet):
         return False
+    if domain in TRUSTED_BROKER_DIRECTORIES and any(
+        marker in urllib.parse.urlparse(url).path.lower()
+        for marker in ('/company/', '/profile/')
+    ):
+        return True
     has_broker = any(term in combined for term in BROKER_SIGNALS)
     has_non_broker = any(term in combined for term in NON_BROKER_SIGNALS)
     official = (
@@ -159,12 +173,15 @@ def is_broker_candidate(title: str, snippet: str, url: str) -> bool:
 def classify_result(title: str, snippet: str, url: str) -> dict:
     combined = " ".join([title or "", snippet or "", url or ""])
     lower = combined.lower()
-    person_page = any(term in lower for term in ('loan officer','mortgage loan originator','mortgage advisor',' mlo '))
+    path = urllib.parse.urlparse(url).path.lower()
+    person_page = '/profile/' in path or any(
+        term in lower for term in ('loan officer','mortgage loan originator','mortgage advisor',' mlo ')
+    )
     title_clean = re.sub(r"\s*[-|Â·].*$", "", title or "").strip()
     domain_name = _domain(url).split('.')[0].replace('-', ' ').title()
     return {
-        "candidate_type": "Company",
-        "company_name": title_clean or domain_name,
+        "candidate_type": "Person" if person_page else "Company",
+        "company_name": "" if person_page else (title_clean or domain_name),
         "person_name": title_clean if person_page else "",
         "nmls_id": _extract_nmls(combined),
         "phone": _extract_phone(combined),
@@ -270,4 +287,3 @@ def pending_results(conn: sqlite3.Connection, state: str = "", limit: int = 200)
         (state, state, min(max(int(limit), 1), 1000)),
     ).fetchall()
     return [dict(row) for row in rows]
-
