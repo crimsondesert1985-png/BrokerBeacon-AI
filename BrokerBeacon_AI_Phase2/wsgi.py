@@ -7,6 +7,7 @@ from beaconmatch_foundation import install_beaconmatch_foundation
 from control_tower_recovery import install_control_tower_recovery
 from control_tower_ux import install_control_tower_ux
 from customer_ready_ux import install_customer_ready_ux
+from demo_ready_ux import install_demo_ready_ux
 from discovery_ops_api import install_discovery_ops
 from drip_campaigns import install_drip_campaigns
 from ember_automation_api import install_ember_automation
@@ -69,6 +70,7 @@ install_interaction_drilldowns(app, DB)
 install_prospect_backfill_boot(app, DB)
 install_ember_worker(app, DB)
 install_customer_ready_ux(app)
+install_demo_ready_ux(app)
 
 
 @app.before_request
