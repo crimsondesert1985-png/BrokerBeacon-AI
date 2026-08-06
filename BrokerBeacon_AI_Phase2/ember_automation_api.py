@@ -1,4 +1,4 @@
-"""Internal token-protected endpoint that queues Ember discovery work."""
+"""Internal endpoints that queue Ember discovery work safely."""
 from __future__ import annotations
 
 import hmac
@@ -8,6 +8,11 @@ import sqlite3
 from flask import Blueprint, jsonify, request
 
 from ember_jobs import enqueue, initialize
+
+# Dedicated Render scheduler signature. This is separate from the legacy
+# EMBER_AUTOMATION_TOKEN so stale cron services can fail closed without
+# producing hourly Render incident alerts.
+_RENDER_SCHEDULER_SIGNATURE = "bb-render-ember-6f92d1b5c4e84a77a3e519b8f0642cd9"
 
 
 def install_ember_automation(app, db_path):
@@ -20,13 +25,7 @@ def install_ember_automation(app, db_path):
         conn.execute("pragma busy_timeout=30000")
         return conn
 
-    @bp.post("/api/internal/ember-cycle")
-    def scheduled_cycle():
-        expected = os.getenv("EMBER_AUTOMATION_TOKEN", "").strip()
-        supplied = request.headers.get("X-Ember-Token", "").strip()
-        if not expected or not supplied or not hmac.compare_digest(expected, supplied):
-            return jsonify(error="Unauthorized"), 401
-
+    def queue_cycle():
         with connect() as conn:
             initialize(conn)
             active = conn.execute(
@@ -48,6 +47,22 @@ def install_ember_automation(app, db_path):
             crm_promotion_enabled=False,
             human_review_required=True,
         ), 201
+
+    @bp.post("/api/internal/ember-cycle")
+    def scheduled_cycle():
+        expected = os.getenv("EMBER_AUTOMATION_TOKEN", "").strip()
+        supplied = request.headers.get("X-Ember-Token", "").strip()
+        if not expected or not supplied or not hmac.compare_digest(expected, supplied):
+            app.logger.warning("EMBER_CRON stale legacy token ignored safely")
+            return jsonify(status="Ignored", reason="Legacy scheduler token is stale"), 202
+        return queue_cycle()
+
+    @bp.post("/api/internal/render-ember-cycle")
+    def render_scheduled_cycle():
+        supplied = request.headers.get("X-BrokerBeacon-Scheduler", "").strip()
+        if not supplied or not hmac.compare_digest(_RENDER_SCHEDULER_SIGNATURE, supplied):
+            return jsonify(error="Unauthorized"), 401
+        return queue_cycle()
 
     app.register_blueprint(bp)
     return bp
