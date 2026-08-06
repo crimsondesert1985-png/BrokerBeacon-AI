@@ -17,7 +17,7 @@ SCHEDULE_SCHEMA = """
 create table if not exists prospect_import_schedule(
  id integer primary key check(id=1), status text not null default 'Never',
  started_at text default '', completed_at text default '', last_error text default '',
- last_total integer not null default 0, last_clean_total integer not null default 0
+ last_total integer not null default 0
 );
 insert or ignore into prospect_import_schedule(id,status) values(1,'Never');
 """
@@ -96,7 +96,7 @@ def install_prospect_backfill_boot(app, db_path):
                 state_rows = conn.execute("""select upper(state),count(*) from prospects
                     where length(trim(coalesce(state,'')))=2 group by upper(state) order by upper(state)""").fetchall()
                 now = datetime.now().isoformat(timespec="seconds")
-                conn.execute("""update prospect_import_schedule set status='Completed',completed_at=?,last_total=?,last_clean_total=?,last_error='' where id=1""", (now, clean_total, clean_total))
+                conn.execute("""update prospect_import_schedule set status='Completed',completed_at=?,last_total=?,last_error='' where id=1""", (now, clean_total))
                 conn.commit()
             app.logger.warning(
                 "PROSPECT_DAILY completed removed_invalid=%s removed_ember=%s removed_after=%s matchup_created=%s roster_rows=%s official_created=%s official_updated=%s clean_total=%s states=%s",
