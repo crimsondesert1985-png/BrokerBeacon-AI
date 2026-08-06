@@ -1,4 +1,4 @@
-"""Maintain BrokerBeacon's prospect catalog with restart-safe daily imports."""
+"""Maintain a clean BrokerBeacon prospect catalog with restart-safe daily imports."""
 from __future__ import annotations
 
 import sqlite3
@@ -9,17 +9,15 @@ from datetime import datetime, timedelta
 
 from autonomous_prospecting import purge_invalid_ember_prospects, promote_warehouse_companies
 from official_roster_import import import_missouri_broker_roster, promote_official_roster
+from prospect_quality import is_publishable_prospect
 
 _started = False
 _lock = threading.Lock()
 SCHEDULE_SCHEMA = """
 create table if not exists prospect_import_schedule(
- id integer primary key check(id=1),
- status text not null default 'Never',
- started_at text default '',
- completed_at text default '',
- last_error text default '',
- last_total integer not null default 0
+ id integer primary key check(id=1), status text not null default 'Never',
+ started_at text default '', completed_at text default '', last_error text default '',
+ last_total integer not null default 0, last_clean_total integer not null default 0
 );
 insert or ignore into prospect_import_schedule(id,status) values(1,'Never');
 """
@@ -40,6 +38,19 @@ def _parse(value: str):
         return None
 
 
+def _clean_catalog(conn: sqlite3.Connection) -> int:
+    rows = conn.execute("select id,company,nmls,source_name from prospects").fetchall()
+    bad = [int(r["id"]) for r in rows if not is_publishable_prospect(r["company"], r["nmls"], r["source_name"])]
+    if not bad:
+        return 0
+    marks = ",".join("?" for _ in bad)
+    conn.execute(f"delete from contacts where prospect_id in ({marks})", bad)
+    conn.execute(f"delete from autonomous_prospect_links where prospect_id in ({marks})", bad)
+    conn.execute(f"delete from prospects where id in ({marks})", bad)
+    conn.commit()
+    return len(bad)
+
+
 def install_prospect_backfill_boot(app, db_path):
     global _started
     with _lock:
@@ -50,8 +61,8 @@ def install_prospect_backfill_boot(app, db_path):
     def due(conn) -> bool:
         conn.executescript(SCHEDULE_SCHEMA)
         row = conn.execute("select * from prospect_import_schedule where id=1").fetchone()
-        total = int(conn.execute("select count(*) from prospects").fetchone()[0])
-        if total < 500:
+        clean_total = sum(1 for r in conn.execute("select company,nmls,source_name from prospects") if is_publishable_prospect(r[0], r[1], r[2]))
+        if clean_total < 500:
             return True
         completed = _parse(str(row["completed_at"] or ""))
         started = _parse(str(row["started_at"] or ""))
@@ -74,37 +85,30 @@ def install_prospect_backfill_boot(app, db_path):
                     total = int(conn.execute("select count(*) from prospects").fetchone()[0])
                     app.logger.warning("PROSPECT_DAILY skipped not_due total=%s", total)
                     return
-                removed = purge_invalid_ember_prospects(conn)
-                matchup = promote_warehouse_companies(conn, state="", limit=1000, minimum_score=80)
-                roster = import_missouri_broker_roster(conn, target_minimum=500)
-                official = promote_official_roster(conn, target_minimum=500, limit=10000)
-                state_rows = conn.execute(
-                    """select upper(state),count(*) from prospects
-                       where length(trim(coalesce(state,'')))=2
-                       group by upper(state) order by upper(state)"""
-                ).fetchall()
-                total = int(conn.execute("select count(*) from prospects where trim(coalesce(company,''))<>''").fetchone()[0])
+                removed_invalid = _clean_catalog(conn)
+                removed_ember = purge_invalid_ember_prospects(conn)
+                matchup = promote_warehouse_companies(conn, state="", limit=1000, minimum_score=85)
+                roster = import_missouri_broker_roster(conn, target_minimum=650)
+                official = promote_official_roster(conn, target_minimum=650, limit=10000)
+                removed_after = _clean_catalog(conn)
+                clean_rows = [r for r in conn.execute("select company,nmls,source_name,state from prospects") if is_publishable_prospect(r[0], r[1], r[2])]
+                clean_total = len(clean_rows)
+                state_rows = conn.execute("""select upper(state),count(*) from prospects
+                    where length(trim(coalesce(state,'')))=2 group by upper(state) order by upper(state)""").fetchall()
                 now = datetime.now().isoformat(timespec="seconds")
-                conn.execute(
-                    """update prospect_import_schedule set status='Completed',completed_at=?,last_total=?,last_error='' where id=1""",
-                    (now, total),
-                )
+                conn.execute("""update prospect_import_schedule set status='Completed',completed_at=?,last_total=?,last_clean_total=?,last_error='' where id=1""", (now, clean_total, clean_total))
                 conn.commit()
             app.logger.warning(
-                "PROSPECT_DAILY completed removed_generic=%s matchup_created=%s roster_rows=%s roster_created=%s roster_updated=%s official_created=%s official_updated=%s visible_total=%s states=%s",
-                removed, matchup.get("prospects_created", 0), roster.get("source_rows", 0),
-                roster.get("created", 0), roster.get("updated", 0), official.get("created", 0),
-                official.get("updated", 0), total, len(state_rows),
+                "PROSPECT_DAILY completed removed_invalid=%s removed_ember=%s removed_after=%s matchup_created=%s roster_rows=%s official_created=%s official_updated=%s clean_total=%s states=%s",
+                removed_invalid, removed_ember, removed_after, matchup.get("prospects_created", 0),
+                roster.get("source_rows", 0), official.get("created", 0), official.get("updated", 0),
+                clean_total, len(state_rows),
             )
-            app.logger.warning("PROSPECT_DAILY state_breakdown=%s", [(str(r[0] or ""), int(r[1])) for r in state_rows])
         except Exception as exc:
             try:
                 with closing(_connect(db_path)) as conn:
                     conn.executescript(SCHEDULE_SCHEMA)
-                    conn.execute(
-                        "update prospect_import_schedule set status='Failed',last_error=? where id=1",
-                        (str(exc)[:1000],),
-                    )
+                    conn.execute("update prospect_import_schedule set status='Failed',last_error=? where id=1", (str(exc)[:1000],))
                     conn.commit()
             except Exception:
                 pass
@@ -117,6 +121,7 @@ def install_prospect_backfill_boot(app, db_path):
             time.sleep(3600)
 
     threading.Thread(target=loop, name="daily-prospect-import", daemon=True).start()
+    app.logger.warning("PROSPECT_AUTOMATION scheduled daily quality cleanup, import, enrichment, and promotion")
     return app
 
 
