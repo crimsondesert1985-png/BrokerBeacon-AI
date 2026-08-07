@@ -67,7 +67,10 @@ def install_ember_prospects_bridge(app, db_path):
         state = str(request.args.get("state") or "").strip().upper()
         query = str(request.args.get("q") or "")
         items, coverage = load_items(state, query, 5000)
-        options = ['<option value="">All 50 states</option>'] + [f'<option value="{code}" {"selected" if state == code else "">{code} ({coverage.get(code, 0)})</option>' for code in STATE_CODES]
+        options = ['<option value="">All 50 states</option>']
+        for code in STATE_CODES:
+            sel = ' selected' if state == code else ''
+            options.append(f'<option value="{code}"{sel}>{code} ({coverage.get(code, 0)})</option>')
         rows = []
         for item in items:
             contact = item["primary_contact"] or "Contact research pending"
