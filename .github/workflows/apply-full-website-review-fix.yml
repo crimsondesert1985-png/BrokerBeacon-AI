@@ -16,10 +16,10 @@ jobs:
           set -e
           git config user.email "crimsondesert1985@gmail.com"
           git config user.name "crimsondesert1985-png"
+          python3 -c "import base64;from pathlib import Path;Path('tools').mkdir(exist_ok=True);Path('tools/apply_full_website_review_fix.py').write_bytes(base64.b64decode(open('tools/patcher.b64').read() if False else '''REPLACE_WITH_B64'''))"
           python3 tools/apply_full_website_review_fix.py
           python3 -m py_compile BrokerBeacon_AI_Phase2/app.py
           wc -c BrokerBeacon_AI_Phase2/app.py
-          grep -n "openSite\|_resolve_prospect_website\|return true" BrokerBeacon_AI_Phase2/app.py | head -12
           grep -q "_resolve_prospect_website" BrokerBeacon_AI_Phase2/app.py
           grep -q "return true" BrokerBeacon_AI_Phase2/app.py
           git add BrokerBeacon_AI_Phase2/app.py tools/apply_full_website_review_fix.py
