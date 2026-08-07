@@ -11,48 +11,27 @@ jobs:
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Restore app.py from 3d7cc72 and harden website open
+      - name: Rebuild app.py from base64 chunks and push
         run: |
           set -e
           git config user.email "crimsondesert1985@gmail.com"
           git config user.name "crimsondesert1985-png"
-          git show 3d7cc725cf4aca506be60d35c5fc5b895c84dd8d:BrokerBeacon_AI_Phase2/app.py > BrokerBeacon_AI_Phase2/app.py
           python3 << 'EOF'
           from pathlib import Path
-          import re
-          path = Path("BrokerBeacon_AI_Phase2/app.py")
-          t = path.read_text()
-          pattern = r"\$\('#refreshRoster'\)\.onclick=async\(\)=>\{if\(!current\)return;.*?\};\$\('#clearContact'\)"
-          m = re.search(pattern, t, re.S)
-          if not m:
-              raise SystemExit("refreshRoster handler not found")
-          new_handler = (
-              "$('#refreshRoster').onclick=async()=>{if(!current)return;"
-              "const openSite=u=>{if(!u)return;let s=String(u).trim();if(!s)return;if(s.indexOf('://')<0)s='https://'+s;"
-              "try{const a=document.createElement('a');a.href=s;a.target='_blank';a.rel='noopener noreferrer';document.body.appendChild(a);a.click();a.remove()}"
-              "catch(e){try{window.open(s,'_blank','noopener')}catch(e2){}}};"
-              "let site=(current.website||current.source_url||'').trim();if(site)openSite(site);"
-              "$('#refreshRoster').disabled=true;$('#refreshRoster').textContent='Checking website...';"
-              "try{let r=await api('/api/prospects/'+current.id+'/refresh-contacts',{method:'POST'});"
-              "const resolved=(r.website||'').trim()||site;if(r.website)current.website=r.website;"
-              "if(resolved)openSite(resolved);"
-              "if(r.contacts){current.contacts=r.contacts;renderContacts(r.contacts)}"
-              "renderCandidates(r.candidates||[]);"
-              "let note=r.message||'Website review complete';"
-              "if(resolved)note+=' <a href=\"'+resolved.replace(/\"/g,'')+'\" target=\"_blank\" rel=\"noopener\">Open website</a>';"
-              "msg(note)}"
-              "catch(e){msg(e.message||'Website review failed')}"
-              "finally{$('#refreshRoster').disabled=false;$('#refreshRoster').textContent='Review company website'}},"
-              "$('#clearContact')"
-          )
-          new_handler = new_handler.replace("'Review company website'}},", "'Review company website'}};")
-          t = t[:m.start()] + new_handler + t[m.end()-len("$('#clearContact'"):]
-          if "def refresh_contacts" not in t:
-              raise SystemExit("missing refresh_contacts")
-          path.write_text(t)
-          print("restored+hardened", path.stat().st_size)
+          import base64
+          chunks = Path("tools/restore_chunks")
+          names = [ln.strip() for ln in (chunks / "manifest.txt").read_text().splitlines() if ln.strip()]
+          b64 = "".join((chunks / n).read_text().strip() for n in names)
+          data = base64.b64decode(b64)
+          out = Path("BrokerBeacon_AI_Phase2/app.py")
+          out.write_bytes(data)
+          print("restored", out.stat().st_size, "bytes")
+          text = data.decode("utf-8")
+          assert "def refresh_contacts" in text
+          assert "openSite" in text
+          assert "_resolve_prospect_website" in text
           EOF
           python3 -m py_compile BrokerBeacon_AI_Phase2/app.py
           git add BrokerBeacon_AI_Phase2/app.py
-          git commit -m "Restore app.py and fix Review company website: open tab + scrape contacts" || echo "no changes"
+          git commit -m "Restore full app.py: Review company website opens tab + scrapes/imports contacts" || echo "no changes"
           git push origin HEAD:main
