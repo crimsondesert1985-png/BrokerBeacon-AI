@@ -1,0 +1,22 @@
+name: apply-website-contacts-patch
+on:
+  workflow_dispatch:
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Apply website contacts Intelligence patch
+        run: |
+          git config user.email "crimsondesert1985@gmail.com"
+          git config user.name "crimsondesert1985-png"
+          python3 tools/apply_website_contacts_patch.py
+          python3 -m py_compile BrokerBeacon_AI_Phase2/app.py
+          git add BrokerBeacon_AI_Phase2/app.py tools/apply_website_contacts_patch.py
+          git commit -m "Intelligence: pull contacts from company websites for empty rosters" || echo "nothing to commit"
+          git push
