@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 
 from autonomous_prospecting import promote_warehouse_companies
 from official_roster_import import import_missouri_broker_roster, promote_official_roster
+from official_website_promotion import promote_official_website_contacts
 from prospect_quality import is_publishable_prospect
 
 _started = False
@@ -87,8 +88,13 @@ def install_prospect_backfill_boot(app, db_path):
                     return
                 removed_invalid = _clean_catalog(conn)
                 matchup = promote_warehouse_companies(conn, state="", limit=1000, minimum_score=85)
+                # Promote loan officers extracted from official company websites into CRM contacts.
+                # Insert/update only; never delete. This is what removes "Contact research pending".
+                website = promote_official_website_contacts(conn, state="", limit=5000)
                 roster = import_missouri_broker_roster(conn, target_minimum=650)
                 official = promote_official_roster(conn, target_minimum=650, limit=10000)
+                # Run website promotion again after roster so any new links get contacts too.
+                website_after = promote_official_website_contacts(conn, state="", limit=5000)
                 removed_after = _clean_catalog(conn)
                 clean_rows = [r for r in conn.execute("select company,nmls,source_name,state from prospects") if is_publishable_prospect(r[0], r[1], r[2])]
                 clean_total = len(clean_rows)
@@ -98,9 +104,11 @@ def install_prospect_backfill_boot(app, db_path):
                 conn.execute("""update prospect_import_schedule set status='Completed',completed_at=?,last_total=?,last_error='' where id=1""", (now, clean_total))
                 conn.commit()
             app.logger.warning(
-                "PROSPECT_DAILY completed removed_invalid=%s removed_after=%s matchup_created=%s roster_rows=%s official_created=%s official_updated=%s clean_total=%s states=%s",
+                "PROSPECT_DAILY completed removed_invalid=%s removed_after=%s matchup_created=%s website_contacts_created=%s website_contacts_updated=%s roster_rows=%s official_created=%s official_updated=%s website_after_created=%s clean_total=%s states=%s",
                 removed_invalid, removed_after, matchup.get("prospects_created", 0),
+                website.get("created", 0), website.get("updated", 0),
                 roster.get("source_rows", 0), official.get("created", 0), official.get("updated", 0),
+                website_after.get("created", 0),
                 clean_total, len(state_rows),
             )
         except Exception as exc:
@@ -120,7 +128,7 @@ def install_prospect_backfill_boot(app, db_path):
             time.sleep(3600)
 
     threading.Thread(target=loop, name="daily-prospect-import", daemon=True).start()
-    app.logger.warning("PROSPECT_AUTOMATION scheduled daily quality cleanup, import, enrichment, and promotion")
+    app.logger.warning("PROSPECT_AUTOMATION scheduled daily quality cleanup, import, website contact promotion, and roster enrichment")
     return app
 
 

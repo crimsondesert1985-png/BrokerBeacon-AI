@@ -77,12 +77,19 @@ def promote_official_website_contacts(conn: sqlite3.Connection, *, state: str = 
                    and lower(trim(coalesce(name,'')))=lower(trim(?)) limit 1""",
                 (prospect_id, name),
             ).fetchone()
+        title = officer.get("title") or "Mortgage professional"
+        email = str(officer.get("public_email") or "").strip()
+        phone = str(officer.get("phone") or "").strip()
+        # Skip empty shells so the catalog does not treat them as researched contacts.
+        if not email and not phone and not nmls:
+            continue
         values = {
             "prospect_id": prospect_id,
             "name": name,
-            "role": officer.get("title") or "Mortgage professional",
-            "email": officer.get("public_email", ""),
-            "phone": officer.get("phone", ""),
+            "role": title,
+            "title": title,
+            "email": email,
+            "phone": phone,
             "nmls": nmls,
             "city": officer.get("city", ""),
             "state": officer.get("state", ""),

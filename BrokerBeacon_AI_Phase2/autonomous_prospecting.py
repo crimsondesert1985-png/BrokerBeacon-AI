@@ -186,20 +186,35 @@ def promote_warehouse_companies(
                 officer = dict(raw_officer)
                 name = str(officer.get("full_name") or "").strip()
                 officer_nmls = _digits(str(officer.get("nmls_id") or ""))
-                if not name or not officer_nmls or "prospect_id" not in contact_columns:
+                email = str(officer.get("public_email") or "").strip()
+                phone = str(officer.get("phone") or "").strip()
+                # Prefer NMLS-backed officers, but still promote named loan officers when
+                # public email/phone was extracted from the official company website.
+                if not name or "prospect_id" not in contact_columns:
                     continue
-                duplicate = conn.execute(
-                    """select id from contacts where prospect_id=? and (
-                         replace(replace(coalesce(nmls,''),'-',''),' ','')=?
-                         or lower(trim(coalesce(name,'')))=lower(trim(?))) limit 1""",
-                    (prospect_id, officer_nmls, name),
-                ).fetchone()
+                if not officer_nmls and not email and not phone:
+                    continue
+                if officer_nmls:
+                    duplicate = conn.execute(
+                        """select id from contacts where prospect_id=? and (
+                             replace(replace(coalesce(nmls,''),'-',''),' ','')=?
+                             or lower(trim(coalesce(name,'')))=lower(trim(?))) limit 1""",
+                        (prospect_id, officer_nmls, name),
+                    ).fetchone()
+                else:
+                    duplicate = conn.execute(
+                        """select id from contacts where prospect_id=?
+                           and lower(trim(coalesce(name,'')))=lower(trim(?)) limit 1""",
+                        (prospect_id, name),
+                    ).fetchone()
+                title = officer.get("title") or "Mortgage Loan Originator"
                 contact_values = {
                     "prospect_id": prospect_id,
                     "name": name,
-                    "title": officer.get("title") or "Mortgage Loan Originator",
-                    "email": officer.get("public_email", ""),
-                    "phone": officer.get("phone", ""),
+                    "title": title,
+                    "role": title,
+                    "email": email,
+                    "phone": phone,
                     "nmls": officer_nmls,
                     "city": officer.get("city", ""),
                     "state": officer.get("state", ""),
