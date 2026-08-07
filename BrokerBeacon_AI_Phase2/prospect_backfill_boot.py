@@ -7,7 +7,7 @@ import time
 from contextlib import closing
 from datetime import datetime, timedelta
 
-from autonomous_prospecting import purge_invalid_ember_prospects, promote_warehouse_companies
+from autonomous_prospecting import promote_warehouse_companies
 from official_roster_import import import_missouri_broker_roster, promote_official_roster
 from prospect_quality import is_publishable_prospect
 
@@ -86,7 +86,6 @@ def install_prospect_backfill_boot(app, db_path):
                     app.logger.warning("PROSPECT_DAILY skipped not_due total=%s", total)
                     return
                 removed_invalid = _clean_catalog(conn)
-                removed_ember = purge_invalid_ember_prospects(conn)
                 matchup = promote_warehouse_companies(conn, state="", limit=1000, minimum_score=85)
                 roster = import_missouri_broker_roster(conn, target_minimum=650)
                 official = promote_official_roster(conn, target_minimum=650, limit=10000)
@@ -99,8 +98,8 @@ def install_prospect_backfill_boot(app, db_path):
                 conn.execute("""update prospect_import_schedule set status='Completed',completed_at=?,last_total=?,last_error='' where id=1""", (now, clean_total))
                 conn.commit()
             app.logger.warning(
-                "PROSPECT_DAILY completed removed_invalid=%s removed_ember=%s removed_after=%s matchup_created=%s roster_rows=%s official_created=%s official_updated=%s clean_total=%s states=%s",
-                removed_invalid, removed_ember, removed_after, matchup.get("prospects_created", 0),
+                "PROSPECT_DAILY completed removed_invalid=%s removed_after=%s matchup_created=%s roster_rows=%s official_created=%s official_updated=%s clean_total=%s states=%s",
+                removed_invalid, removed_after, matchup.get("prospects_created", 0),
                 roster.get("source_rows", 0), official.get("created", 0), official.get("updated", 0),
                 clean_total, len(state_rows),
             )
