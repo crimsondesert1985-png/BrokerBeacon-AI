@@ -1,0 +1,23 @@
+name: Apply contacts patch
+on:
+  workflow_dispatch:
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply contacts enrichment patch
+        run: python3 tools/apply_contacts_patch.py
+      - name: Commit and push if changed
+        run: |
+          git config user.name "BrokerBeacon Bot"
+          git config user.email "bot@brokerbeacon.ai"
+          git add BrokerBeacon_AI_Phase2/app.py
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Surface real loan-officer contacts in Prospects directory and Intelligence"
+            git push origin HEAD:main
+          fi
