@@ -39,15 +39,21 @@ def install_ember_prospects_bridge(app, db_path):
                     continue
                 contacts = conn.execute("select * from contacts where prospect_id=? order by coalesce(is_primary,0) desc, coalesce(is_decision_maker,0) desc, id", (p["id"],)).fetchall()
                 primary = contacts[0] if contacts else None
+                primary_name = (primary["name"] if primary else "") or ""
+                phone = p["phone"] or (primary["phone"] if primary else "") or ""
+                email = p["email"] or (primary["email"] if primary else "") or ""
+                # Never leave a blank contact label when public phone/email already exist.
+                if not primary_name and (phone or email):
+                    primary_name = (p["company"] or "Company").strip() + " main office"
                 items.append({
                     "id": int(p["id"]), "company_name": p["company"] or "", "nmls_id": p["nmls"] or "",
-                    "phone": p["phone"] or (primary["phone"] if primary else "") or "",
-                    "public_email": p["email"] or (primary["email"] if primary else "") or "",
+                    "phone": phone,
+                    "public_email": email,
                     "city": p["city"] or "", "state": (p["state"] or "").upper(),
                     "source": p["source_name"] or "BrokerBeacon CRM",
                     "review_status": p["verification_status"] or "Verify in NMLS",
                     "pipeline_status": p["status"] or "New", "opportunity_score": int(p["score"] or 75),
-                    "loan_officer_count": len(contacts), "primary_contact": primary["name"] if primary else "",
+                    "loan_officer_count": len(contacts), "primary_contact": primary_name,
                 })
             coverage = {code: 0 for code in STATE_CODES}
             for item in items:
