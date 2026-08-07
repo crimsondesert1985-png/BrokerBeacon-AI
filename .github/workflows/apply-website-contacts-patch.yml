@@ -15,8 +15,4 @@ jobs:
         run: |
           git config user.email "crimsondesert1985@gmail.com"
           git config user.name "crimsondesert1985-png"
-          python3 tools/apply_website_contacts_patch.py
-          python3 -m py_compile BrokerBeacon_AI_Phase2/app.py
-          git add BrokerBeacon_AI_Phase2/app.py tools/apply_website_contacts_patch.py
-          git commit -m "Fix Review company website: open site + repair scrape" || echo "nothing to commit"
-          git push
+          python3 -c "import base64; from pathlib import Path; Path('tools').mkdir(exist_ok=True); Path('tools/apply_website_contacts_patch.py').write_bytes(base64.b64decode('$(cat /tmp/b64_placeholder)'))"
