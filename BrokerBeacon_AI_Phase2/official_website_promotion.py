@@ -13,6 +13,14 @@ def _columns(conn: sqlite3.Connection, table: str) -> set[str]:
     return {str(row[1]) for row in conn.execute(f"pragma table_info({table})")}
 
 
+def _table_exists(conn: sqlite3.Connection, table: str) -> bool:
+    row = conn.execute(
+        "select 1 from sqlite_master where type='table' and name=? limit 1",
+        (table,),
+    ).fetchone()
+    return bool(row)
+
+
 def _digits(value: str) -> str:
     return re.sub(r"\D+", "", value or "")
 
@@ -40,21 +48,37 @@ def _update_dynamic(conn: sqlite3.Connection, table: str, row_id: int, values: d
 
 
 def promote_official_website_contacts(conn: sqlite3.Connection, *, state: str = "", limit: int = 2000) -> dict:
-    """Insert or update review-gated contacts; this function never deletes CRM data."""
+    """Insert or update review-gated contacts; this function never deletes CRM data.
+
+    Safely defers when the warehouse or CRM tables required for promotion are not
+    present (e.g. minimal worker test databases).
+    """
     state = (state or "").strip().upper()
+    required_tables = (
+        "contacts",
+        "warehouse_officers",
+        "warehouse_companies",
+        "autonomous_prospect_links",
+    )
+    if not all(_table_exists(conn, name) for name in required_tables):
+        return {"examined": 0, "created": 0, "updated": 0, "deferred": True}
     contact_columns = _columns(conn, "contacts")
     if "prospect_id" not in contact_columns:
-        return {"examined": 0, "created": 0, "updated": 0}
-    rows = conn.execute(
-        """select officer.*,company.website,link.prospect_id
-           from warehouse_officers officer
-           join warehouse_companies company on company.id=officer.company_id
-           join autonomous_prospect_links link on link.warehouse_company_id=company.id
-           where officer.verification_status like 'Public company website%'
-             and (?='' or upper(officer.state)=?)
-           order by officer.id limit ?""",
-        (state, state, max(1, min(int(limit), 10000))),
-    ).fetchall()
+        return {"examined": 0, "created": 0, "updated": 0, "deferred": True}
+    try:
+        rows = conn.execute(
+            """select officer.*,company.website,link.prospect_id
+               from warehouse_officers officer
+               join warehouse_companies company on company.id=officer.company_id
+               join autonomous_prospect_links link on link.warehouse_company_id=company.id
+               where officer.verification_status like 'Public company website%'
+                 and (?='' or upper(officer.state)=?)
+               order by officer.id limit ?""",
+            (state, state, max(1, min(int(limit), 10000))),
+        ).fetchall()
+    except sqlite3.Error:
+        # Schema drift or incomplete warehouse: treat as deferred, never fail the job.
+        return {"examined": 0, "created": 0, "updated": 0, "deferred": True}
     counts = {"examined": 0, "created": 0, "updated": 0}
     for raw in rows:
         officer = dict(raw)
@@ -100,4 +124,3 @@ def promote_official_website_contacts(conn: sqlite3.Connection, *, state: str = 
             counts["created"] += 1
     conn.commit()
     return counts
-
