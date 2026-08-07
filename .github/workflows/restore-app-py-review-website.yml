@@ -1,0 +1,59 @@
+name: restore-app-py-review-website
+on:
+  workflow_dispatch:
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Restore app.py from last good review-website commit and harden open
+        run: |
+          git config user.email "crimsondesert1985@gmail.com"
+          git config user.name "crimsondesert1985-png"
+          git show 3d7cc725cf4aca506be60d35c5fc5b895c84dd8d:BrokerBeacon_AI_Phase2/app.py > BrokerBeacon_AI_Phase2/app.py
+          python3 << 'EOF'
+          from pathlib import Path
+          path = Path("BrokerBeacon_AI_Phase2/app.py")
+          t = path.read_text()
+          import re
+          m = re.search(r"\$\('#refreshRoster'\)\.onclick=async\(\)=>\{if\(!current\)return;.*?\};\$\('#clearContact'\)", t, re.S)
+          if not m:
+              raise SystemExit("refreshRoster handler not found")
+          new_handler = (
+              "$('#refreshRoster').onclick=async()=>{if(!current)return;"
+              "const openSite=u=>{if(!u)return;let s=String(u).trim();if(!s)return;if(s.indexOf('://')<0)s='https://'+s;"
+              "try{const a=document.createElement('a');a.href=s;a.target='_blank';a.rel='noopener noreferrer';document.body.appendChild(a);a.click();a.remove();return true}"
+              "catch(e){try{window.open(s,'_blank','noopener');return true}catch(e2){return false}}};"
+              "let site=(current.website||current.source_url||'').trim();if(site)openSite(site);"
+              "$('#refreshRoster').disabled=true;$('#refreshRoster').textContent='Checking website...';"
+              "try{let r=await api('/api/prospects/'+current.id+'/refresh-contacts',{method:'POST'});"
+              "const resolved=(r.website||'').trim()||site;if(r.website)current.website=r.website;"
+              "if(resolved)openSite(resolved);"
+              "if(r.contacts){current.contacts=r.contacts;renderContacts(r.contacts)}"
+              "renderCandidates(r.candidates||[]);"
+              "let note=r.message||'Website review complete';"
+              "if(resolved)note+=' <a href=\"'+resolved.replace(/\"/g,'')+'\" target=\"_blank\" rel=\"noopener\">Open website</a>';"
+              "msg(note)}"
+              "catch(e){msg(e.message||'Website review failed')}"
+              "finally{$('#refreshRoster').disabled=false;$('#refreshRoster').textContent='Review company website'}},"
+              "$('#clearContact')"
+          )
+          # Fix typo: should end with }}; not }}, for onclick
+          new_handler = new_handler.replace("'Review company website'}},", "'Review company website'}};")
+          t = t[:m.start()] + new_handler + t[m.end()-len("$('#clearContact'"):]
+          if "def _resolve_prospect_website" not in t:
+              raise SystemExit("missing _resolve_prospect_website")
+          if "def refresh_contacts" not in t:
+              raise SystemExit("missing refresh_contacts")
+          path.write_text(t)
+          print("restored+hardened", path.stat().st_size)
+          EOF
+          python3 -m py_compile BrokerBeacon_AI_Phase2/app.py
+          git add BrokerBeacon_AI_Phase2/app.py
+          git commit -m "Restore app.py and fix Review company website: open tab + scrape contacts" || echo "no changes"
+          git push origin HEAD:main
