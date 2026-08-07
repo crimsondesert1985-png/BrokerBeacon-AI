@@ -1,0 +1,25 @@
+name: apply-ash-voice-assistant
+on:
+  workflow_dispatch:
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Apply Ash Voice Assistant
+        run: |
+          set -e
+          git config user.email "crimsondesert1985@gmail.com"
+          git config user.name "crimsondesert1985-png"
+          python3 tools/apply_ash_voice_assistant.py
+          python3 -m py_compile BrokerBeacon_AI_Phase2/app.py
+          grep -n "toggleAshMic\|ashMic\|ashSpeak" BrokerBeacon_AI_Phase2/app.py | head -15
+          grep -q "toggleAshMic" BrokerBeacon_AI_Phase2/app.py
+          git add BrokerBeacon_AI_Phase2/app.py tools/apply_ash_voice_assistant.py
+          git commit -m "Ash Voice Assistant: talk to Ash with mic (browser STT + TTS)" || echo "no changes"
+          git push origin HEAD:main
