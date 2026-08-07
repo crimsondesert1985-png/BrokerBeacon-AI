@@ -18,5 +18,5 @@ jobs:
           python3 tools/apply_website_contacts_patch.py
           python3 -m py_compile BrokerBeacon_AI_Phase2/app.py
           git add BrokerBeacon_AI_Phase2/app.py tools/apply_website_contacts_patch.py
-          git commit -m "Intelligence: auto-pull named contacts from company websites" || echo "nothing to commit"
+          git commit -m "Fix Review company website: open site + repair scrape" || echo "nothing to commit"
           git push
