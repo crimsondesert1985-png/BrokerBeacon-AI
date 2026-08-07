@@ -181,7 +181,7 @@ def _result_rows(conn: sqlite3.Connection, run_id: int, limit: int) -> list[dict
 def ingest_matchup_results(conn: sqlite3.Connection, run_id: int = 0, state: str = "", limit: int = 100) -> dict:
     source_id=create_source(conn,"Mortgage Matchup","Public verified broker directory","Canonical company/profile URLs and public search-index excerpts; verify licensing in NMLS",BASE)
     job_id=create_import_job(conn,source_id,state)
-    counts={"urls_found":0,"profile_pages":0,"company_pages":0,"indexed_fallbacks":0,"companies_created":0,"companies_updated":0,"officers_created":0,"officers_updated":0,"rejected":0,"failures":[]}
+    counts={"urls_found":0,"profile_pages":0,"company_pages":0,"indexed_fallbacks":0,"companies_created":0,"companies_updated":0,"officers_created":0,"officers_updated":0,"rejected":0,"failures":[],"companies":[]}
     rows=_result_rows(conn,int(run_id or 0),max(int(limit)*4,100)); counts["urls_found"]=len(rows)
     for row in rows:
         url=row["source_url"]; kind="Company" if "/Company/" in url else "Profile"
@@ -205,6 +205,8 @@ def ingest_matchup_results(conn: sqlite3.Connection, run_id: int = 0, state: str
                 continue
             company_record={"legal_name":parsed["company_name"],"nmls_id":parsed["company_nmls"],"website":parsed.get("company_website", ""),"phone":parsed.get("company_phone", ""),"public_email":parsed.get("company_email", ""),"city":parsed.get("city", ""),"state":parsed.get("state", state).upper(),"postal_code":parsed.get("postal_code", ""),"source_record_id":url,"source_url":url,"verification_status":"Mortgage Matchup indexed listing - verify in NMLS"}
             result=ingest_companies(conn,job_id,source_id,[company_record]); counts["companies_created"]+=result["created"]; counts["companies_updated"]+=result["updated"]
+            if not any(item.get("nmls_id")==company_record["nmls_id"] for item in counts["companies"]):
+                counts["companies"].append(dict(company_record))
             company_id=_company_id(conn,company_record["nmls_id"],company_record["legal_name"],company_record["state"])
             officers=list(parsed.get("officers", []))
             if kind=="Profile": officers.append(parsed)

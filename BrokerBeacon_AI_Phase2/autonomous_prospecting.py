@@ -66,46 +66,6 @@ def _update_dynamic(conn: sqlite3.Connection, table: str, row_id: int, values: d
     )
 
 
-def _has_matchup_provenance(conn: sqlite3.Connection, warehouse_company_id: int) -> bool:
-    return bool(conn.execute(
-        """select 1 from warehouse_source_records record
-           join warehouse_sources source on source.id=record.source_id
-           where record.entity_type='company' and record.entity_id=?
-             and source.name=? limit 1""",
-        (warehouse_company_id, MATCHUP_SOURCE),
-    ).fetchone())
-
-
-def purge_invalid_ember_prospects(conn: sqlite3.Connection) -> int:
-    """Delete every Ember/Matchup CRM row that lacks real Matchup warehouse provenance."""
-    initialize(conn)
-    rows = conn.execute(
-        """select p.id
-           from prospects p
-           where lower(trim(coalesce(p.source_name,''))) in (
-                    'ember autonomous prospecting','ember warehouse','mortgage matchup via ember')
-              or lower(coalesce(p.signal,'')) like '%ember%'
-              or lower(coalesce(p.signal,'')) like '%mortgage matchup%'"""
-    ).fetchall()
-    invalid = []
-    for row in rows:
-        prospect_id = int(row[0])
-        links = conn.execute(
-            "select warehouse_company_id from autonomous_prospect_links where prospect_id=?",
-            (prospect_id,),
-        ).fetchall()
-        if not any(_has_matchup_provenance(conn, int(link[0])) for link in links):
-            invalid.append(prospect_id)
-    if invalid:
-        marks = ",".join("?" for _ in invalid)
-        if _columns(conn, "contacts") and "prospect_id" in _columns(conn, "contacts"):
-            conn.execute(f"delete from contacts where prospect_id in ({marks})", tuple(invalid))
-        conn.execute(f"delete from autonomous_prospect_links where prospect_id in ({marks})", tuple(invalid))
-        conn.execute(f"delete from prospects where id in ({marks})", tuple(invalid))
-        conn.commit()
-    return len(invalid)
-
-
 def _find_prospect(conn: sqlite3.Connection, company: dict) -> sqlite3.Row | None:
     columns = _columns(conn, "prospects")
     nmls = _digits(str(company.get("nmls_id") or ""))
@@ -133,7 +93,6 @@ def promote_warehouse_companies(
     minimum_score: int = 50,
 ) -> dict:
     initialize(conn)
-    purge_invalid_ember_prospects(conn)
     state = (state or "").upper()[:2]
     now = NOW()
     run_id = int(conn.execute(
