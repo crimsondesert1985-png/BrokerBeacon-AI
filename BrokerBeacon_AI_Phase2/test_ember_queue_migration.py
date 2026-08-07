@@ -72,7 +72,7 @@ class ScoutQueueMigrationTests(unittest.TestCase):
         pipeline = self.rows(
             f"select detail_json from activity_events where job_id={explicit_id} and event_type='PipelineAdvanced'"
         )[0]
-        self.assertIn('"next_stage": "Human review"', pipeline["detail_json"])
+        self.assertIn("Human verification before outreach", pipeline["detail_json"])
         active = self.rows("select state from crawl_jobs where status in ('Queued','Running')")
         self.assertEqual([], active)
 
