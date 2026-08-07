@@ -14,6 +14,8 @@ GENERIC_CONTAINS = (
     "division of banks", "real estate in ", "nmls esb", "cyber fbi",
     "mortgage lenders loan officers", "state licenses", "approval list",
     "find a loan officer", "meet our loan officers", "meet our team",
+    "best phoenix", "mortgage brokers in ", "loan officers in ",
+    "top mortgage", "directory of ", "list of mortgage",
 )
 BUSINESS_SIGNALS = (
     "mortgage", "financial", "finance", "lending", "loans", "funding", "capital",
