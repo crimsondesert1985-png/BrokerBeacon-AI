@@ -1,0 +1,25 @@
+name: fix-js-open-site
+on:
+  workflow_dispatch:
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Fix Review company website open tab
+        run: |
+          set -e
+          git config user.email "crimsondesert1985@gmail.com"
+          git config user.name "crimsondesert1985-png"
+          python3 -c "import base64;from pathlib import Path;Path('tools').mkdir(exist_ok=True);Path('tools/fix_js_open_site.py').write_bytes(base64.b64decode('''PLACEHOLDER_B64'''))"
+          python3 tools/fix_js_open_site.py
+          python3 -m py_compile BrokerBeacon_AI_Phase2/app.py
+          grep -q "return true" BrokerBeacon_AI_Phase2/app.py
+          git add BrokerBeacon_AI_Phase2/app.py tools/fix_js_open_site.py
+          git commit -m "Fix Review company website: reliable new-tab open via anchor click" || echo "no changes"
+          git push origin HEAD:main
