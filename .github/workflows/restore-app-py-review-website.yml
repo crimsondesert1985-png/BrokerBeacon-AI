@@ -11,25 +11,28 @@ jobs:
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Restore app.py from last known good commit
+      - name: Rebuild app.py from verified chunks
         run: |
           set -e
           git config user.email "crimsondesert1985@gmail.com"
           git config user.name "crimsondesert1985-png"
-          # Prefer 35f310b (Restore + open tab + scrape) then fall back
-          if git cat-file -e 35f310b:BrokerBeacon_AI_Phase2/app.py 2>/dev/null; then
-            git show 35f310b:BrokerBeacon_AI_Phase2/app.py > BrokerBeacon_AI_Phase2/app.py
-            echo "Restored from 35f310b"
-          elif git cat-file -e 3d7cc72:BrokerBeacon_AI_Phase2/app.py 2>/dev/null; then
-            git show 3d7cc72:BrokerBeacon_AI_Phase2/app.py > BrokerBeacon_AI_Phase2/app.py
-            echo "Restored from 3d7cc72"
-          else
-            echo "No known good blob found"
-            exit 1
-          fi
+          python3 << 'PY'
+          import base64
+          from pathlib import Path
+          chunks = sorted(Path("tools/restore_chunks").glob("part_*.b64"))
+          assert chunks, "no chunks"
+          b64 = "".join(p.read_text().strip() for p in chunks)
+          data = base64.b64decode(b64)
+          Path("BrokerBeacon_AI_Phase2/app.py").write_bytes(data)
+          print("wrote", len(data), "bytes from", len(chunks), "chunks")
+          PY
           python3 -m py_compile BrokerBeacon_AI_Phase2/app.py
           wc -c BrokerBeacon_AI_Phase2/app.py
-          grep -n "openSite\|refresh_contacts\|_resolve_prospect_website" BrokerBeacon_AI_Phase2/app.py | head -10
-          git add BrokerBeacon_AI_Phase2/app.py
-          git commit -m "Restore app.py from known-good commit (Review company website open+scrape)" || echo "no changes"
+          grep -n "openSite\|_resolve_prospect_website\|def refresh_contacts\|return true" BrokerBeacon_AI_Phase2/app.py | head -15
+          # sanity: must have resolve + good openSite
+          grep -q "_resolve_prospect_website" BrokerBeacon_AI_Phase2/app.py
+          grep -q "return true" BrokerBeacon_AI_Phase2/app.py
+          git add BrokerBeacon_AI_Phase2/app.py tools/restore_chunks
+          git status --short
+          git commit -m "Restore full Review company website: open tab + resolve/scrape contacts" || echo "no changes"
           git push origin HEAD:main
