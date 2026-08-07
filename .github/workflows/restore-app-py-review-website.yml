@@ -11,7 +11,7 @@ jobs:
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Rebuild app.py from verified chunks
+      - name: Rebuild app.py from verified chunks (Ash voice + website review)
         run: |
           set -e
           git config user.email "crimsondesert1985@gmail.com"
@@ -28,11 +28,10 @@ jobs:
           PY
           python3 -m py_compile BrokerBeacon_AI_Phase2/app.py
           wc -c BrokerBeacon_AI_Phase2/app.py
-          grep -n "openSite\|_resolve_prospect_website\|def refresh_contacts\|return true" BrokerBeacon_AI_Phase2/app.py | head -15
-          # sanity: must have resolve + good openSite
-          grep -q "_resolve_prospect_website" BrokerBeacon_AI_Phase2/app.py
-          grep -q "return true" BrokerBeacon_AI_Phase2/app.py
-          git add BrokerBeacon_AI_Phase2/app.py tools/restore_chunks
+          grep -n "toggleAshMic\|_resolve_prospect_website\|return true\|wants_contacts\|ashMic" BrokerBeacon_AI_Phase2/app.py | head -20
+          grep -q "toggleAshMic" BrokerBeacon_AI_Phase2/app.py
+          grep -q "_resolve_prospect_website\|openSite" BrokerBeacon_AI_Phase2/app.py
+          git add BrokerBeacon_AI_Phase2/app.py tools/restore_chunks .github/workflows/restore-app-py-review-website.yml
           git status --short
-          git commit -m "Restore full Review company website: open tab + resolve/scrape contacts" || echo "no changes"
+          git commit -m "Ash Voice Assistant: talk-to-Ash mic + contact/draft intents + website review" || echo "no changes"
           git push origin HEAD:main
