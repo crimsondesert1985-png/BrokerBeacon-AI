@@ -64,8 +64,10 @@ def _ensure_national_queue(conn) -> int:
 
 def _process_one(app, db_path):
     with closing(_connect(db_path)) as conn:
-        _ensure_national_queue(conn)
         job = claim_next(conn, WORKER_KEY, lease_seconds=1200)
+        if not job:
+            _ensure_national_queue(conn)
+            job = claim_next(conn, WORKER_KEY, lease_seconds=1200)
         if not job:
             heartbeat(conn, WORKER_KEY, status="Idle")
             return False
@@ -117,7 +119,6 @@ def _process_one(app, db_path):
                 "relationships":graph.get("relationships",0),"graph_status":graph.get("status","Deferred"),
                 "next_stage":"Human review"})
             heartbeat(conn, WORKER_KEY, status="Idle", jobs_completed_today=1)
-            _ensure_national_queue(conn)
             app.logger.warning(
                 "EMBER_QUEUE completed job_id=%s state=%s seeded=%s crawled=%s warehouse_created=%s prospects_created=%s prospects_updated=%s contacts_created=%s search=%s indexed=%s graph=%s",
                 job["id"], resolved_state, result.get("companies_seeded", 0), company_crawl.get("completed", 0),
