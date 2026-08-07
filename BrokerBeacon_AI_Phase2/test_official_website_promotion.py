@@ -1,7 +1,8 @@
 import sqlite3
 
 import ember_pipeline
-from autonomous_prospecting import promote_warehouse_companies
+from autonomous_prospecting import initialize as initialize_autonomous
+from official_website_promotion import promote_official_website_contacts
 from national_warehouse import create_import_job, create_source, ingest_companies, initialize
 
 
@@ -9,6 +10,7 @@ def test_official_website_contact_without_nmls_is_promoted():
     conn = sqlite3.connect(":memory:")
     conn.row_factory = sqlite3.Row
     initialize(conn)
+    initialize_autonomous(conn)
     conn.executescript(
         """
         create table prospects(
@@ -34,21 +36,28 @@ def test_official_website_contact_without_nmls_is_promoted():
         "source_record_id": "https://mortgagematchup.com/Company/beacon",
     }])
     company_id = conn.execute("select id from warehouse_companies").fetchone()[0]
+    prospect_id = conn.execute("insert into prospects(company,nmls,state) values('Beacon Mortgage Group','123456','NC')").lastrowid
+    conn.execute(
+        """insert into autonomous_prospect_links(
+           warehouse_company_id,prospect_id,promotion_reason,promoted_at,updated_at)
+           values(?,?,?,datetime('now'),datetime('now'))""",
+        (company_id, prospect_id, "Official website test"),
+    )
     conn.execute(
         """insert into warehouse_officers(
            company_id,canonical_key,full_name,normalized_name,nmls_id,title,phone,public_email,
            city,state,verification_status,first_seen_at,last_seen_at,created_at,updated_at)
            values(?,?,'Jane Broker','jane broker','','Mortgage Loan Originator','7045553434',
-                  'jane@beaconmortgage.example','Charlotte','NC','Official website',
+                  'jane@beaconmortgage.example','Charlotte','NC','Public company website - verify identity and licensing',
                   datetime('now'),datetime('now'),datetime('now'),datetime('now'))""",
         (company_id, f"officer:{company_id}:jane-broker"),
     )
     conn.commit()
 
-    result = promote_warehouse_companies(conn, state="NC")
+    result = promote_official_website_contacts(conn, state="NC")
 
     contact = conn.execute("select * from contacts").fetchone()
-    assert result["contacts_created"] == 1
+    assert result["created"] == 1
     assert contact["name"] == "Jane Broker"
     assert contact["role"] == "Mortgage Loan Originator"
     assert contact["email"] == "jane@beaconmortgage.example"
