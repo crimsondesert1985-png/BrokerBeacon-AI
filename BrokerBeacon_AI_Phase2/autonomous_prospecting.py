@@ -33,6 +33,14 @@ def _columns(conn: sqlite3.Connection, table: str) -> set[str]:
     return {str(row[1]) for row in conn.execute(f"pragma table_info({table})")}
 
 
+def _table_exists(conn: sqlite3.Connection, table: str) -> bool:
+    row = conn.execute(
+        "select 1 from sqlite_master where type='table' and name=? limit 1",
+        (table,),
+    ).fetchone()
+    return bool(row)
+
+
 def _normalize(value: str) -> str:
     return re.sub(r"[^a-z0-9]+", " ", (value or "").lower()).strip()
 
@@ -77,8 +85,13 @@ def _has_matchup_provenance(conn: sqlite3.Connection, warehouse_company_id: int)
 
 
 def purge_invalid_ember_prospects(conn: sqlite3.Connection) -> int:
-    """Delete every Ember/Matchup CRM row that lacks real Matchup warehouse provenance."""
+    """Delete every Ember/Matchup CRM row that lacks real Matchup warehouse provenance.
+
+    Kept for explicit/manual cleanup only. Automatic promotion never calls this.
+    """
     initialize(conn)
+    if not _table_exists(conn, "prospects"):
+        return 0
     rows = conn.execute(
         """select p.id
            from prospects p
@@ -132,10 +145,33 @@ def promote_warehouse_companies(
     limit: int = 100,
     minimum_score: int = 50,
 ) -> dict:
+    """Insert or update CRM prospects from Matchup-proven warehouse companies.
+
+    Insert/update only — never deletes CRM data. Defers cleanly when warehouse
+    or CRM tables are not present (e.g. minimal worker test databases).
+    """
     initialize(conn)
-    purge_invalid_ember_prospects(conn)
     state = (state or "").upper()[:2]
     now = NOW()
+    empty = {
+        "run_id": 0,
+        "warehouse_examined": 0,
+        "prospects_created": 0,
+        "prospects_updated": 0,
+        "contacts_created": 0,
+        "duplicates_skipped": 0,
+        "rejected": 0,
+        "deferred": True,
+    }
+    required = (
+        "warehouse_companies",
+        "warehouse_source_records",
+        "warehouse_sources",
+        "prospects",
+    )
+    if not all(_table_exists(conn, name) for name in required):
+        return empty
+
     run_id = int(conn.execute(
         "insert into autonomous_prospecting_runs(state,started_at) values(?,?)",
         (state, now),
@@ -161,7 +197,7 @@ def promote_warehouse_companies(
             (MATCHUP_SOURCE, state, state, max(1, min(int(limit), 1000))),
         ).fetchall()
         prospect_columns = _columns(conn, "prospects")
-        contact_columns = _columns(conn, "contacts")
+        contact_columns = _columns(conn, "contacts") if _table_exists(conn, "contacts") else set()
         for raw_company in companies:
             company = dict(raw_company)
             counts["warehouse_examined"] += 1
@@ -219,6 +255,8 @@ def promote_warehouse_companies(
                 (company["id"], prospect_id, json.dumps(reason), now, now),
             )
 
+            if not _table_exists(conn, "warehouse_officers"):
+                continue
             officers = conn.execute(
                 "select * from warehouse_officers where company_id=? order by id",
                 (company["id"],),
