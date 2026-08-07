@@ -1,0 +1,53 @@
+name: restore-app-py
+on:
+  workflow_dispatch:
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Restore app.py from bd33c01 and apply Prospects UX patches
+        run: |
+          git config user.email "crimsondesert1985@gmail.com"
+          git config user.name "crimsondesert1985-png"
+          git show bd33c0184235d24fe90a544c54d313877af7331d:BrokerBeacon_AI_Phase2/app.py > BrokerBeacon_AI_Phase2/app.py
+          python3 << 'EOF'
+          from pathlib import Path
+          path = Path("BrokerBeacon_AI_Phase2/app.py")
+          content = path.read_text()
+          old_states = """<select id=\"state\"><option>All</option><option>NC</option><option>SC</option><option>VA</option><option>GA</option><option>TN</option><option>MI</option></select>"""
+          new_states = """<select id=\"state\"><option value=\"All\">All states</option><option>AL</option><option>AK</option><option>AZ</option><option>AR</option><option>CA</option><option>CO</option><option>CT</option><option>DE</option><option>FL</option><option>GA</option><option>HI</option><option>ID</option><option>IL</option><option>IN</option><option>IA</option><option>KS</option><option>KY</option><option>LA</option><option>ME</option><option>MD</option><option>MA</option><option>MI</option><option>MN</option><option>MS</option><option>MO</option><option>MT</option><option>NE</option><option>NV</option><option>NH</option><option>NJ</option><option>NM</option><option>NY</option><option>NC</option><option>ND</option><option>OH</option><option>OK</option><option>OR</option><option>PA</option><option>RI</option><option>SC</option><option>SD</option><option>TN</option><option>TX</option><option>UT</option><option>VA</option><option>VT</option><option>WA</option><option>WV</option><option>WI</option><option>WY</option></select>"""
+          if old_states not in content:
+              raise SystemExit('state filter not found')
+          content = content.replace(old_states, new_states, 1)
+          old_btn = """<td><button class=\"btn smallbtn\" onclick=\"profile(${p.id})\">Open</button></td>"""
+          new_btn = """<td><button class=\"btn smallbtn primary\" onclick=\"profile(${p.id})\">Intelligence</button></td>"""
+          if old_btn not in content:
+              raise SystemExit('Open button not found')
+          content = content.replace(old_btn, new_btn, 1)
+          old_titles = "const titles={dashboard:'Ash Workplace',platformadmin:'Platform Admin',salescoach:'Ash Sales Coach',voiceagent:'AI Voice Agent',marketing:'Marketing Center',boss:'Executive View',followups:'Follow-ups',intelligence:'Opportunity Intelligence',opportunityengine:'Opportunity Engine',callprep:'Call Prep Workspace',templates:'Templates & Sequences',guidelines:'Loan Guidelines Library',production:'Production Intelligence',brokerdna:'Broker DNA'};"
+          new_titles = "const titles={dashboard:'Ash Workplace',platformadmin:'Platform Admin',salescoach:'Ash Sales Coach',voiceagent:'AI Voice Agent',marketing:'Marketing Center',boss:'Executive View',followups:'Follow-ups',intelligence:'Opportunity Intelligence',opportunityengine:'Opportunity Engine',callprep:'Call Prep Workspace',templates:'Templates & Sequences',guidelines:'Loan Guidelines Library',production:'Production Intelligence',brokerdna:'Broker DNA',prospects:'Prospects',pipeline:'Pipeline',outreach:'Outreach',inbox:'Reply Inbox',campaigns:'Campaigns',daily:'Daily Plan',territory:'Territory',integrations:'Integrations',copilot:'AI Copilot'};"
+          if old_titles not in content:
+              raise SystemExit('titles map not found')
+          content = content.replace(old_titles, new_titles, 1)
+          old_owner = """<td><b>${esc(p.company)}</b><br><small>${esc(p.owner||'Contact name not available')}</small></td>"""
+          new_owner = """<td><b>${esc(p.company)}</b><br><small>${esc(p.owner||(p.phone||p.email?(p.company||'Company')+' main office':'Contact research pending'))}</small></td>"""
+          if old_owner not in content:
+              raise SystemExit('owner cell not found')
+          content = content.replace(old_owner, new_owner, 1)
+          old_section = """<section id=\"prospects\" class=\"view\"><div class=\"filters\">"""
+          new_section = """<section id=\"prospects\" class=\"view\"><div class=\"hero\"><div><div class=\"kicker\">PROSPECT DIRECTORY</div><h2>Every verified account in one light workspace.</h2><p>Filter by state, open Intelligence for the full company brief, and review loan-officer contacts without leaving Ash Workplace.</p></div><span class=\"pill\">Stay in-app · no dark catalog</span></div><div class=\"filters\">"""
+          if old_section not in content:
+              raise SystemExit('prospects section not found')
+          content = content.replace(old_section, new_section, 1)
+          path.write_text(content)
+          print('patched ok', path.stat().st_size)
+          EOF
+          git add BrokerBeacon_AI_Phase2/app.py
+          git commit -m "Restore full Ash Workplace app; Prospects stay in light shell with Intelligence button" || echo "nothing to commit"
+          git push
