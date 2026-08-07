@@ -13,6 +13,7 @@ from ember_pipeline import launch
 from ember_jobs import claim_next, complete, emit_event, fail, heartbeat, initialize, now_iso
 from intelligence_flow import advance_intelligence
 from national_scheduler import refill_national_queue
+from official_website_promotion import promote_official_website_contacts
 
 _started = False
 _start_lock = threading.Lock()
@@ -25,6 +26,15 @@ def _connect(db_path):
     conn.execute("pragma foreign_keys=on")
     conn.execute("pragma busy_timeout=30000")
     return conn
+
+
+def _crm_ready(conn) -> bool:
+    tables = {
+        str(row[0]) for row in conn.execute(
+            "select name from sqlite_master where type='table' and name in ('prospects','contacts')"
+        )
+    }
+    return {"prospects", "contacts"}.issubset(tables)
 
 
 def _reset_stale_discovery_backlog(conn):
@@ -72,12 +82,23 @@ def _process_one(app, db_path):
             # Matchup national queries can surface a company outside the initial hunt
             # state. Promote every proven Matchup record; the parsed profile controls
             # the prospect's actual state.
-            promotion = promote_warehouse_companies(
-                conn,
-                state="",
-                limit=min(max(int(os.getenv("EMBER_PROMOTION_LIMIT", "500")), 100), 1000),
-                minimum_score=min(max(int(os.getenv("EMBER_PROMOTION_MIN_SCORE", "80")), 50), 95),
-            )
+            if _crm_ready(conn):
+                promotion = promote_warehouse_companies(
+                    conn,
+                    state="",
+                    limit=min(max(int(os.getenv("EMBER_PROMOTION_LIMIT", "500")), 100), 1000),
+                    minimum_score=min(max(int(os.getenv("EMBER_PROMOTION_MIN_SCORE", "80")), 50), 95),
+                )
+                website_promotion = promote_official_website_contacts(
+                    conn,
+                    state="",
+                    limit=min(max(int(os.getenv("EMBER_PROMOTION_LIMIT", "500")), 100), 2000),
+                )
+            else:
+                promotion = {"prospects_created":0,"prospects_updated":0,"contacts_created":0,"duplicates_skipped":0}
+                website_promotion = {"examined":0,"created":0,"updated":0,"status":"Deferred: CRM tables unavailable"}
+            promotion["official_website_contacts"] = website_promotion
+            promotion["contacts_created"] = int(promotion.get("contacts_created", 0)) + int(website_promotion.get("created", 0))
             result["autonomous_prospecting"] = promotion
             complete(conn, int(job["id"]), WORKER_KEY, detail=result)
             graph = advance_intelligence(conn, state=resolved_state)
@@ -94,7 +115,7 @@ def _process_one(app, db_path):
                 "public_search_indexed":public_search.get("indexed",0),"public_search_reason":public_search.get("reason",""),
                 "company_nodes":graph.get("company_nodes",0),"person_nodes":graph.get("person_nodes",0),
                 "relationships":graph.get("relationships",0),"graph_status":graph.get("status","Deferred"),
-                "next_stage":"Human verification before outreach"})
+                "next_stage":"Human review"})
             heartbeat(conn, WORKER_KEY, status="Idle", jobs_completed_today=1)
             _ensure_national_queue(conn)
             app.logger.warning(
