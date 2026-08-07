@@ -13,6 +13,7 @@ from ember_pipeline import launch
 from ember_jobs import claim_next, complete, emit_event, fail, heartbeat, initialize, now_iso
 from intelligence_flow import advance_intelligence
 from national_scheduler import refill_national_queue
+from official_website_promotion import promote_official_website_contacts
 
 _started = False
 _start_lock = threading.Lock()
@@ -78,6 +79,13 @@ def _process_one(app, db_path):
                 limit=min(max(int(os.getenv("EMBER_PROMOTION_LIMIT", "500")), 100), 1000),
                 minimum_score=min(max(int(os.getenv("EMBER_PROMOTION_MIN_SCORE", "80")), 50), 95),
             )
+            website_promotion = promote_official_website_contacts(
+                conn,
+                state="",
+                limit=min(max(int(os.getenv("EMBER_PROMOTION_LIMIT", "500")), 100), 2000),
+            )
+            promotion["official_website_contacts"] = website_promotion
+            promotion["contacts_created"] = int(promotion.get("contacts_created", 0)) + int(website_promotion.get("created", 0))
             result["autonomous_prospecting"] = promotion
             complete(conn, int(job["id"]), WORKER_KEY, detail=result)
             graph = advance_intelligence(conn, state=resolved_state)
@@ -162,3 +170,4 @@ def install_ember_worker(app, db_path):
                     app.logger.exception("EMBER_QUEUE could not persist recovery state")
             time.sleep(idle_interval)
     threading.Thread(target=loop, name="ember-queue-worker", daemon=True).start()
+
