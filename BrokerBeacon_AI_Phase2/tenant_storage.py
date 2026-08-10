@@ -18,13 +18,19 @@ _SHARED_OR_TEMPLATE_TABLES = {
 }
 
 
+def _connect(path):
+    conn = sqlite3.connect(path, timeout=30)
+    conn.execute("pragma busy_timeout=30000")
+    return conn
+
+
 def _workspace_path(central_path, workspace_id):
     central = Path(central_path)
     return central.with_name(f"{central.stem}.workspace-{int(workspace_id)}{central.suffix}")
 
 
 def _is_founding_workspace(central_path, workspace_id):
-    with sqlite3.connect(central_path) as conn:
+    with _connect(central_path) as conn:
         row = conn.execute(
             "select is_founding from saas_workspaces where id=?", (int(workspace_id),)
         ).fetchone()
@@ -42,7 +48,6 @@ def _clear_private_data(conn):
     for table in tables:
         if table in _SHARED_OR_TEMPLATE_TABLES or table.startswith(_SHARED_OR_TEMPLATE_PREFIXES):
             continue
-        # Names originate from sqlite_master, not request data.
         conn.execute(f'delete from "{table.replace(chr(34), chr(34) * 2)}"')
     conn.execute("pragma foreign_keys=on")
 
@@ -52,7 +57,6 @@ def ensure_workspace_database(central_path, workspace_id):
     workspace_id = int(workspace_id)
     central = Path(central_path)
     if _is_founding_workspace(central, workspace_id):
-        # The pre-SaaS database becomes the founding workspace, preserving Clay's records.
         return central
 
     target = _workspace_path(central, workspace_id)
@@ -65,7 +69,7 @@ def ensure_workspace_database(central_path, workspace_id):
         temporary = target.with_suffix(target.suffix + ".creating")
         if temporary.exists():
             temporary.unlink()
-        with sqlite3.connect(central) as source, sqlite3.connect(temporary) as destination:
+        with _connect(central) as source, _connect(temporary) as destination:
             source.backup(destination)
             _clear_private_data(destination)
         temporary.replace(target)
