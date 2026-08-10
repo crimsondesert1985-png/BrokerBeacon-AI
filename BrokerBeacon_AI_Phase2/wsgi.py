@@ -13,6 +13,7 @@ from drip_campaigns import install_drip_campaigns
 from ember_automation_api import install_ember_automation
 from ember_prospects_bridge import install_ember_prospects_bridge
 from ember_queue_api import install_ember_queue_api
+from ember_seed_bootstrap import install_verified_seed_bootstrap
 from ember_status_api import install_ember_status_api
 from ember_worker import install_ember_worker
 from founder_briefing import install_founder_briefing
@@ -68,6 +69,7 @@ install_workspace_consolidation(app)
 install_help_layer(app)
 install_interaction_drilldowns(app, DB)
 install_prospect_backfill_boot(app, DB)
+install_verified_seed_bootstrap(app, DB)
 install_ember_worker(app, DB)
 install_customer_ready_ux(app)
 install_demo_ready_ux(app)
