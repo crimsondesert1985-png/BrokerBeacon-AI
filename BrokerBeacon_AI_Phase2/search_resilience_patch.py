@@ -94,6 +94,15 @@ def install_search_resilience(app=None) -> None:
         if app is not None:
             app.logger.exception("EMBER_RUNTIME patch failed safely")
 
+    # When direct site fetching is blocked, recover only phone/email values that
+    # public search providers actually return from the same official domain.
+    try:
+        from contact_search_fallback import install_contact_search_fallback
+        install_contact_search_fallback(app)
+    except Exception:
+        if app is not None:
+            app.logger.exception("CONTACT_ENRICH snippet fallback install failed safely")
+
     if app is not None:
         app.logger.warning("EMBER_SEARCH resilience enabled providers=%s", ",".join(resilient_providers()))
 
