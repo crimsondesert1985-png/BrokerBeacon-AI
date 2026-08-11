@@ -5,6 +5,7 @@ from app import app, DB
 from actionable_prospect_views import install_actionable_prospect_views
 from ai_ops_api import install_ai_ops
 from beaconmatch_foundation import install_beaconmatch_foundation
+from contact_enrichment_worker import install_contact_enrichment_worker
 from control_tower_recovery import install_control_tower_recovery
 from control_tower_ux import install_control_tower_ux
 from customer_ready_ux import install_customer_ready_ux
@@ -79,6 +80,7 @@ install_interaction_drilldowns(app, DB)
 install_prospect_backfill_boot(app, DB)
 install_verified_seed_bootstrap(app, DB)
 install_ember_worker(app, DB)
+install_contact_enrichment_worker(app, DB)
 install_customer_ready_ux(app)
 install_demo_ready_ux(app)
 
