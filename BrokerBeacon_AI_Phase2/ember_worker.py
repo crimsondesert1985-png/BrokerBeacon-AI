@@ -14,6 +14,7 @@ from ember_jobs import claim_next, complete, emit_event, fail, heartbeat, initia
 from intelligence_flow import advance_intelligence
 from national_scheduler import refill_national_queue
 from official_website_promotion import promote_official_website_contacts
+from prospect_curator import curate_prospects
 
 _started = False
 _start_lock = threading.Lock()
@@ -62,6 +63,26 @@ def _ensure_national_queue(conn) -> int:
     return len(created)
 
 
+def _run_curator(app, conn, *, context: str) -> dict:
+    try:
+        result = curate_prospects(conn, limit=50000)
+        app.logger.warning(
+            "EMBER_CURATOR completed context=%s examined=%s quarantined=%s retained=%s",
+            context, result.get("examined", 0), result.get("quarantined", 0), result.get("retained", 0),
+        )
+        emit_event(
+            conn,
+            "ProspectCuratorSweep",
+            f"Prospect Curator reviewed {result.get('examined', 0)} CRM prospects and quarantined {result.get('quarantined', 0)} high-confidence false positives",
+            worker_key=WORKER_KEY,
+            detail={"context": context, **result},
+        )
+        return result
+    except Exception as exc:
+        app.logger.exception("EMBER_CURATOR sweep failed safely")
+        return {"examined": 0, "quarantined": 0, "retained": 0, "error": str(exc)}
+
+
 def _process_one(app, db_path):
     with closing(_connect(db_path)) as conn:
         job = claim_next(conn, WORKER_KEY, lease_seconds=1200)
@@ -81,9 +102,6 @@ def _process_one(app, db_path):
                 contact_limit=min(max(int(payload.get("contact_limit", 1000)), 500), 2000),
             )
             resolved_state = str(result.get("state") or "").strip().upper()
-            # Matchup national queries can surface a company outside the initial hunt
-            # state. Promote every proven Matchup record; the parsed profile controls
-            # the prospect's actual state.
             if _crm_ready(conn):
                 promotion = promote_warehouse_companies(
                     conn,
@@ -96,21 +114,25 @@ def _process_one(app, db_path):
                     state="",
                     limit=min(max(int(os.getenv("EMBER_PROMOTION_LIMIT", "500")), 100), 2000),
                 )
+                curator = _run_curator(app, conn, context=f"job:{job['id']}")
             else:
                 promotion = {"prospects_created":0,"prospects_updated":0,"contacts_created":0,"duplicates_skipped":0}
                 website_promotion = {"examined":0,"created":0,"updated":0,"status":"Deferred: CRM tables unavailable"}
+                curator = {"examined":0,"quarantined":0,"retained":0,"status":"Deferred: CRM tables unavailable"}
             promotion["official_website_contacts"] = website_promotion
+            promotion["prospect_curator"] = curator
             promotion["contacts_created"] = int(promotion.get("contacts_created", 0)) + int(website_promotion.get("created", 0))
             result["autonomous_prospecting"] = promotion
             complete(conn, int(job["id"]), WORKER_KEY, detail=result)
             graph = advance_intelligence(conn, state=resolved_state)
             public_search = result.get("public_search") or {}
             company_crawl = result.get("company_crawl") or {}
-            emit_event(conn,"PipelineAdvanced",f"{resolved_state} flowed through Mortgage Matchup discovery, warehouse, prospect creation, intelligence, and review",worker_key=WORKER_KEY,job_id=int(job["id"]),state=resolved_state,detail={
+            emit_event(conn,"PipelineAdvanced",f"{resolved_state} flowed through Mortgage Matchup discovery, warehouse, prospect creation, Curator quality review, intelligence, and review",worker_key=WORKER_KEY,job_id=int(job["id"]),state=resolved_state,detail={
                 "companies":result.get("companies_seeded",0),"companies_crawled":company_crawl.get("completed",0),
                 "warehouse_created":(company_crawl.get("warehouse") or {}).get("created",0),
                 "warehouse_updated":(company_crawl.get("warehouse") or {}).get("updated",0),
                 "prospects_created":promotion.get("prospects_created",0),"prospects_updated":promotion.get("prospects_updated",0),
+                "prospects_quarantined":curator.get("quarantined",0),
                 "contacts_created":promotion.get("contacts_created",0),"duplicates_skipped":promotion.get("duplicates_skipped",0),
                 "pages_fetched":company_crawl.get("pages_fetched",0),"contacts":result.get("new_contacts",0),
                 "pending_review":result.get("pending_review",0),"public_search_status":public_search.get("status","Not needed"),
@@ -120,10 +142,10 @@ def _process_one(app, db_path):
                 "next_stage":"Human review"})
             heartbeat(conn, WORKER_KEY, status="Idle", jobs_completed_today=1)
             app.logger.warning(
-                "EMBER_QUEUE completed job_id=%s state=%s seeded=%s crawled=%s warehouse_created=%s prospects_created=%s prospects_updated=%s contacts_created=%s search=%s indexed=%s graph=%s",
+                "EMBER_QUEUE completed job_id=%s state=%s seeded=%s crawled=%s warehouse_created=%s prospects_created=%s prospects_updated=%s prospects_quarantined=%s contacts_created=%s search=%s indexed=%s graph=%s",
                 job["id"], resolved_state, result.get("companies_seeded", 0), company_crawl.get("completed", 0),
                 (company_crawl.get("warehouse") or {}).get("created", 0), promotion.get("prospects_created", 0),
-                promotion.get("prospects_updated", 0), promotion.get("contacts_created", 0),
+                promotion.get("prospects_updated", 0), curator.get("quarantined", 0), promotion.get("contacts_created", 0),
                 public_search.get("status", "Not needed"), public_search.get("indexed", 0), graph.get("status", "Deferred"),
             )
             return True
@@ -162,19 +184,26 @@ def install_ember_worker(app, db_path):
     startup_delay = max(int(os.getenv("EMBER_STARTUP_DELAY_SECONDS", "0")), 0)
     burst_jobs = max(1, min(int(os.getenv("EMBER_BURST_JOBS", "2")), 6))
     between_jobs = max(0, min(int(os.getenv("EMBER_BETWEEN_JOBS_SECONDS", "3")), 30))
+    curator_interval = max(300, min(int(os.getenv("EMBER_CURATOR_SECONDS", "900")), 3600))
     def loop():
         with closing(_connect(db_path)) as conn:
             initialize(conn)
             cancelled = _reset_stale_discovery_backlog(conn)
             queued = _ensure_national_queue(conn)
+            _run_curator(app, conn, context="startup")
             heartbeat(conn, WORKER_KEY, status="Starting")
-        app.logger.warning("EMBER_QUEUE worker started idle=%ss burst=%s between=%ss reset=%s auto_queued=%s queue_mode=automatic-national promotion=matchup-provenance",idle_interval,burst_jobs,between_jobs,cancelled,queued)
+        app.logger.warning("EMBER_QUEUE worker started idle=%ss burst=%s between=%ss reset=%s auto_queued=%s curator=%ss queue_mode=automatic-national promotion=matchup-provenance",idle_interval,burst_jobs,between_jobs,cancelled,queued,curator_interval)
         time.sleep(startup_delay)
+        last_curator = time.monotonic()
         while True:
             try:
                 completed = _run_burst(app, db_path, burst_jobs, between_jobs)
                 if completed:
                     app.logger.warning("EMBER_QUEUE burst completed jobs=%s", completed)
+                if time.monotonic() - last_curator >= curator_interval:
+                    with closing(_connect(db_path)) as conn:
+                        _run_curator(app, conn, context="periodic")
+                    last_curator = time.monotonic()
             except Exception as exc:
                 app.logger.exception("EMBER_QUEUE loop recovered from unexpected error")
                 try:
