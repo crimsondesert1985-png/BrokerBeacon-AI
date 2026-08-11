@@ -6,6 +6,8 @@ import re
 import sqlite3
 from datetime import datetime
 
+from prospect_quality import is_publishable_prospect
+
 NOW = lambda: datetime.now().isoformat(timespec="seconds")
 MATCHUP_SOURCE = "Mortgage Matchup"
 CRM_SOURCE = "Mortgage Matchup via Ember"
@@ -126,7 +128,7 @@ def promote_warehouse_companies(
             counts["warehouse_examined"] += 1
             company_name = str(company.get("legal_name") or "").strip()
             company_nmls = _digits(str(company.get("nmls_id") or ""))
-            if not company_name or not company_nmls:
+            if not is_publishable_prospect(company_name, company_nmls, CRM_SOURCE):
                 counts["rejected"] += 1
                 continue
             score = 95 if company.get("phone") or company.get("public_email") else 90
@@ -166,7 +168,7 @@ def promote_warehouse_companies(
                 prospect_id = _insert_dynamic(conn, "prospects", values)
                 counts["prospects_created"] += 1
 
-            reason = ["Mortgage Matchup company source record", "Company NMLS available"]
+            reason = ["Mortgage Matchup company source record", "Company NMLS available", "Prospect quality gate passed"]
             conn.execute(
                 """insert into autonomous_prospect_links(
                      warehouse_company_id,prospect_id,promotion_reason,promoted_at,updated_at)
@@ -188,8 +190,6 @@ def promote_warehouse_companies(
                 officer_nmls = _digits(str(officer.get("nmls_id") or ""))
                 email = str(officer.get("public_email") or "").strip()
                 phone = str(officer.get("phone") or "").strip()
-                # Prefer NMLS-backed officers, but still promote named loan officers when
-                # public email/phone was extracted from the official company website.
                 if not name or "prospect_id" not in contact_columns:
                     continue
                 if not officer_nmls and not email and not phone:
