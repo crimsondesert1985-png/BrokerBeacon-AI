@@ -65,7 +65,7 @@ def install_customer_ready_ux(app):
         is_owner = bool(getattr(g, "is_platform_owner", False))
         replacements = repr(COPY_RULES)
         messages = repr(HUMAN_MESSAGES)
-        script = f'''<style id="brokerbeacon-customer-ready">
+        script = rf'''<style id="brokerbeacon-customer-ready">
         :root{{--bb-focus:#5f7cff;--bb-success:#20c997}}
         button,input,textarea,select{{font:inherit}}
         button{{transition:transform .15s ease,box-shadow .15s ease,opacity .15s ease}}
