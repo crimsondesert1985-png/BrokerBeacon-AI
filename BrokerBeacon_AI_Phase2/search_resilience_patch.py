@@ -1,4 +1,4 @@
-"""Runtime resilience patch for Ember public search.
+"""Runtime resilience patch for Ember public search and bounded hunts.
 
 Adds a second no-key HTML search fallback so transient DuckDuckGo blocking does
 not stop official-site resolution or Mortgage Matchup discovery. The normal API
@@ -83,6 +83,17 @@ def install_search_resilience(app=None) -> None:
         ember_hunt.configured_providers = resilient_providers
     except Exception:
         pass
+
+    # Keep each state hunt deliberately small so jobs finish reliably and the
+    # national queue advances continuously instead of stalling on 50-company
+    # single-state batches.
+    try:
+        from ember_runtime_patch import install_ember_runtime_patch
+        install_ember_runtime_patch(app)
+    except Exception:
+        if app is not None:
+            app.logger.exception("EMBER_RUNTIME patch failed safely")
+
     if app is not None:
         app.logger.warning("EMBER_SEARCH resilience enabled providers=%s", ",".join(resilient_providers()))
 
