@@ -29,6 +29,7 @@ from prospect_flow import install_prospect_flow
 from role_management import install_role_management
 from saas import PUBLIC_PATHS
 from scenario_rescue_engine import install_scenario_rescue
+from search_resilience_patch import install_search_resilience
 from simplified_flow import install_simplified_flow
 from sprint38_api import install_sprint38_api
 from sprint39_api import install_sprint39_api
@@ -44,6 +45,9 @@ from workspace_consolidation import install_workspace_consolidation
 # Mark only these two internal POST routes public to the SaaS session middleware;
 # the route handlers still enforce their dedicated scheduler tokens.
 PUBLIC_PATHS.update({"/api/internal/ember-cycle", "/api/internal/render-ember-cycle"})
+
+# Patch public-search provider references before any background workers begin.
+install_search_resilience(app)
 
 # Register first so Flask runs these after_request handlers last and their scripts
 # appear after every other Control Tower enhancement.
