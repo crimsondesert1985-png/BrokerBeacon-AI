@@ -2,6 +2,7 @@
 from flask import g, session
 
 from app import app, DB
+from actionable_prospect_views import install_actionable_prospect_views
 from ai_ops_api import install_ai_ops
 from beaconmatch_foundation import install_beaconmatch_foundation
 from control_tower_recovery import install_control_tower_recovery
@@ -25,6 +26,7 @@ from national_warehouse_api import install_national_warehouse
 from prospect_backfill_boot import install_prospect_backfill_boot
 from prospect_flow import install_prospect_flow
 from role_management import install_role_management
+from saas import PUBLIC_PATHS
 from scenario_rescue_engine import install_scenario_rescue
 from simplified_flow import install_simplified_flow
 from sprint38_api import install_sprint38_api
@@ -36,6 +38,11 @@ from sprint42_national_ux import install_sprint42_national_ux
 from state_connector_api import install_state_connectors
 from state_hunt_picker import install_state_hunt_picker
 from workspace_consolidation import install_workspace_consolidation
+
+# Render's scheduler authenticates with its own shared secret, not a user session.
+# Mark only these two internal POST routes public to the SaaS session middleware;
+# the route handlers still enforce their dedicated scheduler tokens.
+PUBLIC_PATHS.update({"/api/internal/ember-cycle", "/api/internal/render-ember-cycle"})
 
 # Register first so Flask runs these after_request handlers last and their scripts
 # appear after every other Control Tower enhancement.
@@ -62,6 +69,7 @@ install_sprint42_national_ux(app)
 install_simplified_flow(app)
 install_prospect_flow(app, DB)
 install_ember_prospects_bridge(app, DB)
+install_actionable_prospect_views(app, DB)
 install_drip_campaigns(app, DB)
 install_scenario_rescue(app, DB)
 install_beaconmatch_foundation(app, DB)
