@@ -1,4 +1,4 @@
-"""Promote only Mortgage Matchup-proven warehouse companies into CRM prospects."""
+"""Promote only Mortgage Matchup-proven, contactable warehouse companies into CRM prospects."""
 from __future__ import annotations
 
 import json
@@ -131,23 +131,38 @@ def promote_warehouse_companies(
             if not is_publishable_prospect(company_name, company_nmls, CRM_SOURCE):
                 counts["rejected"] += 1
                 continue
-            score = 95 if company.get("phone") or company.get("public_email") else 90
+
+            officers = conn.execute(
+                "select * from warehouse_officers where company_id=? order by id",
+                (company["id"],),
+            ).fetchall()
+            company_phone = str(company.get("phone") or "").strip()
+            company_email = str(company.get("public_email") or "").strip()
+            has_officer_channel = any(
+                str(officer["phone"] or "").strip() or str(officer["public_email"] or "").strip()
+                for officer in officers
+            )
+            if not company_phone and not company_email and not has_officer_channel:
+                counts["rejected"] += 1
+                continue
+
+            score = 98 if company_phone or company_email else 95
             values = {
                 "company": company_name,
                 "nmls": company_nmls,
                 "website": company.get("website", ""),
-                "phone": company.get("phone", ""),
-                "email": company.get("public_email", ""),
+                "phone": company_phone,
+                "email": company_email,
                 "city": company.get("city", ""),
                 "state": company.get("state", ""),
                 "status": "New",
                 "score": max(score, int(minimum_score)),
-                "signal": "Verified public Mortgage Matchup brokerage listing",
+                "signal": "Verified public Mortgage Matchup brokerage listing with public contact channel",
                 "source_name": CRM_SOURCE,
                 "source_url": "https://mortgagematchup.com",
-                "verification_status": "Verify current licensing in NMLS before outreach",
-                "ai_summary": "Mortgage Matchup brokerage with company NMLS and linked public loan-originator profiles.",
-                "next_best_action": "Review company and loan-officer contact details, then verify licensing before outreach.",
+                "verification_status": "Contactable public record - verify current licensing in NMLS before outreach",
+                "ai_summary": "Mortgage Matchup brokerage with company NMLS and a public phone/email channel from the company or a linked mortgage professional.",
+                "next_best_action": "Verify licensing and contact details, then begin broker outreach using the public phone/email channel.",
                 "created_at": now,
                 "updated_at": now,
             }
@@ -168,7 +183,12 @@ def promote_warehouse_companies(
                 prospect_id = _insert_dynamic(conn, "prospects", values)
                 counts["prospects_created"] += 1
 
-            reason = ["Mortgage Matchup company source record", "Company NMLS available", "Prospect quality gate passed"]
+            reason = [
+                "Mortgage Matchup company source record",
+                "Company NMLS available",
+                "Prospect quality gate passed",
+                "Public phone or email channel available",
+            ]
             conn.execute(
                 """insert into autonomous_prospect_links(
                      warehouse_company_id,prospect_id,promotion_reason,promoted_at,updated_at)
@@ -180,10 +200,6 @@ def promote_warehouse_companies(
                 (company["id"], prospect_id, json.dumps(reason), now, now),
             )
 
-            officers = conn.execute(
-                "select * from warehouse_officers where company_id=? order by id",
-                (company["id"],),
-            ).fetchall()
             for raw_officer in officers:
                 officer = dict(raw_officer)
                 name = str(officer.get("full_name") or "").strip()
@@ -192,7 +208,8 @@ def promote_warehouse_companies(
                 phone = str(officer.get("phone") or "").strip()
                 if not name or "prospect_id" not in contact_columns:
                     continue
-                if not officer_nmls and not email and not phone:
+                # A contact must be usable for outreach; NMLS alone is not a contact channel.
+                if not email and not phone:
                     continue
                 if officer_nmls:
                     duplicate = conn.execute(
@@ -218,7 +235,7 @@ def promote_warehouse_companies(
                     "nmls": officer_nmls,
                     "city": officer.get("city", ""),
                     "state": officer.get("state", ""),
-                    "roster_status": "Verify in NMLS",
+                    "roster_status": "Public contact channel - verify in NMLS",
                     "source_name": CRM_SOURCE,
                     "updated_at": now,
                 }
