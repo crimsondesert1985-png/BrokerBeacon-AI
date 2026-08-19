@@ -27,6 +27,7 @@ from market_productivity import install_market_productivity
 from national_autopilot_api import install_national_autopilot_api
 from national_data_center import install_national_data_center
 from national_warehouse_api import install_national_warehouse
+from prospect_action_center import install_prospect_action_center
 from prospect_backfill_boot import install_prospect_backfill_boot
 from prospect_click_router import install_prospect_click_router
 from prospect_flow import install_prospect_flow
@@ -96,6 +97,7 @@ install_ember_worker(app, DB)
 install_contact_enrichment_worker(app, DB)
 install_customer_ready_ux(app)
 install_demo_ready_ux(app)
+install_prospect_action_center(app)
 # Install last so the contact-first router intercepts prospect clicks before older drawers.
 install_prospect_click_router(app)
 
