@@ -6,6 +6,7 @@ from actionable_prospect_views import install_actionable_prospect_views
 from ai_ops_api import install_ai_ops
 from beaconmatch_foundation import install_beaconmatch_foundation
 from contact_enrichment_worker import install_contact_enrichment_worker
+from contact_prep import install_contact_prep
 from control_tower_recovery import install_control_tower_recovery
 from control_tower_ux import install_control_tower_ux
 from customer_ready_ux import install_customer_ready_ux
@@ -79,6 +80,7 @@ install_prospect_flow(app, DB)
 install_ember_prospects_bridge(app, DB)
 install_actionable_prospect_views(app, DB)
 install_prospect_intelligence_report(app, DB)
+install_contact_prep(app, DB)
 install_drip_campaigns(app, DB)
 install_market_productivity(app, DB)
 install_market_outreach_integration(app, DB)
