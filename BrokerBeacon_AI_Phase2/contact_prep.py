@@ -2,10 +2,11 @@
 from __future__ import annotations
 
 import html
+import re
 import sqlite3
 from contextlib import closing
 
-from flask import Response, g
+from flask import Response, g, request
 
 
 def _connect(db_path):
@@ -44,7 +45,7 @@ def _digits(phone: str) -> str:
     return "".join(ch for ch in phone if ch.isdigit() or ch == "+")
 
 
-def _contact_card(contact: dict, index: int, company: str) -> str:
+def _contact_card(contact: dict, index: int) -> str:
     name = _first(contact, "name", "full_name", "contact_name") or f"Contact {index}"
     title = _first(contact, "title", "job_title", "role") or "Loan Officer / Brokerage Contact"
     nmls = _first(contact, "nmls", "nmls_id", "license_number")
@@ -148,7 +149,7 @@ def install_contact_prep(app, db_path):
             safe = website if website.lower().startswith(("http://", "https://")) else "https://" + website
             account_links.append(f'<a href="{_esc(safe)}" target="_blank" rel="noopener noreferrer">Website</a>')
 
-        cards = "".join(_contact_card(contact, i + 1, company) for i, contact in enumerate(contacts))
+        cards = "".join(_contact_card(contact, i + 1) for i, contact in enumerate(contacts))
         if not cards:
             cards = '<div class="empty"><h2>No individual loan officers stored yet</h2><p>Account-level contact information remains available above while BrokerBeacon continues enrichment.</p></div>'
 
@@ -158,6 +159,29 @@ def install_contact_prep(app, db_path):
 (function(){{const company={company!r};function openTool(name){{sessionStorage.setItem('bb-contact-prep-open-tool',name);location.href='/'}}document.querySelectorAll('[data-tool]').forEach(b=>b.onclick=()=>openTool(b.dataset.tool));function openDrawer(title,content){{const d=document.getElementById('prep-drawer'),c=document.getElementById('prep-content');c.innerHTML='';const h=document.createElement('h2');h.textContent=title;const a=document.createElement('textarea');a.value=content;const actions=document.createElement('div');actions.className='drawer-actions';const copy=document.createElement('button');copy.textContent='Copy';copy.onclick=async()=>{{await navigator.clipboard.writeText(a.value);copy.textContent='Copied'}};actions.appendChild(copy);c.append(h,a,actions);d.classList.add('open');a.focus()}}document.getElementById('close-prep').onclick=()=>document.getElementById('prep-drawer').classList.remove('open');document.querySelectorAll('.prep-actions button').forEach(btn=>btn.onclick=()=>{{const card=btn.closest('.contact-card'),name=card.dataset.name||'there',kind=btn.dataset.kind;let title='',draft='';if(kind==='email'){{title='Email · '+name;draft='Subject: Quick introduction\n\nHi '+name+',\n\nI wanted to introduce myself and offer to be a resource for '+company+'. If you have a wholesale mortgage scenario that needs a second look, an onboarding question, or a file you are trying to place, I am happy to help work through the next step.\n\nIf useful, send over the basics of what you are working on and I will help think through the options.\n\nBest,\n[Your Name]'}}else if(kind==='call'){{title='Call Prep · '+name;draft='Hi '+name+', this is [Your Name] with [Lender]. I wanted to introduce myself and offer to be a resource for '+company+'. If you have a wholesale mortgage scenario you are trying to place, or any onboarding questions, I am happy to help. What are you working on right now?'}}else{{title='Text · '+name;draft='Hi '+name+', this is [Your Name] with [Lender]. Wanted to introduce myself and offer help with any wholesale mortgage scenarios or onboarding questions for '+company+'. Happy to be a resource.'}}openDrawer(title,draft)}})}})();
 </script></body></html>'''
         return Response(body, mimetype="text/html", headers={"Cache-Control": "no-store, no-cache, must-revalidate"})
+
+    @app.after_request
+    def add_contact_prep_button(response):
+        if not getattr(g, "user_id", None):
+            return response
+        match = re.fullmatch(r"/prospects/(\d+)/intelligence-report/?", request.path)
+        if not match:
+            return response
+        if response.status_code != 200 or "text/html" not in response.headers.get("Content-Type", "").lower():
+            return response
+        try:
+            body = response.get_data(as_text=True)
+        except (RuntimeError, UnicodeDecodeError):
+            return response
+        if "brokerbeacon-contact-prep-button" in body or "</body>" not in body.lower():
+            return response
+        prospect_id = match.group(1)
+        enhancement = f'''<style id="brokerbeacon-contact-prep-button-style">.bb-contact-prep-primary{{display:inline-flex!important;align-items:center;justify-content:center;background:#285fe8!important;border-color:#285fe8!important;color:#fff!important;padding:11px 16px!important;font-weight:900!important;box-shadow:0 7px 18px #285fe833}}.bb-contact-prep-primary:hover{{background:#174fcf!important}}</style><script id="brokerbeacon-contact-prep-button">(function(){{function add(){{if(document.querySelector('.bb-contact-prep-primary'))return;const actions=document.querySelector('.account-actions');if(!actions)return;const a=document.createElement('a');a.className='bb-contact-prep-primary';a.href='/prospects/{prospect_id}/contact-prep';a.textContent='Contact Prep';a.title='Open every available loan officer and contact method for this brokerage';actions.prepend(a)}}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',add);else add()}})();</script>'''
+        pos = body.lower().rfind("</body>")
+        body = body[:pos] + enhancement + body[pos:]
+        response.set_data(body)
+        response.headers["Content-Length"] = str(len(response.get_data()))
+        return response
 
     @app.after_request
     def restore_contact_prep_tool(response):
