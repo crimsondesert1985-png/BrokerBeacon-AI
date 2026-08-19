@@ -21,6 +21,8 @@ from ember_worker import install_ember_worker
 from founder_briefing import install_founder_briefing
 from help_layer import install_help_layer
 from interaction_drilldowns import install_interaction_drilldowns
+from market_outreach_integration import install_market_outreach_integration
+from market_productivity import install_market_productivity
 from national_autopilot_api import install_national_autopilot_api
 from national_data_center import install_national_data_center
 from national_warehouse_api import install_national_warehouse
@@ -76,6 +78,8 @@ install_prospect_flow(app, DB)
 install_ember_prospects_bridge(app, DB)
 install_actionable_prospect_views(app, DB)
 install_drip_campaigns(app, DB)
+install_market_productivity(app, DB)
+install_market_outreach_integration(app, DB)
 install_scenario_rescue(app, DB)
 install_beaconmatch_foundation(app, DB)
 install_workspace_consolidation(app)
