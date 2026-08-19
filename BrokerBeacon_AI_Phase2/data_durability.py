@@ -29,6 +29,18 @@ def verify_database(database_path):
     return True
 
 
+def _prune_backups(backup_dir, source_stem, keep):
+    """Prune oldest snapshots first so there is room to create the next backup."""
+    snapshots = sorted(
+        backup_dir.glob(f"{source_stem}-*.db"),
+        key=lambda item: item.stat().st_mtime,
+    )
+    keep = max(0, int(keep))
+    stale = snapshots[:-keep] if keep else snapshots
+    for item in stale:
+        item.unlink(missing_ok=True)
+
+
 def create_backup(database_path, reason="manual", retention=BACKUP_RETENTION):
     """Create a transactionally consistent SQLite backup and prune old snapshots."""
     source = Path(database_path)
@@ -36,15 +48,31 @@ def create_backup(database_path, reason="manual", retention=BACKUP_RETENTION):
         raise FileNotFoundError(source)
     backup_dir = source.parent / "backups"
     backup_dir.mkdir(parents=True, exist_ok=True)
+
+    # Prune before writing the next snapshot. Waiting until after the backup can
+    # deadlock deployment when the persistent disk is already at capacity.
+    retention = max(1, int(retention))
+    _prune_backups(backup_dir, source.stem, retention - 1)
+
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     safe_reason = "".join(ch if ch.isalnum() or ch in "-_" else "-" for ch in reason)[:32]
     destination = backup_dir / f"{source.stem}-{stamp}-{safe_reason}.db"
-    with sqlite3.connect(source) as current, sqlite3.connect(destination) as backup:
-        current.backup(backup)
-    verify_database(destination)
-    snapshots = sorted(backup_dir.glob(f"{source.stem}-*.db"), key=lambda item: item.stat().st_mtime)
-    for stale in snapshots[:-max(1, int(retention))]:
-        stale.unlink()
+    try:
+        with sqlite3.connect(source) as current, sqlite3.connect(destination) as backup:
+            current.backup(backup)
+        verify_database(destination)
+    except sqlite3.OperationalError as exc:
+        destination.unlink(missing_ok=True)
+        if "database or disk is full" not in str(exc).lower():
+            raise
+        # Free one more retained snapshot and retry once. This preserves the
+        # newest available backups while allowing the application to boot.
+        _prune_backups(backup_dir, source.stem, max(0, retention - 2))
+        with sqlite3.connect(source) as current, sqlite3.connect(destination) as backup:
+            current.backup(backup)
+        verify_database(destination)
+
+    _prune_backups(backup_dir, source.stem, retention)
     return destination
 
 
