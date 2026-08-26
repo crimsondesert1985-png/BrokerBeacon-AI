@@ -27,6 +27,7 @@ from market_productivity import install_market_productivity
 from national_autopilot_api import install_national_autopilot_api
 from national_data_center import install_national_data_center
 from national_warehouse_api import install_national_warehouse
+from partnerbeacon_facebook_leads import install_facebook_purchase_leads
 from prospect_action_center import install_prospect_action_center
 from prospect_backfill_boot import install_prospect_backfill_boot
 from prospect_click_router import install_prospect_click_router
@@ -51,6 +52,11 @@ from workspace_consolidation import install_workspace_consolidation
 # Mark only these two internal POST routes public to the SaaS session middleware;
 # the route handlers still enforce their dedicated scheduler tokens.
 PUBLIC_PATHS.update({"/api/internal/ember-cycle", "/api/internal/render-ember-cycle"})
+PUBLIC_PATHS.update({
+    "/webhooks/facebook/leads",
+    "/leads/facebook/apply",
+    "/leads/facebook/apply/thanks",
+})
 
 # Patch public-search provider references before any background workers begin.
 install_search_resilience(app)
@@ -84,6 +90,7 @@ install_actionable_prospect_views(app, DB)
 install_prospect_intelligence_report(app, DB)
 install_contact_prep(app, DB)
 install_drip_campaigns(app, DB)
+install_facebook_purchase_leads(app, DB)
 install_market_productivity(app, DB)
 install_market_outreach_integration(app, DB)
 install_scenario_rescue(app, DB)
