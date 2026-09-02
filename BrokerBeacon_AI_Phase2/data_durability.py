@@ -5,10 +5,12 @@ from pathlib import Path
 import shutil
 import sqlite3
 import tempfile
+import warnings
 
 
 DEFAULT_DATA_DIR = Path("/var/data")
 BACKUP_RETENTION = 7
+STARTUP_BACKUP_RETENTION = 2
 
 
 def _data_directory():
@@ -68,9 +70,13 @@ def create_backup(database_path, reason="manual", retention=BACKUP_RETENTION):
         # Free one more retained snapshot and retry once. This preserves the
         # newest available backups while allowing the application to boot.
         _prune_backups(backup_dir, source.stem, max(0, retention - 2))
-        with sqlite3.connect(source) as current, sqlite3.connect(destination) as backup:
-            current.backup(backup)
-        verify_database(destination)
+        try:
+            with sqlite3.connect(source) as current, sqlite3.connect(destination) as backup:
+                current.backup(backup)
+            verify_database(destination)
+        except sqlite3.OperationalError:
+            destination.unlink(missing_ok=True)
+            raise
 
     _prune_backups(backup_dir, source.stem, retention)
     return destination
@@ -112,6 +118,25 @@ def verify_latest_backup(database_path):
     return verify_backup_restore(backups[-1])
 
 
+def _startup_backup(database):
+    """Create a restart snapshot without making disk pressure fatal to app boot."""
+    retention = max(
+        1,
+        int(os.getenv("BROKERBEACON_STARTUP_BACKUP_RETENTION", STARTUP_BACKUP_RETENTION)),
+    )
+    try:
+        backup = create_backup(database, reason="pre-deploy", retention=retention)
+        verify_backup_restore(backup)
+    except sqlite3.OperationalError as exc:
+        if "database or disk is full" not in str(exc).lower():
+            raise
+        warnings.warn(
+            f"Skipped startup backup for {database}: persistent disk is full",
+            RuntimeWarning,
+            stacklevel=2,
+        )
+
+
 def prepare_database(seed_path):
     """Place the central database on durable storage, preserving an existing copy."""
     seed = Path(seed_path)
@@ -141,8 +166,7 @@ def prepare_database(seed_path):
         verify_database(target)
         databases = [target, *target.parent.glob(f"{target.stem}.workspace-*{target.suffix}")]
         for database in databases:
-            backup = create_backup(database, reason="pre-deploy")
-            verify_backup_restore(backup)
+            _startup_backup(database)
     return target
 
 
