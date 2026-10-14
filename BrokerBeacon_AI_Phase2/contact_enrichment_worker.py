@@ -58,7 +58,7 @@ def _update_dynamic(conn, table, row_id, values):
     )
 
 
-def enrich_batch(conn, *, limit=8):
+def enrich_batch(conn, *, limit=12):
     """Enrich a bounded batch and return auditable counts."""
     contact_cols = _columns(conn, "contacts")
     if "prospect_id" not in contact_cols:
@@ -196,7 +196,7 @@ def install_contact_enrichment_worker(app, db_path):
             return app
         _started = True
     interval = max(300, min(int(os.getenv("PROSPECT_CONTACT_ENRICH_SECONDS", "600")), 3600))
-    batch = max(1, min(int(os.getenv("PROSPECT_CONTACT_ENRICH_BATCH", "8")), 25))
+    batch = max(1, min(int(os.getenv("PROSPECT_CONTACT_ENRICH_BATCH", "12")), 25))
 
     def loop():
         time.sleep(20)
