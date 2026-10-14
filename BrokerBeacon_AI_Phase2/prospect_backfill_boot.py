@@ -215,9 +215,9 @@ def install_prospect_backfill_boot(app, db_path):
                     )
                     return
                 removed_invalid = _clean_catalog(conn)
-                matchup = promote_warehouse_companies(conn, state="", limit=1000, minimum_score=85)
+                matchup = promote_warehouse_companies(conn, state="", limit=1000, minimum_score=70)
                 website = promote_official_website_contacts(conn, state="", limit=5000)
-                roster = import_missouri_broker_roster(conn, target_minimum=650)
+                roster = import_missouri_broker_roster(conn, target_minimum=1000000)
                 official = promote_official_roster(conn, target_minimum=650, limit=10000)
                 website_after = promote_official_website_contacts(conn, state="", limit=5000)
                 seeded = seed_contacts_from_prospect_records(conn, limit=5000)
