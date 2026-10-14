@@ -142,11 +142,8 @@ def promote_warehouse_companies(
                 str(officer["phone"] or "").strip() or str(officer["public_email"] or "").strip()
                 for officer in officers
             )
-            if not company_phone and not company_email and not has_officer_channel:
-                counts["rejected"] += 1
-                continue
 
-            score = 98 if company_phone or company_email else 95
+            score = 98 if company_phone or company_email else (95 if has_officer_channel else 70)
             values = {
                 "company": company_name,
                 "nmls": company_nmls,
@@ -160,9 +157,9 @@ def promote_warehouse_companies(
                 "signal": "Verified public Mortgage Matchup brokerage listing with public contact channel",
                 "source_name": CRM_SOURCE,
                 "source_url": "https://mortgagematchup.com",
-                "verification_status": "Contactable public record - verify current licensing in NMLS before outreach",
+                "verification_status": "Public brokerage record; automatic contact enrichment pending" if not (company_phone or company_email or has_officer_channel) else "Public contact available; verify current licensing in NMLS before outreach",
                 "ai_summary": "Mortgage Matchup brokerage with company NMLS and a public phone/email channel from the company or a linked mortgage professional.",
-                "next_best_action": "Verify licensing and contact details, then begin broker outreach using the public phone/email channel.",
+                "next_best_action": "Automatic contact enrichment pending; do not outreach without a verified channel." if not (company_phone or company_email or has_officer_channel) else "Review public contact information before outreach.",
                 "created_at": now,
                 "updated_at": now,
             }
@@ -187,7 +184,7 @@ def promote_warehouse_companies(
                 "Mortgage Matchup company source record",
                 "Company NMLS available",
                 "Prospect quality gate passed",
-                "Public phone or email channel available",
+                "Public contact channel pending automatic enrichment" if not (company_phone or company_email or has_officer_channel) else "Public phone or email channel available",
             ]
             conn.execute(
                 """insert into autonomous_prospect_links(
