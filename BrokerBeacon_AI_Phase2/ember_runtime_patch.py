@@ -16,7 +16,7 @@ def install_ember_runtime_patch(app=None) -> None:
     def bounded_launch(conn, *, state="", company_limit=50, contact_limit=1000):
         # Small batches finish reliably and allow the national queue to advance.
         # Repeated cycles provide breadth without long-running single jobs.
-        effective_companies = max(6, min(int(company_limit or 12), 12))
+        effective_companies = max(6, min(int(company_limit or 20), 20))
         effective_contacts = max(100, min(int(contact_limit or 300), 500))
         return original(
             conn,
@@ -27,7 +27,7 @@ def install_ember_runtime_patch(app=None) -> None:
 
     ember_worker.launch = bounded_launch
     if app is not None:
-        app.logger.warning("EMBER_RUNTIME bounded_hunts company_limit=12 contact_limit=500")
+        app.logger.warning("EMBER_RUNTIME bounded_hunts company_limit=20 contact_limit=500")
 
 
 __all__ = ["install_ember_runtime_patch"]
