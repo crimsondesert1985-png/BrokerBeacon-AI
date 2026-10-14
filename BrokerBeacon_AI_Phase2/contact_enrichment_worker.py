@@ -14,7 +14,7 @@ import time
 from contextlib import closing
 from datetime import datetime
 
-from ember_company_crawler import crawl_company
+from contact_search_fallback import resilient_contact_crawl as crawl_company
 from prospect_quality import is_publishable_prospect
 
 _started = False
@@ -63,6 +63,8 @@ def enrich_batch(conn, *, limit=8):
     contact_cols = _columns(conn, "contacts")
     if "prospect_id" not in contact_cols:
         return {"examined": 0, "sites_completed": 0, "prospects_updated": 0, "contacts_created": 0, "failed": 0}
+    conn.execute("create table if not exists contact_enrichment_attempts (prospect_id integer primary key, last_attempt_at text not null, attempt_count integer not null default 0)")
+    conn.commit()
     rows = conn.execute(
         """select p.* from prospects p
            where trim(coalesce(p.company,''))<>''
@@ -72,6 +74,7 @@ def enrich_batch(conn, *, limit=8):
                  and lower(trim(coalesce(c.title,''))) not in ('company contact','main office')
                  and lower(trim(coalesce(c.name,''))) not like '% main office'
              )
+           and not exists (select 1 from contact_enrichment_attempts a where a.prospect_id=p.id and a.last_attempt_at > datetime('now','-24 hours'))
            order by case when trim(coalesce(p.website,''))<>'' then 0 else 1 end,
                     coalesce(p.score,0) desc,p.id
            limit ?""",
@@ -80,6 +83,8 @@ def enrich_batch(conn, *, limit=8):
     counts = {"examined": 0, "sites_completed": 0, "prospects_updated": 0, "contacts_created": 0, "failed": 0}
     for row in rows:
         counts["examined"] += 1
+        conn.execute("insert into contact_enrichment_attempts(prospect_id,last_attempt_at,attempt_count) values(?,datetime(\'now\'),1) on conflict(prospect_id) do update set last_attempt_at=datetime(\'now\'),attempt_count=attempt_count+1", (int(row["id"]),))
+        conn.commit()
         company = str(row["company"] or "").strip()
         nmls = str(row["nmls"] or "").strip()
         source = str(row["source_name"] or "").strip()
