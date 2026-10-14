@@ -71,7 +71,6 @@ def enrich_batch(conn, *, limit=8):
              and not exists (
                select 1 from contacts c where c.prospect_id=p.id
                  and (trim(coalesce(c.phone,''))<>'' or trim(coalesce(c.email,''))<>'')
-                 and lower(trim(coalesce(c.title,''))) not in ('company contact','main office')
                  and lower(trim(coalesce(c.name,''))) not like '% main office'
              )
            and not exists (select 1 from contact_enrichment_attempts a where a.prospect_id=p.id and a.last_attempt_at > datetime('now','-24 hours'))
