@@ -69,6 +69,8 @@ def enrich_batch(conn, *, limit=8):
              and not exists (
                select 1 from contacts c where c.prospect_id=p.id
                  and (trim(coalesce(c.phone,''))<>'' or trim(coalesce(c.email,''))<>'')
+                 and lower(trim(coalesce(c.title,''))) not in ('company contact','main office')
+                 and lower(trim(coalesce(c.name,''))) not like '% main office'
              )
            order by case when trim(coalesce(p.website,''))<>'' then 0 else 1 end,
                     coalesce(p.score,0) desc,p.id
@@ -125,8 +127,8 @@ def enrich_batch(conn, *, limit=8):
                 continue
             exists = conn.execute(
                 """select 1 from contacts where prospect_id=? and lower(trim(coalesce(name,'')))=lower(trim(?))
-                   and (coalesce(phone,'')=? or coalesce(email,'')=?) limit 1""",
-                (int(row["id"]), name, officer_phone, officer_email),
+                   and ((?<>'' and coalesce(phone,'')=?) or (?<>'' and coalesce(email,'')=?)) limit 1""",
+                (int(row["id"]), name, officer_phone, officer_phone, officer_email, officer_email),
             ).fetchone()
             if exists:
                 continue
