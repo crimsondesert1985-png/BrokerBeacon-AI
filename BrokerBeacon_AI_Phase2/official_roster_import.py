@@ -123,8 +123,6 @@ def promote_official_roster(conn: sqlite3.Connection, target_minimum: int = 500,
       order by c.state,c.legal_name limit ?""", (SOURCE_NAME, max(1, min(int(limit), 10000)))).fetchall()
     existing_total = int(conn.execute("select count(*) from prospects").fetchone()[0])
     for raw in rows:
-        if existing_total + counts["created"] >= target_minimum:
-            break
         company = dict(raw)
         counts["examined"] += 1
         name, nmls, state = str(company.get("legal_name") or "").strip(), digits(company.get("nmls_id")), str(company.get("state") or "").upper()
