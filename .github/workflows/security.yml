@@ -19,7 +19,7 @@ jobs:
         working-directory: BrokerBeacon_AI_Phase2
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
           cache: pip
