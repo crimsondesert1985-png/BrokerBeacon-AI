@@ -2,3 +2,4 @@ Flask
 gunicorn
 pypdf
 psycopg[binary]
+twilio>=9,<10

@@ -1,0 +1,85 @@
+:root {
+  color-scheme: light;
+  font: 14px Inter, "Segoe UI", system-ui, sans-serif;
+  color: #152531;
+  background: #f2f5f6;
+  --line: #d9e1e5;
+  --accent: #11685b;
+  --muted: #4d626d;
+}
+* { box-sizing: border-box; }
+body { margin: 0; }
+main { max-width: 1760px; padding: 24px; margin: auto; }
+header, .queue-meta, .status, .pager {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+header { margin-bottom: 18px; }
+header a { color: var(--accent); font-weight: 700; text-decoration: none; }
+h1 { margin: 5px 0 0; font-size: clamp(22px, 3vw, 30px); }
+h2 { margin: 0 0 12px; font-size: 17px; }
+h3 { margin: 14px 0 7px; font-size: 15px; }
+p { margin: 8px 0; overflow-wrap: anywhere; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button, input, select, textarea {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  min-height: 33px;
+  padding: 6px 9px;
+}
+textarea { min-height: 75px; resize: vertical; }
+button { cursor: pointer; font-weight: 600; }
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:disabled { opacity: .48; cursor: default; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.primary { background: var(--accent); border-color: var(--accent); color: white; }
+.start { padding-inline: 18px; min-height: 40px; }
+.workspace { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 322px); gap: 14px; align-items: start; }
+.queue, .call-panel { background: white; border: 1px solid var(--line); border-radius: 10px; padding: 14px; min-width: 0; }
+.call-panel { position: sticky; top: 14px; }
+.filters, .row-controls, .settings-form, .voicemail-settings { display: flex; flex-wrap: wrap; align-items: end; gap: 8px; }
+.filters { margin-bottom: 8px; }
+.filters label:first-child { flex: 1 1 170px; }
+label { display: grid; gap: 4px; color: var(--muted); font-size: 12px; }
+label :is(input, select, textarea) { width: 100%; color: #152531; font-size: 13px; }
+.filters input { max-width: 100%; }
+.queue-meta { font-size: 12px; flex-wrap: wrap; margin: 10px 0; color: var(--muted); }
+.queue-meta label { display: flex; align-items: center; }
+.queue-meta select { width: auto; }
+.table-scroll { overflow: auto; max-height: 60vh; border: 1px solid var(--line); border-radius: 7px; }
+table { border-collapse: separate; border-spacing: 0; width: 100%; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; border-bottom: 1px solid var(--line); padding: 7px 9px; white-space: nowrap; }
+th { position: sticky; top: 0; background: #eaf1f1; z-index: 1; }
+td { font-size: 12px; }
+th:nth-last-child(-n+2), td:nth-last-child(-n+2) { text-align: right; }
+th button, .table-name { border: 0; padding: 0; background: transparent; min-height: auto; text-align: inherit; }
+th button { font-size: 12px; }
+.table-name small { display: block; color: var(--accent); font-weight: 600; }
+tr.current { background: #d9f1e6; }
+tr.current td:first-child { box-shadow: inset 3px 0 var(--accent); }
+tr.selected { background: #edf6f3; }
+.pager, .voicemail-settings { margin: 10px 0; }
+.empty { padding: 10px; }
+details { margin-block: 10px; }
+summary { cursor: pointer; font-weight: 600; color: var(--accent); }
+details .settings-form, details .filters { margin-top: 10px; }
+.saved-clip { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 7px; }
+audio { height: 34px; max-width: 100%; }
+.status { padding: 7px; background: #eaf4f2; text-transform: capitalize; align-items: start; }
+.status span, .next-contact { font-size: 12px; color: var(--muted); }
+.call-panel > .row-controls, .call-panel > button, .wrap-up > button { margin-top: 8px; }
+.wrap-up { display: grid; gap: 8px; margin-top: 10px; padding-block: 5px 10px; border-bottom: 1px solid var(--line); }
+dl { display: grid; grid-template-columns: 1fr auto; gap: 5px; font-variant-numeric: tabular-nums; }
+dd { margin: 0; font-weight: 650; }
+.score { color: var(--accent); white-space: nowrap; }
+.notice { background: #fff4df; padding: 8px 10px; margin: 0 0 10px; border-radius: 6px; }
+.notice button { float: right; min-height: auto; padding: 0 4px; }
+ul { padding-left: 18px; }
+@media (max-width: 920px) {
+  main { padding: 12px; }
+  .workspace { grid-template-columns: 1fr; }
+  .call-panel { position: static; }
+}
