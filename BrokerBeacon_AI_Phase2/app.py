@@ -12,6 +12,7 @@ from revenue_intelligence import executive_dashboard, log_revenue_event
 from voice_agent import configured as voice_configured, create_twilio_call, human_greeting, voicemail, twiml, say, appointment_slots, ai_reply
 from guideline_index import seed_index, index_fha_pdf, search as search_guideline_index, stats as guideline_index_stats
 from saas import install_saas
+from priority_dialer import install_priority_dialer
 from tenant_storage import ensure_workspace_database
 from data_durability import create_backup, prepare_database, storage_status, verify_latest_backup
 from security_monitoring import emit_security_alert
@@ -939,6 +940,16 @@ function buildWorkflowNav(){
   nav.replaceChildren(fragment);nav.classList.add('workflow-nav');syncWorkflowNav(document.querySelector('.view.active')?.id||'dashboard');
 }
 buildWorkflowNav();
+const dialerNav = document.querySelector('[data-nav-group="engage"] .nav-group-items-inner');
+if (dialerNav && {{ (g.membership_role in ['AE', 'Manager', 'Owner']) | tojson }} && document.body.dataset.demo !== '1') {
+  const dialerLink = document.createElement('button');
+  dialerLink.type = 'button';
+  dialerLink.onclick = () => location.assign('/priority-dialer');
+  dialerLink.textContent = 'Priority Auto-Dialer';
+  dialerLink.title = 'Call broker contacts in priority order';
+  dialerNav.appendChild(dialerLink);
+}
+
 function configurePlatformAdmin(){
   const allowed=!!SaaSContext?.user?.is_platform_owner;
   const group=document.querySelector('.nav-group[data-owner-only="1"]');
@@ -1631,6 +1642,7 @@ def calculate_broker_dna(c, prospect):
 
 init()
 install_saas(app, DB, BUILD_VERSION)
+install_priority_dialer(app, db, NOW)
 print(f"BrokerBeacon startup: VERSION {BUILD_VERSION} · {BUILD_NAME}", flush=True)
 
 @app.after_request
@@ -1647,6 +1659,14 @@ def add_build_headers(response):
         "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; "
         "img-src 'self' data: https:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'"
     )
+    if request.path == "/priority-dialer":
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; style-src 'self'; script-src 'self'; img-src 'self'; "
+            "connect-src 'self' https://*.twilio.com wss://*.twilio.com; media-src 'self' blob:; "
+            "frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
+        )
+    if request.path == "/priority-dialer" or request.path.startswith("/api/priority-dialer"):
+        response.headers["Cache-Control"] = "no-store"
     if request.path == "/" or request.path.startswith("/api/guidelines") or request.path in {"/health", "/api/version"}:
         response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
         response.headers["Pragma"] = "no-cache"

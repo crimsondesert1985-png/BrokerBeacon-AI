@@ -321,7 +321,7 @@ def install_saas(app, db_path, build_version):
                     membership = conn.execute("""select role from saas_memberships
                         where user_id=? and workspace_id=?""", (g.user_id, g.workspace_id)).fetchone()
                     g.membership_role = membership["role"] if membership else None
-        if request.path in PUBLIC_PATHS or request.path.startswith(("/static/", "/invite/")):
+        if request.path in PUBLIC_PATHS or request.path.startswith(("/static/", "/invite/", "/dialer/voice/")):
             return None
         if not g.user_id:
             if request.path.startswith("/api/"):
